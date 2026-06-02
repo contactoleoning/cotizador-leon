@@ -6,63 +6,105 @@
 <title>Leon Ingenieria - Cotizador</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a1628;--bg2:#0d1f3c;--bg3:#112240;--brd:#1e3a5f;--brd2:#2a4a6f;--txt:#e8f0fe;--txt2:#a8c0e0;--txt3:#6a8caf;--acc:#e8c547;--acc2:#c9a830;--grn:#4ade80;--cy:#fb923c;--blu:#60a5fa;--red:#f87171;--r:10px;--rs:6px}
+:root{
+  --bg:#0a1628;--bg2:#0f2647;--bg3:#16315a;--brd:#264a78;--brd2:#345a8c;
+  --txt:#f5f9ff;--txt2:#c2d6f0;--txt3:#8badd4;
+  --acc:#f5d04e;--acc2:#d4af2f;--grn:#5ee88f;--cy:#ff9f43;--blu:#6db4ff;--red:#ff6b6b;
+  --r:12px;--rs:8px
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);font-family:"DM Sans",sans-serif;min-height:100vh}
-.hdr{background:var(--bg2);border-bottom:1px solid var(--brd);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.logo{height:36px;width:auto}
-.hbadge{background:var(--bg3);border:1px solid var(--brd);padding:4px 10px;border-radius:20px;font-size:11px;color:var(--txt2)}
-.tabs{display:flex;gap:4px;padding:10px 16px 0;background:var(--bg2);border-bottom:1px solid var(--brd)}
-.tab{padding:8px 18px;border-radius:var(--rs) var(--rs) 0 0;font-size:13px;font-weight:500;cursor:pointer;color:var(--txt2);border:1px solid transparent;border-bottom:none;transition:all .15s}
+body{background:var(--bg);color:var(--txt);font-family:"DM Sans",sans-serif;min-height:100vh;font-size:18px;line-height:1.55}
+.hdr{background:var(--bg2);border-bottom:2px solid var(--brd);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{height:50px;width:auto}
+.hbadge{background:var(--bg3);border:2px solid var(--brd);padding:7px 16px;border-radius:20px;font-size:17px;font-weight:700;color:var(--acc)}
+.tabs{display:flex;gap:6px;padding:14px 16px 0;background:var(--bg2);border-bottom:2px solid var(--brd)}
+.tab{padding:13px 24px;border-radius:var(--rs) var(--rs) 0 0;font-size:17px;font-weight:700;cursor:pointer;color:var(--txt2);border:2px solid transparent;border-bottom:none;transition:all .15s;letter-spacing:.02em}
 .tab:hover{color:var(--txt);background:var(--bg3)}
-.tab.act{background:var(--bg);color:var(--txt);border-color:var(--brd)}
-.main{max-width:580px;margin:0 auto;padding:20px 16px 100px}
-.card{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:16px;margin-bottom:12px}
-.ct{font-size:11px;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
-.ss{font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 10px;padding-top:12px;border-top:1px solid var(--brd)}
+.tab.act{background:var(--bg);color:var(--acc);border-color:var(--brd)}
+.main{max-width:640px;margin:0 auto;padding:22px 18px 120px}
+.card{background:var(--bg2);border:2px solid var(--brd);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.ct{font-size:17px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.06em;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid var(--brd)}
+.ss{font-size:16px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 12px;padding-top:14px;border-top:1px solid var(--brd)}
 .ss.f{margin-top:0;padding-top:0;border-top:none}
-.fr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.fl{font-size:13px;color:var(--txt2);width:155px;flex-shrink:0;line-height:1.3}
-input,select{flex:1;background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--rs);padding:8px 12px;font-size:14px;color:var(--txt);font-family:"DM Sans",sans-serif;outline:none;transition:border-color .15s}
+.fr{display:flex;align-items:center;gap:12px;margin-bottom:13px}
+.fr:last-child{margin-bottom:0}
+.fl{font-size:17px;font-weight:500;color:var(--txt2);width:185px;flex-shrink:0;line-height:1.35}
+input,select{flex:1;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:13px 15px;font-size:18px;color:var(--txt);font-family:"DM Sans",sans-serif;outline:none;transition:border-color .15s;font-weight:500}
 input:focus,select:focus{border-color:var(--acc)}
-select option{background:#0d1f3c;color:#e8f0fe}
-.ib{font-size:12px;padding:7px 12px;background:var(--bg3);border-radius:var(--rs);color:var(--txt2);margin-bottom:10px}
-.pg{display:flex;flex-direction:column;gap:6px;margin-top:10px}
-.pc{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rs);padding:12px 14px;cursor:pointer;transition:all .15s}
-.pc:hover{border-color:var(--brd2);background:#2a2a2a}
-.pc.sel{border-color:var(--acc);background:#2a2618}
+input::placeholder{color:var(--txt3)}
+select option{background:#0f2647;color:var(--txt)}
+.ib{font-size:16px;padding:11px 15px;background:var(--bg3);border-radius:var(--rs);color:var(--txt2);margin-bottom:12px;line-height:1.5}
+.pg{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.pc{background:var(--bg3);border:2px solid var(--brd);border-radius:var(--rs);padding:15px 16px;cursor:pointer;transition:all .15s}
+.pc:hover{border-color:var(--brd2);background:#1a3a6a}
+.pc.sel{border-color:var(--acc);background:#26315a;box-shadow:0 0 0 1px var(--acc)}
 .pc.sel .pn{color:var(--acc)}
-.pn{font-size:14px;font-weight:500}
-.pm{display:flex;gap:5px;flex-wrap:wrap;margin:5px 0 6px}
-.bdg{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500}
-.bb{background:#1e3a5f;color:var(--blu)}.bp{background:#14532d;color:var(--grn)}.bt{background:var(--bg2);color:var(--txt2);border:1px solid var(--brd)}
-.pp{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.pv{font-size:15px;font-weight:600;color:var(--grn)}.pcy{font-size:13px;font-weight:500;color:var(--cy)}.piv{font-size:11px;color:var(--txt3)}
-.btn{width:100%;padding:11px;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;border:none;margin-top:8px;font-family:"DM Sans",sans-serif;transition:all .15s}
+.pn{font-size:18px;font-weight:700}
+.pm{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 9px}
+.badge,.bdg{font-size:14px;padding:4px 11px;border-radius:20px;font-weight:700}
+.bb{background:#1e4575;color:#a8d0ff}.bp{background:#1a6e4a;color:#a0f0c8}.bt{background:var(--bg2);color:var(--txt2);border:1px solid var(--brd)}
+.pp{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.pv{font-size:22px;font-weight:700;color:var(--grn)}
+.pcy{font-size:18px;font-weight:700;color:var(--cy)}
+.piv{font-size:15px;color:var(--txt3);font-weight:500}
+.btn{width:100%;padding:16px;border-radius:var(--rs);font-size:18px;font-weight:700;cursor:pointer;border:none;margin-top:10px;font-family:"DM Sans",sans-serif;letter-spacing:.01em;transition:all .15s}
 .btn:active{transform:scale(.98)}
-.badd{background:var(--acc);color:#0f0f0f}.badd:hover{background:var(--acc2)}
-.bcy{background:var(--cy);color:#0f0f0f}
-.bwa{background:#128c7e;color:#fff}.bpdf{background:#1e3a5f;color:var(--blu)}
-.bdel{background:transparent;border:1px solid #3a1a1a;color:var(--red);font-size:11px;padding:4px 8px;width:auto;border-radius:4px;margin-top:0;cursor:pointer}
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
-.met{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rs);padding:10px 12px}
-.ml{font-size:10px;color:var(--txt3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
-.mv{font-size:15px;font-weight:600}.mv.g{color:var(--grn)}.mv.a{color:var(--cy)}
-.ci{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--brd)}.ci:last-child{border-bottom:none}
-.tots{background:var(--bg3);border-radius:var(--rs);padding:14px;margin-top:12px}
-.tr{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--txt2)}.tr.dc{color:var(--cy)}.tr.TT{font-size:18px;font-weight:700;color:var(--grn);border-top:1px solid var(--brd);margin-top:8px;padding-top:10px}
-.wabox{background:#0d1f1d;border:1px solid #1a3a36;border-radius:var(--rs);padding:14px;margin-top:10px;font-size:12px;color:#a7f3d0;line-height:1.8;white-space:pre-wrap;word-break:break-word}
-.ctag{background:#7c2d12;color:var(--cy);font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;margin-left:6px}
-.gl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 6px}.gl:first-child{margin-top:0}
-.ai{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--brd)}.ai:last-child{border-bottom:none}
-.ainfo{flex:1;min-width:0}.an{font-size:12px;font-weight:500}.as{font-size:11px;color:var(--txt2);margin-top:1px}.av{font-size:11px;color:var(--grn);margin-top:1px}
-.ainp{display:flex;flex-direction:column;gap:4px;flex-shrink:0}.air{display:flex;align-items:center;gap:4px}.ail{font-size:10px;width:28px;color:var(--txt3)}.ail.c{color:var(--cy)}
-.ainput{width:60px!important;flex:none!important;font-size:12px!important;padding:4px 6px!important;text-align:right}
-.ainput-costo{width:90px!important;flex:none!important;font-size:12px!important;padding:4px 6px!important;text-align:right;border-color:var(--acc2)!important}
-.smsg{font-size:12px;color:var(--grn);text-align:center;min-height:18px;margin-top:6px}
-.empty{font-size:14px;font-weight:700;color:#ff6b6b;padding:16px;text-align:center;background:#2a0a0a;border:2px solid #ff6b6b;border-radius:8px;letter-spacing:.05em}
-.btnrow{display:flex;gap:8px;margin-top:8px}.btnrow .btn{margin-top:0}
-@media(max-width:480px){.main{padding:16px 12px 100px}.fl{width:130px;font-size:12px}.tab{padding:8px 12px;font-size:12px}}
+.badd{background:var(--acc);color:#0a1628}.badd:hover{background:var(--acc2)}
+.bcy{background:var(--cy);color:#0a1628}.bcy:hover{filter:brightness(1.1)}
+.bwa{background:#1eb858;color:#fff}.bwa:hover{background:#19a34d}
+.bpdf{background:#2d6fc4;color:#fff}.bpdf:hover{background:#2860ad}
+.bdel{background:#3a1a1a;border:2px solid var(--red);color:var(--red);font-size:15px;font-weight:700;padding:6px 12px;width:auto;border-radius:6px;margin-top:0;cursor:pointer}
+.bdel:hover{background:var(--red);color:#fff}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.met{background:var(--bg3);border:2px solid var(--brd);border-radius:var(--rs);padding:14px}
+.ml{font-size:15px;color:var(--txt3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.mv{font-size:21px;font-weight:700}
+.mv.g{color:var(--grn)}.mv.a{color:var(--cy)}
+.ci{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--brd)}
+.ci:last-child{border-bottom:none}
+.tots{background:var(--bg3);border:2px solid var(--brd);border-radius:var(--r);padding:18px;margin-top:16px}
+.tr{display:flex;justify-content:space-between;font-size:18px;padding:6px 0;color:var(--txt)}
+.tr span:first-child{color:var(--txt2)}
+.tr.dc{color:var(--cy)}.tr.dc span{color:var(--cy)}
+.tr.TT{font-size:30px;font-weight:800;color:var(--grn);border-top:2px solid var(--brd);margin-top:10px;padding-top:14px}
+.tr.TT span{color:var(--grn)}
+.tr.tc{font-size:17px;font-weight:600;color:var(--txt2);margin-top:4px}
+.tr.tc span{color:var(--txt2)}
+.wabox{background:#0d2438;border:2px solid #1eb858;border-radius:var(--rs);padding:16px;margin-top:12px;font-size:16px;color:#b8f5d0;line-height:1.9;white-space:pre-wrap;word-break:break-word;font-family:"DM Sans",sans-serif}
+.ctag{background:#c2620f;color:#fff;font-size:15px;padding:3px 12px;border-radius:20px;font-weight:700;margin-left:8px}
+.gl{font-size:15px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--brd)}
+.gl:first-child{margin-top:0}
+.ai{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--brd)}
+.ai:last-child{border-bottom:none}
+.ainfo{flex:1;min-width:0}
+.an{font-size:17px;font-weight:700;color:var(--txt)}
+.as{font-size:15px;color:var(--txt2);margin-top:3px}
+.av{font-size:16px;color:var(--grn);margin-top:3px;font-weight:600}
+.ainp{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.air{display:flex;align-items:center;gap:6px}
+.ail{font-size:14px;width:58px;color:var(--txt3);font-weight:600}
+.ail.c{color:var(--cy)}
+.ainput{width:88px!important;flex:none!important;font-size:17px!important;padding:8px 10px!important;text-align:right;font-weight:600}
+.ainput-costo{width:120px!important;flex:none!important;font-size:17px!important;padding:8px 10px!important;text-align:right;border-color:var(--acc)!important;font-weight:700;color:var(--acc)}
+.smsg{font-size:17px;font-weight:700;color:var(--grn);text-align:center;min-height:24px;margin-top:8px}
+.tipoinm{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:4px}
+.tipoinm-opt{display:flex;align-items:center;gap:11px;padding:14px 16px;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);cursor:pointer;font-size:17px;font-weight:600;color:var(--txt2);transition:all .15s}
+.tipoinm-opt:hover{border-color:var(--acc)}
+.tipoinm-opt.sel{border-color:var(--acc);background:#26315a;color:var(--txt)}
+.tipoinm-box{width:24px;height:24px;border:2px solid var(--brd2);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-weight:800;color:#0a1628}
+.tipoinm-opt.sel .tipoinm-box{background:var(--acc);border-color:var(--acc)}
+.empty{font-size:19px;font-weight:800;color:#ff6b6b;padding:22px;text-align:center;background:#3a1015;border:2px solid #ff6b6b;border-radius:var(--rs);letter-spacing:.04em}
+.btnrow{display:flex;gap:10px;margin-top:10px}
+.btnrow .btn{margin-top:0}
+@media(max-width:480px){
+  body{font-size:16px}
+  .main{padding:16px 12px 110px}
+  .fl{width:140px;font-size:15px}
+  .tab{padding:11px 15px;font-size:15px}
+  .tr.TT{font-size:26px}
+  .pv{font-size:20px}
+  .tipoinm{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -86,8 +128,76 @@ select option{background:#0d1f3c;color:#e8f0fe}
     <div class="fr"><span class="fl">Contacto</span><input type="text" id="ccont" placeholder="Nombre contacto"></div>
     <div class="fr"><span class="fl">Teléfono</span><input type="text" id="ctel" placeholder="+56 9 XXXX XXXX"></div>
     <div class="fr"><span class="fl">Dirección</span><input type="text" id="cdir" placeholder="Calle, numero, depto"></div>
-    <div class="fr"><span class="fl">Comuna</span><input type="text" id="ccom" placeholder="Comuna"></div>
+    <div class="fr"><span class="fl">Comuna</span>
+      <select id="ccom">
+<option value="">— Selecciona comuna —</option>
+        <option value="Alhué">Alhué</option>
+        <option value="Buin">Buin</option>
+        <option value="Calera de Tango">Calera de Tango</option>
+        <option value="Cerrillos">Cerrillos</option>
+        <option value="Cerro Navia">Cerro Navia</option>
+        <option value="Cisterna">Cisterna</option>
+        <option value="Colina">Colina</option>
+        <option value="Conchalí">Conchalí</option>
+        <option value="Curacaví">Curacaví</option>
+        <option value="El Bosque">El Bosque</option>
+        <option value="El Monte">El Monte</option>
+        <option value="Estación Central">Estación Central</option>
+        <option value="Huechuraba">Huechuraba</option>
+        <option value="Independencia">Independencia</option>
+        <option value="Isla de Maipo">Isla de Maipo</option>
+        <option value="La Cisterna">La Cisterna</option>
+        <option value="La Florida">La Florida</option>
+        <option value="La Granja">La Granja</option>
+        <option value="La Pintana">La Pintana</option>
+        <option value="La Reina">La Reina</option>
+        <option value="Lampa">Lampa</option>
+        <option value="Las Condes">Las Condes</option>
+        <option value="Lo Barnechea">Lo Barnechea</option>
+        <option value="Lo Espejo">Lo Espejo</option>
+        <option value="Lo Prado">Lo Prado</option>
+        <option value="Macul">Macul</option>
+        <option value="Maipú">Maipú</option>
+        <option value="María Pinto">María Pinto</option>
+        <option value="Melipilla">Melipilla</option>
+        <option value="Padre Hurtado">Padre Hurtado</option>
+        <option value="Paine">Paine</option>
+        <option value="Pedro Aguirre Cerda">Pedro Aguirre Cerda</option>
+        <option value="Peñaflor">Peñaflor</option>
+        <option value="Peñalolén">Peñalolén</option>
+        <option value="Pirque">Pirque</option>
+        <option value="Providencia">Providencia</option>
+        <option value="Pudahuel">Pudahuel</option>
+        <option value="Puente Alto">Puente Alto</option>
+        <option value="Quilicura">Quilicura</option>
+        <option value="Quinta Normal">Quinta Normal</option>
+        <option value="Recoleta">Recoleta</option>
+        <option value="Renca">Renca</option>
+        <option value="San Bernardo">San Bernardo</option>
+        <option value="San Joaquín">San Joaquín</option>
+        <option value="San José de Maipo">San José de Maipo</option>
+        <option value="San Miguel">San Miguel</option>
+        <option value="San Pedro">San Pedro</option>
+        <option value="San Ramón">San Ramón</option>
+        <option value="Santiago">Santiago</option>
+        <option value="Talagante">Talagante</option>
+        <option value="Tiltil">Tiltil</option>
+        <option value="Vitacura">Vitacura</option>
+        <option value="Ñuñoa">Ñuñoa</option>
+      </select>
+    </div>
     <div class="fr"><span class="fl">Email</span><input type="text" id="cemail" placeholder="correo@email.com"></div>
+    <div class="fr" style="align-items:flex-start"><span class="fl" style="padding-top:8px">Tipo de inmueble</span>
+      <div style="flex:1">
+        <div class="tipoinm">
+          <div class="tipoinm-opt" data-inm="Casa"><span class="tipoinm-box"></span>Casa</div>
+          <div class="tipoinm-opt" data-inm="Departamento"><span class="tipoinm-box"></span>Departamento</div>
+          <div class="tipoinm-opt" data-inm="Oficinas"><span class="tipoinm-box"></span>Oficinas</div>
+          <div class="tipoinm-opt" data-inm="Instituciones"><span class="tipoinm-box"></span>Instituciones</div>
+        </div>
+        <input type="hidden" id="tipoinm" value="">
+      </div>
+    </div>
     <div class="fr"><span class="fl">Validez</span>
       <select id="validez">
         <option value="5 Dias Habiles" selected>5 Días Hábiles</option>
@@ -116,6 +226,15 @@ select option{background:#0d1f3c;color:#e8f0fe}
       </select>
     </div>
     <div class="pg" id="prodlista"></div>
+    <div class="fr" id="rowcant" style="display:none;margin-top:10px"><span class="fl">Cantidad de equipos</span>
+      <select id="cantequipo">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
     <button class="btn badd" id="btnag" style="display:none">+ Agregar Equipo al Presupuesto</button>
     <button class="btn bcy" id="btncy" style="display:none">⚡ Agregar Precio Cyber Day</button>
   </div>
@@ -151,19 +270,33 @@ select option{background:#0d1f3c;color:#e8f0fe}
         <option value="pisocielo24">Instalación Piso Cielo 24.000 BTU</option>
       </select>
     </div>
-    <div class="fr"><span class="fl">Altura / Acceso (Casa)</span>
-      <select id="ialt">
-        <option value="0">Primer piso (Sin Recargo)</option>
-        <option value="0.15">Segundo piso (+15%)</option>
-        <option value="0.35">Tercer piso (+35%)</option>
+    <div class="fr"><span class="fl">Cantidad instalaciones</span>
+      <select id="cantinst">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
       </select>
     </div>
-    <div class="fr"><span class="fl">Tipo de Muro</span>
-      <select id="imuro">
-        <option value="0">Tabique / Albañilería</option>
-        <option value="40000">Hormigón (+$40.000)</option>
+    <div class="ss">Materiales</div>
+    <div class="fr"><span class="fl">Tipo de materiales</span>
+      <select id="imateriales" onchange="calcInst()">
+        <option value="130000">Materiales adicionales básico — $130.000</option>
+        <option value="0">Sin materiales adicionales</option>
       </select>
     </div>
+    <div class="fr"><span class="fl">Cantidad materiales</span>
+      <select id="cantmat">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+    
+    
 
     <div class="ss">Canaleta Decorativa (Opcional)</div>
     <div class="fr"><span class="fl">Bandejas 100×50mm ($6.500 c/u, 2m)</span><input type="number" id="ican100" value="0" min="0" max="10"></div>
@@ -173,14 +306,18 @@ select option{background:#0d1f3c;color:#e8f0fe}
     <div class="fr"><span class="fl">Bomba Condensado</span>
       <select id="ibomba"><option value="0">No</option><option value="115000">Sí (+$115.000)</option></select>
     </div>
+    <div class="fr" id="rowbomba" style="display:none"><span class="fl">Cantidad bombas</span>
+      <select id="cantbomba">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
 
-    <div class="ss">Descuento Global</div>
-    <div class="fr"><span class="fl">Descuento (%)</span><input type="number" id="desc" value="0" min="0" max="100"></div>
   </div>
-  <div id="borrador" style="display:none;background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:14px;margin-bottom:10px">
-    <div style="font-size:11px;font-weight:600;color:var(--acc);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">PRESUPUESTO DETALLE</div>
-    <div id="borrador-contenido"></div>
-  </div>
+
   <div class="g3" id="instmets"></div>
   <button class="btn badd" id="btnagregarinst">+ Agregar Instalación al Presupuesto</button>
 
@@ -188,14 +325,33 @@ select option{background:#0d1f3c;color:#e8f0fe}
 </div>
 
 <div id="view-info" style="display:none">
+
+  <!-- BLOQUE 1: INFO OBLIGATORIA -->
   <div class="card">
-    <div class="ct">Información</div>
-    <div style="text-align:center;padding:40px 20px;color:var(--txt2)">
-      <div style="font-size:40px;margin-bottom:16px">📋</div>
-      <div style="font-size:15px;font-weight:500;color:var(--txt);margin-bottom:8px">Sección en preparación</div>
-      <div style="font-size:13px;line-height:1.6">Aquí agregaremos información importante<br>para tu equipo de trabajo.</div>
+    <div class="ct">📋 Información obligatoria por llamada</div>
+    <div style="font-size:15px;color:var(--cy);font-weight:700;margin-bottom:14px;padding:10px 14px;background:#2a1a00;border-left:4px solid var(--cy);border-radius:6px">
+      El closer NO puede terminar una conversación sin obtener toda esta información.
+    </div>
+    <div id="checklist-oblig" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="resetChecklist()" style="flex:1;padding:11px;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);color:var(--txt2);font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">↺ Reiniciar</button>
+      <button onclick="copiarChecklist()" style="flex:1;padding:11px;background:#128c7e;border:none;border-radius:var(--rs);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">📱 Copiar resumen</button>
+    </div>
+    <div id="checklist-pct" style="text-align:center;font-size:14px;color:var(--txt2);margin-top:10px"></div>
+  </div>
+
+  <!-- BLOQUE 2: GUIÓN DE VENTAS -->
+  <div class="card">
+    <div class="ct">🎯 Guión de llamada — Paso a paso</div>
+    <div style="font-size:15px;color:var(--txt2);margin-bottom:16px;line-height:1.6">
+      Sigue cada paso en orden. Marca la casilla cuando hayas hecho la pregunta y anota la respuesta del cliente.
+    </div>
+    <div id="guion-pasos"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="resetGuion()" style="flex:1;padding:11px;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);color:var(--txt2);font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">↺ Nueva llamada</button>
     </div>
   </div>
+
 </div>
 
 <div id="view-adm" style="display:none">
@@ -210,9 +366,9 @@ select option{background:#0d1f3c;color:#e8f0fe}
 
 var IVA=0.19;
 var IBASE={
-  split9:142857, split12:159664, split18:184874, split22:210084, split24:235294,
-  cassette12:193277, cassette18:226891, cassette24:268908, cassette36:319328,
-  pisocielo18:210084, pisocielo24:252101
+  split9:150000, split12:150000, split18:180000, split22:180000, split24:180000,
+  cassette12:180000, cassette18:180000, cassette24:200000, cassette36:280000,
+  pisocielo18:180000, pisocielo24:200000
 };
 var MO_INST={
   split9:50000, split12:55000, split18:70000, split22:80000, split24:90000,
@@ -300,82 +456,65 @@ function seleccionar(id){
   selProd=CAT.find(function(p){return p.id===id;});
   document.getElementById("btnag").style.display=selProd?"block":"none";
   document.getElementById("btncy").style.display=selProd?"block":"none";
+  document.getElementById("rowcant").style.display=selProd?"flex":"none";
 }
 
 function agregar(esCyber){
   if(!selProd)return;
+  var cant=parseInt(document.getElementById("cantequipo").value)||1;
   var neto=esCyber?pvC(selProd):pvN(selProd);
   carrito.push({id:selProd.id+"_"+Date.now(),cod:selProd.id,
     desc:selProd.marca+" "+selProd.modelo+" "+selProd.btu+".000 BTU",
-    tipo:selProd.tipo,neto:neto,total:wIVA(neto),esCyber:esCyber,cant:1});
+    tipo:selProd.tipo,neto:neto,total:wIVA(neto),esCyber:esCyber,cant:cant});
   selProd=null;
   document.querySelectorAll(".pc").forEach(function(c){c.classList.remove("sel");});
   document.getElementById("btnag").style.display="none";
   document.getElementById("btncy").style.display="none";
+  document.getElementById("rowcant").style.display="none";
+  document.getElementById("cantequipo").value="1";
   renderCarrito();
 }
 
 function calcInst(){
   var base=IBASE[vs("itipo")]||0;
-  var alt=vn("ialt");
-  var altExtra=Math.round(base*alt);
-  var muro=vn("imuro");
   var bomba=vn("ibomba");
   var can100=vn("ican100")*6500;
   var can20=vn("ican20")*1200;
-  var neto=base+altExtra+muro+bomba+can100+can20;
+  var mat=vn("imateriales");
+  var neto=base+bomba+can100+can20+mat;
   var iva=Math.round(neto*IVA);
   document.getElementById("instmets").innerHTML=
     '<div class="met"><div class="ml">Neto</div><div class="mv a">'+fmt(neto)+'</div></div>'
     +'<div class="met"><div class="ml">IVA 19%</div><div class="mv">'+fmt(iva)+'</div></div>'
     +'<div class="met"><div class="ml">Total c/IVA</div><div class="mv g">'+fmt(neto+iva)+'</div></div>';
-
-  // PRESUPUESTO DETALLE
-  var tipoTrabajo=INOMBRES[vs("itipo")]||vs("itipo");
-  var altLabel=alt===0?"Primer piso (Sin Recargo)":alt===0.15?"Segundo piso (+15%)":"Tercer piso (+35%)";
-  var muroLabel=muro===0?"Tabique / Albañilería":"Hormigón";
-
-  function row(label,detalle,monto){
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--brd);font-size:13px">'+
-      '<span style="color:var(--txt2);width:48%">'+label+'</span>'+
-      '<span style="color:var(--txt);width:32%;font-size:12px;text-align:center">'+detalle+'</span>'+
-      '<span style="font-weight:500;width:20%;text-align:right;color:var(--grn)">'+monto+'</span></div>';
-  }
-
-  var html="";
-  html+=row(tipoTrabajo,"Pack instalación",fmt(base));
-  if(altExtra>0)html+=row("Recargo altura",altLabel,fmt(altExtra));
-  if(muro>0)html+=row("Recargo muro",muroLabel,fmt(muro));
-  if(bomba>0)html+=row("Bomba de condensado","Instalación incluida",fmt(bomba));
-  if(can100>0)html+=row("Canaleta 100×50mm",vn("ican100")+" bandeja(s) — "+vn("ican100")*2+"m",fmt(can100));
-  if(can20>0)html+=row("Canaleta 20×10mm",vn("ican20")+" bandeja(s) — "+vn("ican20")*2+"m",fmt(can20));
-
-  html+='<div style="display:flex;justify-content:space-between;padding:8px 0 4px;font-size:13px;font-weight:600;border-top:1px solid var(--brd2);margin-top:4px">'+
-    '<span style="color:var(--txt2)">Subtotal neto instalación</span>'+
-    '<span style="color:var(--grn)">'+fmt(neto)+'</span></div>'+
-    '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:12px">'+
-    '<span style="color:var(--txt2)">IVA 19%</span>'+
-    '<span style="color:var(--txt2)">'+fmt(iva)+'</span></div>'+
-    '<div style="display:flex;justify-content:space-between;padding:4px 0 0;font-size:14px;font-weight:700">'+
-    '<span style="color:var(--grn)">Total instalación c/IVA</span>'+
-    '<span style="color:var(--grn)">'+fmt(neto+iva)+'</span></div>';
-
-  document.getElementById("borrador-contenido").innerHTML=html;
-  document.getElementById("borrador").style.display="block";
 }
 
 function agregarInst(){
   var base=IBASE[vs("itipo")]||0;
-  var alt=vn("ialt");
-  var altExtra=Math.round(base*alt);
-  var muro=vn("imuro");
-  var bomba=vn("ibomba");
   var can100=vn("ican100")*6500;
   var can20=vn("ican20")*1200;
-  var neto=base+altExtra+muro+bomba+can100+can20;
+  var cantInst=parseInt(document.getElementById("cantinst").value)||1;
+  var netoInst=base+can100+can20;
   carrito.push({id:"INST_"+Date.now(),cod:"IN-"+vs("itipo").toUpperCase(),
     desc:INOMBRES[vs("itipo")],tipo:"Instalacion",
-    neto:neto,total:wIVA(neto),esCyber:false,cant:1});
+    neto:netoInst,total:wIVA(netoInst),esCyber:false,cant:cantInst});
+  // Materiales adicionales
+  var mat=vn("imateriales");
+  if(mat>0){
+    var cantMat=parseInt(document.getElementById("cantmat").value)||1;
+    carrito.push({id:"MAT_"+Date.now(),cod:"MAT",
+      desc:"Materiales adicionales básico",tipo:"Materiales",
+      neto:mat,total:wIVA(mat),esCyber:false,cant:cantMat});
+  }
+  // Bomba de condensado
+  var bomba=vn("ibomba");
+  if(bomba>0){
+    var cantBomba=parseInt(document.getElementById("cantbomba").value)||1;
+    var bombaNeto=Math.round(bomba/1.19);
+    carrito.push({id:"BOMBA_"+Date.now(),cod:"BOMBA",
+      desc:"Bomba de condensado",tipo:"Accesorio",
+      neto:bombaNeto,total:wIVA(bombaNeto),esCyber:false,cant:cantBomba});
+  }
   renderCarrito();
 }
 
@@ -385,14 +524,19 @@ function renderCarrito(){
   var cc=document.getElementById("cartcard"),ab=document.getElementById("actbtns"),wp=document.getElementById("waprev");
   if(!carrito.length){cc.style.display="none";ab.style.display="none";wp.style.display="none";return;}
   cc.style.display="block";ab.style.display="flex";
-  var d=vn("desc"),sN=carrito.reduce(function(a,b){return a+b.neto;},0);
+  var d=0;
+  var sN=carrito.reduce(function(a,b){return a+(b.neto*(b.cant||1));},0);
   var dM=Math.round(sN*d/100),nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
   document.getElementById("cartlista").innerHTML=carrito.map(function(p,i){
+    var cant=p.cant||1;
+    var totalLinea=p.total*cant;
+    var cantLabel=cant>1?'<span style="color:var(--acc);font-weight:800"> ×'+cant+'</span>':'';
+    var detalleNeto=cant>1?(fmt(p.neto)+' c/u — '+cant+' unidades'):('Neto: '+fmt(p.neto));
     return '<div class="ci"><div style="flex:1;min-width:0">'
-      +'<div style="font-size:13px;font-weight:500;color:var(--txt)">'+p.desc+(p.esCyber?'<span class="ctag">Cyber</span>':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--txt2)">'+p.tipo+' Neto: '+fmt(p.neto)+'</div></div>'
-      +'<div style="display:flex;align-items:center;gap:8px">'
-      +'<span style="font-size:13px;font-weight:500;color:var(--grn)">'+fmt(p.total)+'</span>'
+      +'<div style="font-size:18px;font-weight:700;color:var(--txt)">'+p.desc+cantLabel+(p.esCyber?'<span class="ctag">Cyber</span>':'')+'</div>'
+      +'<div style="font-size:15px;color:var(--txt2);margin-top:3px">'+p.tipo+' — '+detalleNeto+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<span style="font-size:19px;font-weight:700;color:var(--grn)">'+fmt(totalLinea)+'</span>'
       +'<button class="bdel" data-idx="'+i+'">X</button></div></div>';
   }).join("");
   var th='<div class="tr"><span>Subtotal neto</span><span>'+fmt(sN)+'</span></div>';
@@ -400,7 +544,7 @@ function renderCarrito(){
   th+='<div class="tr"><span>Monto neto</span><span>'+fmt(nD)+'</span></div>'
     +'<div class="tr"><span>IVA 19%</span><span>'+fmt(iva)+'</span></div>'
     +'<div class="tr TT"><span>TOTAL</span><span>'+fmt(tot)+'</span></div>'
-    +'<div class="tr" style="font-size:11px;color:var(--txt3)"><span>Total tarjeta credito +3.5%</span><span>'+fmt(totTC)+'</span></div>';
+    +'<div class="tr tc"><span>Total tarjeta crédito +3,5%</span><span>'+fmt(totTC)+'</span></div>';
   document.getElementById("totales").innerHTML=th;
   updWA(sN,dM,nD,iva,tot);
 }
@@ -411,12 +555,14 @@ function updWA(sN,dM,nD,iva,tot){
   var tel=document.getElementById("ctel").value.trim();
   var dir=document.getElementById("cdir").value.trim();
   var com=document.getElementById("ccom").value.trim();
-  var d=vn("desc");
-  var items=carrito.map(function(p){return "- "+p.desc+(p.esCyber?" [Cyber Day]":"")+": "+fmt(p.total);}).join("\n");
+  var inm=document.getElementById("tipoinm").value;
+  var d=0;
+  var items=carrito.map(function(p){var c=p.cant||1;var cl=c>1?(" x"+c):"";return "- "+p.desc+cl+(p.esCyber?" [Cyber Day]":"")+": "+fmt(p.total*c);}).join("\n");
   var msg="*COTIZACION N "+nro+"*\n*Leon Ingenieria Y Proyectos SpA*\nTel: +569 6371 0820\n\nCliente: "+nombre;
   if(tel)msg+="\nTel: "+tel;
   if(dir)msg+="\nDir: "+dir;
   if(com)msg+="\nComuna: "+com;
+  if(inm)msg+="\nTipo: "+inm;
   msg+="\n\n*Detalle:*\n"+items+"\n\n--------------";
   if(d>0)msg+="\nDescuento "+d+"%: -"+fmt(dM);
   msg+="\nMonto neto: "+fmt(nD)+"\nIVA 19%: "+fmt(iva)+"\nTOTAL: "+fmt(tot)+"\n\nCotizacion valida por "+vs("validez")+"\nLeon Ingenieria - Una Solucion Inteligente";
@@ -446,21 +592,22 @@ function genPDF(){
   var comuna=document.getElementById("ccom").value.trim()||"-";
   var email=document.getElementById("cemail").value.trim()||"-";
   var validez=vs("validez");
-  var d=vn("desc");
-  var sN=carrito.reduce(function(a,b){return a+b.neto;},0);
+  var d=0;
+  var sN=carrito.reduce(function(a,b){return a+(b.neto*(b.cant||1));},0);
   var dM=Math.round(sN*d/100),nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
   var rows=carrito.map(function(p,i){
+    var c=p.cant||1;
     return "<tr><td>"+(i+1)+"</td><td>"+p.cod+"</td><td>"+p.desc+"</td>"
-      +"<td style='text-align:center'>"+p.cant+"</td>"
+      +"<td style='text-align:center'>"+c+"</td>"
       +"<td style='text-align:right'>"+fmt(p.neto)+"</td>"
       +"<td style='text-align:center'>"+(d>0?d+"%":"-")+"</td>"
-      +"<td style='text-align:right'>"+fmt(p.neto)+"</td></tr>";
+      +"<td style='text-align:right'>"+fmt(p.neto*c)+"</td></tr>";
   }).join("");
   var blanks="";
   for(var i=carrito.length;i<10;i++){
     blanks+="<tr><td>"+(i+1)+"</td><td>-</td><td>-</td><td></td><td style='text-align:right'>$ -</td><td></td><td style='text-align:right'>$ -</td></tr>";
   }
-  var css="*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:11px;color:#1a1a1a;background:#fff;padding:20px}.page{max-width:760px;margin:0 auto}.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;border-bottom:2px solid #1a1a1a;padding-bottom:12px}.logo{width:150px;height:auto}.cbox{border:2px solid #1a1a1a;padding:6px 14px;text-align:center;margin-top:6px}.clbl{font-size:11px;font-weight:700}.cnum{font-size:22px;font-weight:700}.title{text-align:center;font-size:14px;font-weight:700;margin:10px 0;text-transform:uppercase}table{width:100%;border-collapse:collapse;margin-bottom:8px}th{background:#2d2d2d;color:#fff;padding:5px 8px;font-size:10px;font-weight:600;text-align:left}td{padding:5px 8px;border-bottom:1px solid #e0e0e0}tr:nth-child(even) td{background:#f9f9f9}.it td{border:1px solid #ccc;font-weight:600;font-size:10px}.trow td{background:#2d2d2d!important;color:#fff!important;font-weight:700;font-size:12px}.grow td{background:#c9a830!important;color:#1a1a1a!important;font-weight:700;font-size:12px}.fs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.fb th{background:#2d2d2d;color:#fff;font-size:10px;padding:5px 8px}.fb td{font-size:10px;padding:4px 8px;border-bottom:1px solid #eee}.tl{text-align:center;font-style:italic;font-weight:700;margin-top:14px;font-size:13px;letter-spacing:1px;border-top:2px solid #1a1a1a;padding-top:10px}@media print{button{display:none}}";
+  var css="*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;background:#fff;padding:20px}.page{max-width:760px;margin:0 auto}.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;border-bottom:3px solid #1a1a1a;padding-bottom:12px}.logo{width:170px;height:auto}.cbox{border:3px solid #1a1a1a;padding:8px 16px;text-align:center;margin-top:6px}.clbl{font-size:13px;font-weight:700}.cnum{font-size:26px;font-weight:700}.title{text-align:center;font-size:17px;font-weight:700;margin:12px 0;text-transform:uppercase}table{width:100%;border-collapse:collapse;margin-bottom:8px}th{background:#1a3a5f;color:#fff;padding:8px 10px;font-size:12px;font-weight:700;text-align:left}td{padding:8px 10px;border-bottom:1px solid #ddd;font-size:12px}tr:nth-child(even) td{background:#f5f8fc}.it td{border:1px solid #bbb;font-weight:600;font-size:12px}.trow td{background:#1a3a5f!important;color:#fff!important;font-weight:700;font-size:15px}.grow td{background:#d4af2f!important;color:#1a1a1a!important;font-weight:700;font-size:14px}.fs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.fb th{background:#1a3a5f;color:#fff;font-size:11px;padding:7px 9px}.fb td{font-size:12px;padding:6px 9px;border-bottom:1px solid #ddd}.tl{text-align:center;font-style:italic;font-weight:700;margin-top:16px;font-size:15px;letter-spacing:1px;border-top:3px solid #1a1a1a;padding-top:12px}@media print{button{display:none}}";
   var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Cotizacion "+nro+"</title><style>"+css+"</style></head><body><div class='page'>";
   h+="<div class='hdr'><div><img class='logo' src='"+LOGO_B64+"'><br><div style='font-size:10px;margin-top:4px'>TELEFONO: +569 6371 0820</div><div style='font-size:10px'>contactoleoning@gmail.com</div></div>";
   h+="<div style='text-align:right'><div class='cbox'><div class='clbl'>COTIZACION</div><div class='cnum'>"+nro+"</div></div></div></div>";
@@ -579,13 +726,31 @@ document.addEventListener("DOMContentLoaded", function(){
   document.getElementById("btnpdf").addEventListener("click",genPDF);
   document.getElementById("btnwa").addEventListener("click",copiarWA);
   // Install form changes
-  ["itipo","ialt","imuro","ibomba"].forEach(function(id){
+  ["itipo","ibomba","imateriales"].forEach(function(id){
     document.getElementById(id).addEventListener("change",calcInst);
+  });
+  // Mostrar cantidad bombas cuando bomba = Sí
+  document.getElementById("ibomba").addEventListener("change",function(){
+    document.getElementById("rowbomba").style.display=(this.value!=="0")?"flex":"none";
+  });
+  // Checkboxes tipo de inmueble (selección única)
+  document.querySelectorAll(".tipoinm-opt").forEach(function(opt){
+    opt.addEventListener("click",function(){
+      var val=this.getAttribute("data-inm");
+      var ya=this.classList.contains("sel");
+      document.querySelectorAll(".tipoinm-opt").forEach(function(o){o.classList.remove("sel");o.querySelector(".tipoinm-box").textContent="";});
+      if(!ya){
+        this.classList.add("sel");
+        this.querySelector(".tipoinm-box").textContent="✓";
+        document.getElementById("tipoinm").value=val;
+      } else {
+        document.getElementById("tipoinm").value="";
+      }
+    });
   });
   ["ican100","ican20"].forEach(function(id){
     document.getElementById(id).addEventListener("input",calcInst);
   });
-  document.getElementById("desc").addEventListener("input",renderCarrito);
   document.getElementById("btusel").addEventListener("change",filtrar);
   document.getElementById("tiposel").addEventListener("change",filtrar);
   // nro is auto-managed, no manual input listener needed
@@ -606,7 +771,185 @@ document.addEventListener("DOMContentLoaded", function(){
   showTab("cot");
   calcInst();
   loadOv();
+  initInfo();
 });
+
+// =============================================
+// INFORMACION TAB - Checklist y Guion de ventas
+// =============================================
+
+var OBLIG_ITEMS = [
+  "Nombre cliente",
+  "Teléfono",
+  "Comuna",
+  "Tipo de propiedad",
+  "Tipo de espacio",
+  "Ancho del lugar",
+  "Largo del lugar",
+  "Exposición solar",
+  "Fotos del lugar (idealmente)",
+  "Equipo de interés",
+  "Presupuesto aproximado (económico / intermedio / premium)",
+  "Necesita instalación (Sí / No)",
+  "Requiere visita técnica (Sí / No)"
+];
+
+var GUION_PASOS = [
+  {
+    num: 1,
+    titulo: "Saludo e identificación",
+    pregunta: "¡Hola! Buenos días/tardes, me presento — ud. habla con <strong style='color:var(--acc)'>___________</strong>. ¿Hablo con <strong style='color:var(--acc)'>[nombre cliente]</strong>?",
+    nota: "Nombre del cliente:"
+  },
+  {
+    num: 2,
+    titulo: "Levantar la necesidad",
+    pregunta: "Para comenzar me gustaría saber su necesidad, que me pudiera compartir información clave para entender la situación y así ofrecerle una solución sólida a lo que necesita.",
+    nota: "Apuntes de necesidad:"
+  },
+  {
+    num: 3,
+    titulo: "Medidas del espacio",
+    pregunta: "Ok, ¿cuánto mide el ancho y el largo del lugar que desea climatizar?",
+    nota: "Ancho: ______ m  /  Largo: ______ m  /  Altura: ______ m"
+  },
+  {
+    num: 4,
+    titulo: "Exposición solar",
+    pregunta: "El lugar a climatizar — ¿el sol le da directo por los ventanales? ¿En qué período del día le da el sol? <span style='font-size:13px;color:var(--txt3)'>(Importante: si el equipo cubre el espacio muy justo, es mejor subir a la siguiente capacidad mayor.)</span>",
+    nota: "Exposición solar:"
+  },
+  {
+    num: 5,
+    titulo: "Tipo de propiedad",
+    pregunta: "¿La propiedad es casa o departamento? ¿En qué piso se encuentra? ¿Las paredes son de tabique o de hormigón/concreto?",
+    nota: "Casa / Dpto — Piso: ______ — Muro:"
+  },
+  {
+    num: 6,
+    titulo: "Equipo de interés",
+    pregunta: "¿Hay algún equipo que le llame la atención? <em>Si la respuesta es sí:</em> ¿Cuál es? — <em>Si es no:</em> Nosotros podemos recomendarle un equipo diseñado especial para su espacio.",
+    nota: "Equipo de interés:"
+  },
+  {
+    num: 7,
+    titulo: "Presupuesto y fecha",
+    pregunta: "¿Tiene una fecha estimada de cuándo le gustaría tener el equipo instalado? ¿Y tiene en mente un presupuesto aproximado — estamos hablando de algo más económico, intermedio o premium?",
+    nota: "Fecha: ______  —  Presupuesto:"
+  },
+  {
+    num: 8,
+    titulo: "Instalación y visita técnica",
+    pregunta: "¿Necesitaría instalación o solo el equipo? ¿Le gustaría que agendáramos una visita técnica para medición y presupuesto en terreno?",
+    nota: "Instalación: Sí / No  —  Visita técnica: Sí / No"
+  },
+  {
+    num: 9,
+    titulo: "Explicar qué incluye la instalación",
+    pregunta: "El valor cotizado en la instalación incluye el kit básico que trae el equipo, más una bandeja de 100×50 y dos de 20×10 que esconden el recorrido de las cañerías y la electricidad al enchufe — todo contemplado para 3 metros máximos entre unidades.",
+    nota: "Apuntes adicionales:"
+  },
+  {
+    num: 10,
+    titulo: "Cierre y seguimiento",
+    pregunta: "Perfecto, con toda esta información le preparo una cotización detallada y se la envío por WhatsApp. ¿El número al que hablamos es el correcto para enviarla?",
+    nota: "Teléfono confirmado:  —  Email:"
+  }
+];
+
+var obligState = {};
+var guionState = {};
+
+function renderChecklist() {
+  var el = document.getElementById("checklist-oblig");
+  if (!el) return;
+  var done = 0;
+  el.innerHTML = OBLIG_ITEMS.map(function(item, i) {
+    var checked = !!obligState[i];
+    if (checked) done++;
+    return '<div onclick="toggleOblig('+i+')" style="display:flex;align-items:center;gap:14px;padding:12px 14px;background:'+(checked?"#0e3020":"var(--bg3)")+';border:2px solid '+(checked?"var(--grn)":"var(--brd2)")+';border-radius:var(--rs);cursor:pointer;transition:all .15s">'
+      + '<div style="width:26px;height:26px;border:2px solid '+(checked?"var(--grn)":"var(--brd2)")+';border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:'+(checked?"var(--grn)":"transparent")+';font-size:17px;font-weight:800;color:#0a1628">'+(checked?"✓":"")+"</div>"
+      + '<span style="font-size:17px;font-weight:'+(checked?"700":"500")+';color:'+(checked?"var(--grn)":"var(--txt2)")+'">'+(checked?"<s style=\"opacity:.5\">"+item+"</s>":item)+"</span>"
+      + "</div>";
+  }).join("");
+  var pct = Math.round(done / OBLIG_ITEMS.length * 100);
+  var pctEl = document.getElementById("checklist-pct");
+  if (pctEl) {
+    var color = pct === 100 ? "var(--grn)" : pct >= 60 ? "var(--acc)" : "var(--cy)";
+    pctEl.innerHTML = "<span style=\"color:"+color+";font-size:17px;font-weight:700\">"+done+" / "+OBLIG_ITEMS.length+" ítems obtenidos ("+pct+"%)"+(pct===100?" ✓ Llamada completa":"")+"</span>";
+  }
+}
+
+function toggleOblig(i) {
+  obligState[i] = !obligState[i];
+  renderChecklist();
+}
+
+function resetChecklist() {
+  obligState = {};
+  renderChecklist();
+}
+
+function copiarChecklist() {
+  var txt = "RESUMEN LLAMADA — León Ingeniería\n";
+  txt += "================================\n";
+  OBLIG_ITEMS.forEach(function(item, i) {
+    txt += (obligState[i] ? "✅ " : "❌ ") + item + "\n";
+  });
+  var done = Object.keys(obligState).filter(function(k){return obligState[k];}).length;
+  txt += "\nCompletado: " + done + "/" + OBLIG_ITEMS.length;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).then(function(){
+      var b = document.querySelector("[onclick=\"copiarChecklist()\"]");
+      if(b){b.textContent="✓ Copiado!";setTimeout(function(){b.textContent="📱 Copiar resumen";},2500);}
+    });
+  }
+}
+
+function renderGuion() {
+  var el = document.getElementById("guion-pasos");
+  if (!el) return;
+  el.innerHTML = GUION_PASOS.map(function(paso, i) {
+    var checked = !!guionState[i];
+    var nota = guionState["nota_"+i] || "";
+    return '<div style="margin-bottom:16px;border:2px solid '+(checked?"var(--grn)":"var(--brd)")+';border-radius:var(--r);overflow:hidden;transition:border-color .2s">'
+      // Header del paso
+      + '<div onclick="toggleGuion('+i+')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:'+(checked?"#0e3020":"var(--bg3)")+';cursor:pointer">'
+      + '<div style="width:34px;height:34px;border:2px solid '+(checked?"var(--grn)":"var(--brd2)")+';border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:'+(checked?"var(--grn)":"var(--bg2)")+';font-size:16px;font-weight:800;color:'+(checked?"#0a1628":"var(--txt3)")+'">'+( checked?"✓":paso.num)+"</div>"
+      + '<div style="flex:1">'
+      + '<div style="font-size:16px;font-weight:700;color:'+(checked?"var(--grn)":"var(--acc)")+'">'+paso.titulo+'</div>'
+      + '<div style="font-size:13px;color:var(--txt3);margin-top:2px">'+(checked?"Completado — toca para desmarcar":"Toca para marcar como preguntado")+"</div>"
+      + "</div></div>"
+      // Pregunta
+      + '<div style="padding:14px 16px;border-top:1px solid var(--brd)">'
+      + '<div style="font-size:16px;color:var(--txt);line-height:1.6;margin-bottom:12px">'+paso.pregunta+"</div>"
+      // Campo de notas
+      + '<div style="font-size:13px;font-weight:600;color:var(--txt3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">✏️ Respuesta del cliente:</div>'
+      + '<textarea id="nota-'+i+'" placeholder="'+paso.nota+'" oninput="saveNota('+i+',this.value)" style="width:100%;min-height:70px;background:var(--bg);border:2px solid var(--brd2);border-radius:var(--rs);padding:10px 12px;font-size:15px;color:var(--txt);font-family:DM Sans,sans-serif;resize:vertical;outline:none;line-height:1.5">'+nota+"</textarea>"
+      + "</div></div>";
+  }).join("");
+}
+
+function toggleGuion(i) {
+  guionState[i] = !guionState[i];
+  renderGuion();
+}
+
+function saveNota(i, val) {
+  guionState["nota_"+i] = val;
+}
+
+function resetGuion() {
+  if(!confirm("¿Iniciar nueva llamada? Se borrarán todas las notas.")) return;
+  guionState = {};
+  renderGuion();
+}
+
+function initInfo() {
+  renderChecklist();
+  renderGuion();
+}
+
 
 </script>
 </body>
