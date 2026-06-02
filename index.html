@@ -633,56 +633,167 @@ function genPDF(){
   var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
   var rows=carrito.map(function(p,i){
     var c=p.cant||1;
-    return "<tr><td>"+(i+1)+"</td><td>"+p.cod+"</td><td>"+p.desc+"</td>"
+    return "<tr><td style='text-align:center'>"+( i+1)+"</td><td style='text-align:left'>"+p.cod+"</td><td>"+p.desc+"</td>"
       +"<td style='text-align:center'>"+c+"</td>"
-      +"<td style='text-align:right'>"+fmt(p.neto)+"</td>"
-      +"<td style='text-align:center'>"+(d>0?d+"%":"-")+"</td>"
-      +"<td style='text-align:right'>"+fmt(p.neto*c)+"</td></tr>";
+      +"<td style='text-align:center'>$"+Math.round(p.neto).toLocaleString("es-CL")+"</td>"
+      +"<td style='text-align:center'>"+(cyberPct>0?cyberPct+"%":"")+"</td>"
+      +"<td style='text-align:center'>$"+Math.round(p.neto*c).toLocaleString("es-CL")+"</td></tr>";
   }).join("");
   var blanks="";
   for(var i=carrito.length;i<10;i++){
-    blanks+="<tr><td>"+(i+1)+"</td><td>-</td><td>-</td><td></td><td style='text-align:right'>$ -</td><td></td><td style='text-align:right'>$ -</td></tr>";
+    blanks+="<tr><td style='text-align:center'>"+(i+1)+"</td><td style='text-align:center'>-</td><td style='text-align:center'>-</td><td style='text-align:center'></td><td style='text-align:center'>$ -</td><td style='text-align:center'></td><td style='text-align:center'>$ -</td></tr>";
   }
-  var css="*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;background:#fff;padding:20px}.page{max-width:760px;margin:0 auto}.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;border-bottom:3px solid #1a1a1a;padding-bottom:12px}.logo{width:170px;height:auto}.cbox{border:3px solid #1a1a1a;padding:8px 16px;text-align:center;margin-top:6px}.clbl{font-size:13px;font-weight:700}.cnum{font-size:26px;font-weight:700}.title{text-align:center;font-size:17px;font-weight:700;margin:12px 0;text-transform:uppercase}table{width:100%;border-collapse:collapse;margin-bottom:8px}th{background:#1a3a5f;color:#fff;padding:8px 10px;font-size:12px;font-weight:700;text-align:left}td{padding:8px 10px;border-bottom:1px solid #ddd;font-size:12px}tr:nth-child(even) td{background:#f5f8fc}.it td{border:1px solid #bbb;font-weight:600;font-size:12px}.trow td{background:#1a3a5f!important;color:#fff!important;font-weight:700;font-size:15px}.grow td{background:#d4af2f!important;color:#1a1a1a!important;font-weight:700;font-size:14px}.fs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.fb th{background:#1a3a5f;color:#fff;font-size:11px;padding:7px 9px}.fb td{font-size:12px;padding:6px 9px;border-bottom:1px solid #ddd}.tl{text-align:center;font-style:italic;font-weight:700;margin-top:16px;font-size:15px;letter-spacing:1px;border-top:3px solid #1a1a1a;padding-top:12px}@media print{button{display:none}}";
+
+  var css="*{box-sizing:border-box;margin:0;padding:0}"
+    +"body{font-family:Arial,sans-serif;font-size:11px;color:#1a1a1a;background:#fff;padding:18px 24px}"
+    +".page{max-width:780px;margin:0 auto}"
+    +".hdr{display:grid;grid-template-columns:160px 1fr auto;align-items:center;gap:10px;border-bottom:2px solid #1a3a5f;padding-bottom:10px;margin-bottom:12px}"
+    +".logo{width:130px;height:auto}"
+    +".hdr-tel{font-size:12px;font-weight:700;color:#1a3a5f;text-align:center}"
+    +".cbox{border:2px solid #1a3a5f;padding:6px 14px;text-align:center;min-width:110px}"
+    +".clbl{font-size:10px;font-weight:700;color:#1a3a5f;text-transform:uppercase;letter-spacing:.04em}"
+    +".cnum{font-size:28px;font-weight:800;color:#1a1a1a;line-height:1.1}"
+    +".title{text-align:center;font-size:14px;font-weight:800;margin:10px 0 8px;text-transform:uppercase;color:#1a1a1a}"
+    +"table{width:100%;border-collapse:collapse}"
+    +"th{background:#1a3a5f;color:#fff;padding:7px 8px;font-size:10px;font-weight:700;text-align:left}"
+    +"td{padding:6px 8px;border-bottom:1px solid #ddd;font-size:11px}"
+    +"tr:nth-child(even) td{background:#f0f4f8}"
+    +".items-table th,.items-table td{border:1px solid #ccc}"
+    +".items-table th{background:#1a3a5f;color:#fff;font-size:10px;padding:7px 8px;text-align:center}"
+    +".trow td{background:#1a3a5f!important;color:#fff!important;font-weight:800;font-size:12px;border:1px solid #1a3a5f}"
+    +".grow td{background:#c9a830!important;color:#1a1a1a!important;font-weight:800;font-size:12px;border:1px solid #c9a830}"
+    +".obs td{background:#fff!important;font-size:11px;line-height:1.8;padding:8px}"
+    +".sec-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}"
+    +".tl{text-align:center;font-style:italic;font-weight:800;margin-top:14px;font-size:13px;letter-spacing:2px;border-top:2px solid #1a3a5f;padding-top:12px;color:#1a3a5f}"
+    +"@media print{button{display:none}body{padding:8px 12px}}";
+
   var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Cotizacion "+nro+"</title><style>"+css+"</style></head><body><div class='page'>";
-  h+="<div class='hdr'><div><img class='logo' src='"+LOGO_B64+"'><br><div style='font-size:10px;margin-top:4px'>TELEFONO: +569 6371 0820</div><div style='font-size:10px'>contactoleoning@gmail.com</div></div>";
-  h+="<div style='text-align:right'><div class='cbox'><div class='clbl'>COTIZACION</div><div class='cnum'>"+nro+"</div></div></div></div>";
+
+  // HEADER: logo | telefono centrado | cotizacion box
+  h+="<div class='hdr'>"
+    +"<img class='logo' src='"+LOGO_B64+"'>"
+    +"<div class='hdr-tel'>TELÉFONO: +569 6371 0820</div>"
+    +"<div class='cbox'><div class='clbl'>Cotización</div><div class='cnum'>"+nro+"</div></div>"
+    +"</div>";
+
+  // TITLE
   h+="<div class='title'>Aire Acondicionado y Electricidad</div>";
-  h+="<table class='it' style='margin-bottom:4px'><tr><th>FECHA</th><th>RUT</th><th>CLIENTE</th><th>CONTACTO</th><th>COMUNA</th></tr>";
-  h+="<tr><td>"+fecha+"</td><td>"+rut+"</td><td>"+nombre+"</td><td>"+contacto+"</td><td>"+comuna+"</td></tr></table>";
-  h+="<table class='it' style='margin-bottom:12px'><tr><th>TELEFONO</th><th>DIRECCION</th><th>E-MAIL</th><th>T.PAGO</th></tr>";
-  h+="<tr><td>"+tel+"</td><td>"+dir+"</td><td>"+email+"</td><td>Transferencia</td></tr></table>";
-  h+="<table><thead><tr><th style='width:4%'>Item</th><th style='width:10%'>Codigo</th><th>Descripcion</th><th style='width:7%;text-align:center'>Cant.</th><th style='width:12%;text-align:right'>Precio</th><th style='width:8%;text-align:center'>Desc.</th><th style='width:12%;text-align:right'>Valor</th></tr></thead><tbody>";
-  h+=rows+blanks;
-  h+="<tr><td colspan='2' style='font-size:10px;color:#555;vertical-align:top;padding:8px' rowspan='6'>Garantias:<br>- 1 ano garantia equipos nuevos.<br>- 3 meses garantia bombas condensado.<br>- 1 mes garantia mantenciones.</td>";
-  h+="<td colspan='2' style='text-align:right;font-weight:700;font-size:10px'>DESCUENTO GLOBAL</td><td style='text-align:center;font-weight:700'>"+d+"%</td><td style='text-align:right;font-weight:700'>"+fmt(dM)+"</td></tr>";
-  h+="<tr><td colspan='3' style='text-align:right;font-weight:700'>MONTO NETO</td><td colspan='2' style='text-align:right;font-weight:700'>"+fmt(nD)+"</td></tr>";
-  h+="<tr><td colspan='3' style='text-align:right;font-weight:700'>I.V.A 19%</td><td colspan='2' style='text-align:right;font-weight:700'>"+fmt(iva)+"</td></tr>";
-  h+="<tr class='trow'><td colspan='3' style='text-align:right'>TOTAL</td><td colspan='2' style='text-align:right'>"+fmt(tot)+"</td></tr>";
-  h+="<tr class='grow'><td colspan='3' style='text-align:right'>TOTAL TARJETA DE CREDITO</td><td colspan='2' style='text-align:right'>"+fmt(totTC)+"</td></tr>";
-  h+="</tbody></table>";
-  h+="<div class='fs'><table class='fb'><tr><th colspan='3'>DATOS TRANSFERENCIA - Banco Falabella</th></tr><tr><th>BANCO</th><th>N CUENTA</th><th>CUENTA</th></tr><tr><td>Falabella</td><td>0-1983-154-6787</td><td>Corriente</td></tr><tr><th>RUT</th><th colspan='2'>NOMBRE</th></tr><tr><td>18.245.550-4</td><td colspan='2'>Isaac Leon</td></tr><tr><td colspan='3'>contactoleoning@gmail.com</td></tr></table>";
-  h+="<div><table class='fb'><tr><th>TRANSFERENCIA</th><th>FINALIZADO</th><th>INICIO</th></tr><tr><td>Abono 70%</td><td>Restante 30%</td><td>Acordar</td></tr></table>";
-  h+="<table class='fb' style='margin-top:6px'><tr><th>TARJETA CREDITO</th><th>INICIO</th><th>COMISION</th></tr><tr><td>Cancelar total</td><td>3 dias habiles</td><td>3.5% adicional</td></tr></table></div></div>";
-  h+="<div style='text-align:center;font-size:10px;margin-top:10px;color:#555'>Leon Ingenieria Y Proyectos Spa. Empresa dedicada a satisfacer las necesidades de nuestros clientes con calidad y compromiso.</div>";
-  h+="<div style='text-align:right;font-size:10px;font-weight:700;margin-top:6px'>Cotizacion Valida: "+validez+"</div>";
-  h+="<div class='tl'>--- UNA SOLUCION INTELIGENTE ---</div>";
-  h+="<div style='text-align:center;margin-top:16px'><button onclick='window.print()' style='background:#c9a830;color:#1a1a1a;border:none;padding:10px 28px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer'>Imprimir / Guardar PDF</button></div>";
-  h+="</div></body></html>";
-  // Increment number BEFORE opening - ensures it always increments even if popup blocked
+
+  // CLIENT TABLE ROW 1: fecha, rut, cliente, contacto, comuna
+  h+="<table class='items-table' style='margin-bottom:4px'>"
+    +"<tr><th style='width:10%;text-align:center'>RUT</th><th style='width:25%;text-align:center'>CLIENTE</th><th style='width:20%;text-align:center'>CONTACTO</th><th style='width:16%;text-align:center'>COMUNA</th><th style='width:14%;text-align:center'>FECHA</th></tr>"
+    +"<tr><td style='text-align:center'>"+rut+"</td><td style='text-align:center;font-weight:700'>"+nombre+"</td><td style='text-align:center'>"+contacto+"</td><td style='text-align:center'>"+comuna+"</td><td style='text-align:center'>"+fecha+"</td></tr>"
+    +"</table>";
+
+  // CLIENT TABLE ROW 2: telefono, direccion, email, t.pago
+  h+="<table class='items-table' style='margin-bottom:12px'>"
+    +"<tr><th style='width:16%'>TELÉFONO</th><th style='width:32%'>DIRECCIÓN</th><th style='width:24%'>E-MAIL</th><th style=\'text-align:center\'>T.PAGO</th></tr>"
+    +"<tr><td style='text-align:center'>"+tel+"</td><td style='text-align:center'>"+dir+"</td><td style='text-align:center'>"+email+"</td><td style='text-align:center;font-weight:700'>Transferencia</td></tr>"
+    +"</table>";
+
+  // ITEMS TABLE
+  h+="<table class='items-table'>"
+    +"<thead><tr>"
+    +"<th style='width:5%;text-align:center'>Ítems</th>"
+    +"<th style='width:10%;text-align:center'>Código</th>"
+    +"<th style=\'text-align:center\'>Descripción</th>"
+    +"<th style='width:8%;text-align:center'>Cantidad</th>"
+    +"<th style='width:13%;text-align:center'>Precio</th>"
+    +"<th style='width:8%;text-align:center'>% Desc.</th>"
+    +"<th style='width:13%;text-align:center'>Valor</th>"
+    +"</tr></thead>"
+    +"<tbody>"+rows+blanks;
+
+  // TOTALS ROWS (merged with items table bottom)
+  h+="<tr>"
+    +"<td colspan='4' class='obs' rowspan='6' style='vertical-align:top;border:1px solid #ccc'>"
+    +"<div class='sec-title' style='margin-bottom:6px'>Observaciones</div>"
+    +"<strong>Garantías:</strong><br>"
+    +"Un año de garantía en los equipos nuevos.<br>"
+    +"Tres meses de garantía en bombas de condensado.<br>"
+    +"Un mes de garantía en mantenciones."
+    +"</td>"
+    +"<td colspan='2' style='text-align:right;font-weight:700;border:1px solid #ccc'>DESCUENTO GLOBAL</td>"
+    +"<td style='text-align:right;font-weight:700;border:1px solid #ccc'>"+(dM>0?"$ "+Math.round(dM).toLocaleString("es-CL"):"$ -")+"</td>"
+    +"</tr>"
+    +"<tr>"
+    +"<td colspan='2' style='text-align:right;font-weight:700;border:1px solid #ccc'>MONTO NETO</td>"
+    +"<td style='text-align:right;font-weight:700;border:1px solid #ccc'>$ "+Math.round(nD).toLocaleString("es-CL")+"</td>"
+    +"</tr>"
+    +"<tr>"
+    +"<td colspan='2' style='text-align:right;font-weight:700;border:1px solid #ccc'>I.V.A 19%</td>"
+    +"<td style='text-align:right;font-weight:700;border:1px solid #ccc'>$ "+Math.round(iva).toLocaleString("es-CL")+"</td>"
+    +"</tr>"
+    +"<tr class='trow'>"
+    +"<td colspan='2' style='text-align:right'>TOTAL</td>"
+    +"<td style='text-align:right'>$ "+Math.round(tot).toLocaleString("es-CL")+"</td>"
+    +"</tr>"
+    +"<tr class='grow'>"
+    +"<td colspan='2' style='text-align:right'>TOTAL TARJETA DE CRÉDITO</td>"
+    +"<td style='text-align:right'>$ "+Math.round(totTC).toLocaleString("es-CL")+"</td>"
+    +"</tr>"
+    +"</tbody></table>";
+
+  // TRANSFERENCIA + DATOS BANCARIOS
+  h+="<table style='width:100%;border-collapse:collapse;margin-top:12px'><tr>"
+    +"<td style='width:50%;vertical-align:top;padding-right:8px'>"
+    // Datos transferencia
+    +"<table style='width:100%;border-collapse:collapse'>"
+    +"<tr><th colspan='4' style='background:#1a3a5f;color:#fff;padding:7px 8px;font-size:10px;font-weight:700;text-align:left'>DATOS DE TRANSFERENCIA</th></tr>"
+    +"<tr><th style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>BANCO</th>"
+    +"<th style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>N° CUENTA</th>"
+    +"<th style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>CUENTA</th>"
+    +"<th style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>RUT</th></tr>"
+    +"<tr><td style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>Falabella</td>"
+    +"<td style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>0-1983-154-6787</td>"
+    +"<td style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>Corriente</td>"
+    +"<td style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>18.245.550-4</td></tr>"
+    +"<tr><th colspan='2' style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>NOMBRE</th>"
+    +"<th colspan='2' style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>CORREO</th></tr>"
+    +"<tr><td colspan='2' style='padding:6px 8px;border:1px solid #ddd;font-size:11px;font-weight:700'>Isaac León</td>"
+    +"<td colspan='2' style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>contactoleoning@gmail.com</td></tr>"
+    +"</table>"
+    +"</td>"
+    +"<td style='width:50%;vertical-align:top;padding-left:8px'>"
+    // Condiciones de pago
+    +"<table style='width:100%;border-collapse:collapse;margin-bottom:8px'>"
+    +"<tr><th style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>TRANSFERENCIA</th>"
+    +"<th style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>FINALIZADO EL TRABAJO</th>"
+    +"<th style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>INICIO</th></tr>"
+    +"<tr><td style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>Abono 70%</td>"
+    +"<td style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>Restante 30%</td>"
+    +"<td style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>Acordar con el cliente</td></tr>"
+    +"</table>"
+    +"<table style='width:100%;border-collapse:collapse'>"
+    +"<tr><th style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>TARJETA DE CRÉDITO</th>"
+    +"<th style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>COMIENZO DE TRABAJOS</th>"
+    +"<th style='background:#1a3a5f;color:#fff;padding:6px 8px;font-size:10px'>COMISIÓN TARJ. CRÉDITO</th></tr>"
+    +"<tr><td style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>Cancelar total a pagar</td>"
+    +"<td style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>Después de 3 días hábiles</td>"
+    +"<td style='padding:6px 8px;border:1px solid #ddd;font-size:11px'>3,5% adicional al valor total</td></tr>"
+    +"</table>"
+    +"</td>"
+    +"</tr></table>";
+
+  // FOOTER
+  h+="<div style='text-align:center;font-size:11px;color:#555;margin-top:14px;line-height:1.7'>"
+    +"León Ingeniería Y Proyectos Spa. Somos una empresa dedicada a satisfacer las necesidades de nuestros clientes, entregando calidad y compromiso."
+    +"</div>"
+    +"<div style='text-align:right;font-size:11px;font-weight:700;margin-top:6px'>Cotización Válida: "+validez+"</div>"
+    +"<div class='tl'>——— UNA SOLUCION INTELIGENTE ———</div>"
+    +"<div style='text-align:center;margin-top:16px'>"
+    +"<button onclick='window.print()' style='background:#c9a830;color:#1a1a1a;border:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer'>Imprimir / Guardar PDF</button>"
+    +"</div>"
+    +"</div></body></html>";
+
   incrementNro();
-  var w=window.open("","_blank","width=820,height=900");
-  if(w){
-    w.document.write(h);
-    w.document.close();
-  } else {
-    // Popup blocked - offer download as fallback
+  var w=window.open("","_blank","width=860,height=960");
+  if(w){w.document.write(h);w.document.close();}
+  else{
     var blob=new Blob([h],{type:"text/html"});
     var url=URL.createObjectURL(blob);
     var a=document.createElement("a");
-    a.href=url;
-    a.download="cotizacion-"+document.getElementById("nro").value+".html";
-    a.click();
+    a.href=url;a.download="cotizacion-"+nro+".html";a.click();
     URL.revokeObjectURL(url);
   }
 }
@@ -695,18 +806,49 @@ function pvN(p){return Math.round(getCosto(p)*(1+gPct(p)/100));}
 
 
 // EVENT LISTENERS - no inline onclick
-function loadNro(){
-  var n=parseInt(localStorage.getItem("cot_nro")||"0")||0;
-  if(n===0){n=1;localStorage.setItem("cot_nro","1");}
-  document.getElementById("nro").value=String(n).padStart(3,"0");
-  document.getElementById("hnum").textContent="COT #"+String(n).padStart(3,"0");
+// === CONTADOR COMPARTIDO EN LA NUBE (JSONBin.io) ===
+var JSONBIN_ID="REEMPLAZAR_BIN_ID";
+var JSONBIN_KEY="REEMPLAZAR_API_KEY";
+
+function setNroUI(n){
+  var s=String(n).padStart(3,"0");
+  document.getElementById("nro").value=s;
+  document.getElementById("hnum").textContent="COT #"+s;
 }
+
+function loadNro(){
+  // Mostrar número local mientras carga la nube
+  var local=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  setNroUI(local);
+  // Consultar nube
+  if(JSONBIN_ID==="REEMPLAZAR_BIN_ID"){return;} // sin configurar
+  fetch("https://api.jsonbin.io/v3/b/"+JSONBIN_ID+"/latest",{
+    headers:{"X-Master-Key":JSONBIN_KEY}
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var n=data.record.nro||1;
+    localStorage.setItem("cot_nro",String(n));
+    setNroUI(n);
+  })
+  .catch(function(){
+    // Sin red, usar local
+    setNroUI(local);
+  });
+}
+
 function incrementNro(){
-  var n=parseInt(localStorage.getItem("cot_nro")||"1");
-  n=n+1;
-  localStorage.setItem("cot_nro",String(n));
-  document.getElementById("nro").value=String(n).padStart(3,"0");
-  document.getElementById("hnum").textContent="COT #"+String(n).padStart(3,"0");
+  var n=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  var siguiente=n+1;
+  localStorage.setItem("cot_nro",String(siguiente));
+  setNroUI(siguiente);
+  // Actualizar nube
+  if(JSONBIN_ID==="REEMPLAZAR_BIN_ID"){return;}
+  fetch("https://api.jsonbin.io/v3/b/"+JSONBIN_ID,{
+    method:"PUT",
+    headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},
+    body:JSON.stringify({nro:siguiente})
+  }).catch(function(){});
 }
 
 function renderAdmin(){
