@@ -206,6 +206,14 @@ select option{background:#0f2647;color:var(--txt)}
   </div>
   <div class="card">
     <div class="ct">Seleccionar Equipo</div>
+    <div class="fr"><span class="fl">Modelo de Equipo</span>
+      <select id="tiposel">
+        <option value="">Todos</option>
+        <option value="Split Muro">Split Muro</option>
+        <option value="Cassette">Cassette</option>
+        <option value="Piso Cielo">Piso Cielo</option>
+      </select>
+    </div>
     <div class="fr"><span class="fl">Capacidad BTU</span>
       <select id="btusel">
         <option value="">— Selecciona —</option>
@@ -215,14 +223,6 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="22">22.000 BTU — 40 a 50 m²</option>
         <option value="24">24.000 BTU — 40 a 50 m²</option>
         <option value="36">36.000 BTU — 60 m² o más</option>
-      </select>
-    </div>
-    <div class="fr"><span class="fl">Modelo de Equipo</span>
-      <select id="tiposel">
-        <option value="">Todos</option>
-        <option value="Split Muro">Split Muro</option>
-        <option value="Cassette">Cassette</option>
-        <option value="Piso Cielo">Piso Cielo</option>
       </select>
     </div>
     <div class="pg" id="prodlista"></div>
@@ -239,6 +239,14 @@ select option{background:#0f2647;color:var(--txt)}
   </div>
   <div class="card" id="cartcard" style="display:none">
     <div class="ct">Presupuesto</div>
+    <div class="fr" style="margin-bottom:14px;padding:12px 14px;background:var(--bg3);border:2px solid var(--brd);border-radius:var(--rs);align-items:center">
+      <span style="font-size:17px;font-weight:700;color:var(--cy);flex:1">⚡ Descuento CyberDay</span>
+      <select id="cyberdisc" onchange="renderCarrito()" style="max-width:220px;border-color:var(--cy)">
+        <option value="0">Sin descuento</option>
+        <option value="15">15% de descuento</option>
+        <option value="20">20% de descuento</option>
+      </select>
+    </div>
     <div id="cartlista"></div>
     <div class="tots" id="totales"></div>
   </div>
@@ -256,6 +264,7 @@ select option{background:#0f2647;color:var(--txt)}
     <div class="ss f">Pack de Instalación</div>
     <div class="fr"><span class="fl">Tipo de Trabajo</span>
       <select id="itipo">
+        <option value="">— Selecciona —</option>
         <option value="split9">Instalación Split Muro 9.000 BTU</option>
         <option value="split12">Instalación Split Muro 12.000 BTU</option>
         <option value="split18">Instalación Split Muro 18.000 BTU</option>
@@ -271,6 +280,7 @@ select option{background:#0f2647;color:var(--txt)}
     </div>
     <div class="fr"><span class="fl">Cantidad instalaciones</span>
       <select id="cantinst">
+        <option value="">—</option>
         <option value="1">1</option>
         <option value="2">2</option>
         <option value="3">3</option>
@@ -281,12 +291,13 @@ select option{background:#0f2647;color:var(--txt)}
     <div class="ss">Materiales</div>
     <div class="fr"><span class="fl">Tipo de materiales</span>
       <select id="imateriales" onchange="calcInst()">
+        <option value="0">— Selecciona —</option>
         <option value="130000">Básico — $130.000 neto</option>
-        <option value="0">Sin materiales adicionales</option>
       </select>
     </div>
     <div class="fr"><span class="fl">Cantidad materiales</span>
       <select id="cantmat">
+        <option value="">—</option>
         <option value="1">1</option>
         <option value="2">2</option>
         <option value="3">3</option>
@@ -305,20 +316,19 @@ select option{background:#0f2647;color:var(--txt)}
     <div class="fr"><span class="fl">Bomba Condensado</span>
       <select id="ibomba"><option value="0">No</option><option value="115000">Sí (+$115.000)</option></select>
     </div>
-    <div class="fr" id="rowbomba" style="display:none"><span class="fl">Cantidad bombas</span>
+    <div id="rowbomba" style="display:none"><div class="fr"><span class="fl">Cantidad bombas</span>
       <select id="cantbomba">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+        <option value="4">4</option><option value="5">5</option>
       </select>
-    </div>
+    </div></div>
+
+
 
   </div>
 
   <div class="g3" id="instmets"></div>
-  <button class="btn badd" id="btnagregarinst">+ Agregar Instalación al Presupuesto</button>
+  <button class="btn badd" id="btnagregarinst">+ Agregar al Presupuesto</button>
 
 
 </div>
@@ -466,6 +476,8 @@ function agregar(){
   document.getElementById("btnag").style.display="none";
   document.getElementById("rowcant").style.display="none";
   document.getElementById("cantequipo").value="1";
+  document.getElementById("btusel").value="";
+  document.getElementById("prodlista").innerHTML="";
   renderCarrito();
 }
 
@@ -483,24 +495,36 @@ function calcInst(){
     +'<div class="met"><div class="ml">Total c/IVA</div><div class="mv g">'+fmt(neto+iva)+'</div></div>';
 }
 
+
 function agregarInst(){
-  var base=IBASE[vs("itipo")]||0;
-  var can100=vn("ican100")*6500;
-  var can20=vn("ican20")*1200;
-  var cantInst=parseInt(document.getElementById("cantinst").value)||1;
-  var netoInst=base+can100+can20;
-  carrito.push({id:"INST_"+Date.now(),cod:"IN-"+vs("itipo").toUpperCase(),
-    desc:INOMBRES[vs("itipo")],tipo:"Instalacion",
-    neto:netoInst,total:wIVA(netoInst),esCyber:false,cant:cantInst});
-  // Materiales adicionales
+  var agregado=false;
+
+  // Instalacion (solo si se seleccionó tipo de trabajo)
+  if(vs("itipo")){
+    if(!vs("cantinst")){alert("Selecciona la cantidad de instalaciones.");return;}
+    var base=IBASE[vs("itipo")]||0;
+    var can100=vn("ican100")*6500;
+    var can20=vn("ican20")*1200;
+    var cantInst=parseInt(vs("cantinst"))||1;
+    var netoInst=base+can100+can20;
+    carrito.push({id:"INST_"+Date.now(),cod:"IN-"+vs("itipo").toUpperCase(),
+      desc:INOMBRES[vs("itipo")],tipo:"Instalacion",
+      neto:netoInst,total:wIVA(netoInst),esCyber:false,cant:cantInst});
+    agregado=true;
+  }
+
+  // Materiales adicionales (independiente de la instalación)
   var mat=vn("imateriales");
   if(mat>0){
-    var cantMat=parseInt(document.getElementById("cantmat").value)||1;
+    if(!vs("cantmat")){alert("Selecciona la cantidad de materiales.");return;}
+    var cantMat=parseInt(vs("cantmat"))||1;
     carrito.push({id:"MAT_"+Date.now(),cod:"MAT",
       desc:"Materiales adicionales básico",tipo:"Materiales",
       neto:mat,total:wIVA(mat),esCyber:false,cant:cantMat});
+    agregado=true;
   }
-  // Bomba de condensado
+
+  // Bomba de condensado (independiente)
   var bomba=vn("ibomba");
   if(bomba>0){
     var cantBomba=parseInt(document.getElementById("cantbomba").value)||1;
@@ -508,7 +532,23 @@ function agregarInst(){
     carrito.push({id:"BOMBA_"+Date.now(),cod:"BOMBA",
       desc:"Bomba de condensado",tipo:"Accesorio",
       neto:bombaNeto,total:wIVA(bombaNeto),esCyber:false,cant:cantBomba});
+    agregado=true;
   }
+
+  if(!agregado){
+    alert("Selecciona al menos un ítem: instalación, materiales o bomba.");
+    return;
+  }
+  // Auto-reset de todos los campos después de agregar
+  document.getElementById("itipo").value="";
+  document.getElementById("cantinst").value="";
+  document.getElementById("imateriales").value="0";
+  document.getElementById("cantmat").value="";
+  document.getElementById("ibomba").value="0";
+  document.getElementById("rowbomba").style.display="none";
+  document.getElementById("ican100").value="0";
+  document.getElementById("ican20").value="0";
+  document.getElementById("instmets").innerHTML="";
   renderCarrito();
 }
 
@@ -518,9 +558,10 @@ function renderCarrito(){
   var cc=document.getElementById("cartcard"),ab=document.getElementById("actbtns"),wp=document.getElementById("waprev");
   if(!carrito.length){cc.style.display="none";ab.style.display="none";wp.style.display="none";return;}
   cc.style.display="block";ab.style.display="flex";
-  var d=0;
+  var cyberPct=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
   var sN=carrito.reduce(function(a,b){return a+(b.neto*(b.cant||1));},0);
-  var dM=Math.round(sN*d/100),nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
+  var dM=cyberPct>0?Math.round(sN*cyberPct/100):0;
+  var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
   document.getElementById("cartlista").innerHTML=carrito.map(function(p,i){
     var cant=p.cant||1;
     var totalLinea=p.total*cant;
@@ -534,7 +575,7 @@ function renderCarrito(){
       +'<button class="bdel" data-idx="'+i+'">X</button></div></div>';
   }).join("");
   var th='<div class="tr"><span>Subtotal neto</span><span>'+fmt(sN)+'</span></div>';
-  if(dM>0)th+='<div class="tr dc"><span>Descuento '+d+'%</span><span>-'+fmt(dM)+'</span></div>';
+  if(dM>0)th+='<div class="tr dc"><span>⚡ CyberDay -'+cyberPct+'%</span><span>-'+fmt(dM)+'</span></div>';
   th+='<div class="tr"><span>Monto neto</span><span>'+fmt(nD)+'</span></div>'
     +'<div class="tr"><span>IVA 19%</span><span>'+fmt(iva)+'</span></div>'
     +'<div class="tr TT"><span>TOTAL</span><span>'+fmt(tot)+'</span></div>'
@@ -550,7 +591,7 @@ function updWA(sN,dM,nD,iva,tot){
   var dir=document.getElementById("cdir").value.trim();
   var com=document.getElementById("ccom").value.trim();
   var inm=document.getElementById("tipoinm").value;
-  var d=0;
+  var cyberPctWA=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
   var items=carrito.map(function(p){var c=p.cant||1;var cl=c>1?(" x"+c):"";return "- "+p.desc+cl+": "+fmt(p.total*c);}).join("\n");
   var msg="*COTIZACION N "+nro+"*\n*Leon Ingenieria Y Proyectos SpA*\nTel: +569 6371 0820\n\nCliente: "+nombre;
   if(tel)msg+="\nTel: "+tel;
@@ -558,7 +599,7 @@ function updWA(sN,dM,nD,iva,tot){
   if(com)msg+="\nComuna: "+com;
   if(inm)msg+="\nTipo: "+inm;
   msg+="\n\n*Detalle:*\n"+items+"\n\n--------------";
-  if(d>0)msg+="\nDescuento "+d+"%: -"+fmt(dM);
+  if(cyberPctWA>0)msg+="\n⚡ CyberDay -"+cyberPctWA+"%: -"+fmt(dM);
   msg+="\nMonto neto: "+fmt(nD)+"\nIVA 19%: "+fmt(iva)+"\nTOTAL: "+fmt(tot)+"\n\nCotizacion valida por "+vs("validez")+"\nLeon Ingenieria - Una Solucion Inteligente";
   document.getElementById("waprev").style.display="block";
   document.getElementById("waprev").textContent=msg;
@@ -586,9 +627,10 @@ function genPDF(){
   var comuna=document.getElementById("ccom").value.trim()||"-";
   var email=document.getElementById("cemail").value.trim()||"-";
   var validez=vs("validez");
-  var d=0;
+  var cyberPct=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
   var sN=carrito.reduce(function(a,b){return a+(b.neto*(b.cant||1));},0);
-  var dM=Math.round(sN*d/100),nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
+  var dM=cyberPct>0?Math.round(sN*cyberPct/100):0;
+  var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
   var rows=carrito.map(function(p,i){
     var c=p.cant||1;
     return "<tr><td>"+(i+1)+"</td><td>"+p.cod+"</td><td>"+p.desc+"</td>"
@@ -820,36 +862,30 @@ var GUION_PASOS = [
   },
   {
     num: 5,
-    titulo: "Tipo de propiedad",
-    pregunta: "¿La propiedad es casa o departamento? ¿En qué piso se encuentra? ¿Las paredes son de tabique o de hormigón/concreto?",
-    nota: "Casa / Dpto — Piso: ______ — Muro:"
-  },
-  {
-    num: 6,
     titulo: "Equipo de interés",
     pregunta: "¿Hay algún equipo que le llame la atención? <em>Si la respuesta es sí:</em> ¿Cuál es? — <em>Si es no:</em> Nosotros podemos recomendarle un equipo diseñado especial para su espacio.",
     nota: "Equipo de interés:"
   },
   {
-    num: 7,
+    num: 6,
     titulo: "Presupuesto y fecha",
     pregunta: "¿Tiene una fecha estimada de cuándo le gustaría tener el equipo instalado? ¿Y tiene en mente un presupuesto aproximado — estamos hablando de algo más económico, intermedio o premium?",
     nota: "Fecha: ______  —  Presupuesto:"
   },
   {
-    num: 8,
+    num: 7,
     titulo: "Instalación y visita técnica",
     pregunta: "¿Necesitaría instalación o solo el equipo? ¿Le gustaría que agendáramos una visita técnica para medición y presupuesto en terreno?",
     nota: "Instalación: Sí / No  —  Visita técnica: Sí / No"
   },
   {
-    num: 9,
+    num: 8,
     titulo: "Explicar qué incluye la instalación",
     pregunta: "El valor cotizado en la instalación incluye el kit básico que trae el equipo, más una bandeja de 100×50 y dos de 20×10 que esconden el recorrido de las cañerías y la electricidad al enchufe — todo contemplado para 3 metros máximos entre unidades.",
     nota: "Apuntes adicionales:"
   },
   {
-    num: 10,
+    num: 9,
     titulo: "Cierre y seguimiento",
     pregunta: "Perfecto, con toda esta información le preparo una cotización detallada y se la envío por WhatsApp. ¿El número al que hablamos es el correcto para enviarla?",
     nota: "Teléfono confirmado:  —  Email:"
