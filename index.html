@@ -236,7 +236,6 @@ select option{background:#0f2647;color:var(--txt)}
       </select>
     </div>
     <button class="btn badd" id="btnag" style="display:none">+ Agregar Equipo al Presupuesto</button>
-    <button class="btn bcy" id="btncy" style="display:none">⚡ Agregar Precio Cyber Day</button>
   </div>
   <div class="card" id="cartcard" style="display:none">
     <div class="ct">Presupuesto</div>
@@ -282,7 +281,7 @@ select option{background:#0f2647;color:var(--txt)}
     <div class="ss">Materiales</div>
     <div class="fr"><span class="fl">Tipo de materiales</span>
       <select id="imateriales" onchange="calcInst()">
-        <option value="130000">Materiales adicionales básico — $130.000</option>
+        <option value="130000">Básico — $130.000 neto</option>
         <option value="0">Sin materiales adicionales</option>
       </select>
     </div>
@@ -356,7 +355,7 @@ select option{background:#0f2647;color:var(--txt)}
 
 <div id="view-adm" style="display:none">
   <div class="card">
-    <div class="ct">Editar % Ganancia y % Cyber Day por Equipo</div>
+    <div class="ct">Editar Costo y % Ganancia por Equipo</div>
     <div id="adminlista"></div>
   </div>
   <div class="smsg" id="savedmsg"></div>
@@ -393,7 +392,6 @@ var CAT=[{"id": "V-SM-9", "tipo": "Split Muro", "btu": 9, "marca": "Vesta", "mod
 var ov={},carrito=[],selProd=null;
 
 function gPct(p){return (ov[p.id]&&ov[p.id].pct!==undefined)?ov[p.id].pct:p.pct;}
-function gCy(p){return (ov[p.id]&&ov[p.id].cyber!==undefined)?ov[p.id].cyber:p.cyber;}
 // pvN and pvC defined below using getCosto
 function wIVA(n){return Math.round(n*(1+IVA));}
 function fmt(n){return "$"+Math.round(n).toLocaleString("es-CL");}
@@ -432,20 +430,18 @@ function filtrar(){
   var lista=document.getElementById("prodlista");
   selProd=null;
   document.getElementById("btnag").style.display="none";
-  document.getElementById("btncy").style.display="none";
   if(!btu){lista.innerHTML="";return;}
   var res=CAT.filter(function(p){return p.btu===btu&&(!tipo||p.tipo===tipo);});
   if(!res.length){lista.innerHTML='<div class="empty">NO EXISTE EQUIPO PARA ESA SELECCIÓN</div>';return;}
   lista.innerHTML=res.map(function(p){
-    var n=pvN(p),cy=pvC(p);
+    var n=pvN(p);
     return '<div class="pc" id="pc-'+p.id+'" data-pid="'+p.id+'">'
       +'<div class="pn">'+p.marca+' - '+p.modelo+'</div>'
       +'<div class="pm"><span class="bdg bb">'+p.btu+'.000 BTU</span>'
       +'<span class="bdg bt">'+p.tipo+'</span>'
       +'<span class="bdg bp">'+p.prov+'</span></div>'
       +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span>'
-      +'<span class="piv">c/IVA</span>'
-      +'<span class="pcy">Cyber: '+fmt(wIVA(cy))+'</span></div></div>';
+      +'<span class="piv">c/IVA</span></div></div>';
   }).join("");
 }
 
@@ -455,21 +451,19 @@ function seleccionar(id){
   if(el)el.classList.add("sel");
   selProd=CAT.find(function(p){return p.id===id;});
   document.getElementById("btnag").style.display=selProd?"block":"none";
-  document.getElementById("btncy").style.display=selProd?"block":"none";
   document.getElementById("rowcant").style.display=selProd?"flex":"none";
 }
 
-function agregar(esCyber){
+function agregar(){
   if(!selProd)return;
   var cant=parseInt(document.getElementById("cantequipo").value)||1;
-  var neto=esCyber?pvC(selProd):pvN(selProd);
+  var neto=pvN(selProd);
   carrito.push({id:selProd.id+"_"+Date.now(),cod:selProd.id,
     desc:selProd.marca+" "+selProd.modelo+" "+selProd.btu+".000 BTU",
-    tipo:selProd.tipo,neto:neto,total:wIVA(neto),esCyber:esCyber,cant:cant});
+    tipo:selProd.tipo,neto:neto,total:wIVA(neto),esCyber:false,cant:cant});
   selProd=null;
   document.querySelectorAll(".pc").forEach(function(c){c.classList.remove("sel");});
   document.getElementById("btnag").style.display="none";
-  document.getElementById("btncy").style.display="none";
   document.getElementById("rowcant").style.display="none";
   document.getElementById("cantequipo").value="1";
   renderCarrito();
@@ -533,7 +527,7 @@ function renderCarrito(){
     var cantLabel=cant>1?'<span style="color:var(--acc);font-weight:800"> ×'+cant+'</span>':'';
     var detalleNeto=cant>1?(fmt(p.neto)+' c/u — '+cant+' unidades'):('Neto: '+fmt(p.neto));
     return '<div class="ci"><div style="flex:1;min-width:0">'
-      +'<div style="font-size:18px;font-weight:700;color:var(--txt)">'+p.desc+cantLabel+(p.esCyber?'<span class="ctag">Cyber</span>':'')+'</div>'
+      +'<div style="font-size:18px;font-weight:700;color:var(--txt)">'+p.desc+cantLabel+'</div>'
       +'<div style="font-size:15px;color:var(--txt2);margin-top:3px">'+p.tipo+' — '+detalleNeto+'</div></div>'
       +'<div style="display:flex;align-items:center;gap:10px">'
       +'<span style="font-size:19px;font-weight:700;color:var(--grn)">'+fmt(totalLinea)+'</span>'
@@ -557,7 +551,7 @@ function updWA(sN,dM,nD,iva,tot){
   var com=document.getElementById("ccom").value.trim();
   var inm=document.getElementById("tipoinm").value;
   var d=0;
-  var items=carrito.map(function(p){var c=p.cant||1;var cl=c>1?(" x"+c):"";return "- "+p.desc+cl+(p.esCyber?" [Cyber Day]":"")+": "+fmt(p.total*c);}).join("\n");
+  var items=carrito.map(function(p){var c=p.cant||1;var cl=c>1?(" x"+c):"";return "- "+p.desc+cl+": "+fmt(p.total*c);}).join("\n");
   var msg="*COTIZACION N "+nro+"*\n*Leon Ingenieria Y Proyectos SpA*\nTel: +569 6371 0820\n\nCliente: "+nombre;
   if(tel)msg+="\nTel: "+tel;
   if(dir)msg+="\nDir: "+dir;
@@ -655,36 +649,8 @@ function getCosto(p){
   return (ov[p.id]&&ov[p.id].costo!==undefined)?ov[p.id].costo:p.costo;
 }
 function pvN(p){return Math.round(getCosto(p)*(1+gPct(p)/100));}
-function pvC(p){return Math.round(getCosto(p)*(1+gCy(p)/100));}
 
-function renderAdmin(){
-  var grupos={};
-  CAT.forEach(function(p){if(!grupos[p.tipo])grupos[p.tipo]=[];grupos[p.tipo].push(p);});
-  var html='<div style="font-size:12px;color:var(--txt2);margin-bottom:12px;padding:8px 10px;background:var(--bg3);border-radius:var(--rs)">Edita el <strong style="color:var(--acc)">Costo Neto</strong> y los porcentajes. <strong style="color:var(--acc)">% gan.</strong> = margen ganancia normal. <strong style="color:var(--cy)">% cyber</strong> = margen Cyber Day (0% = costo+IVA sin ganancia).</div>';
-  Object.keys(grupos).forEach(function(tipo){
-    html+='<div class="gl">'+tipo+'</div>';
-    grupos[tipo].forEach(function(p){
-      var pct=gPct(p),cy=gCy(p),costo=getCosto(p);
-      var n=Math.round(costo*(1+pct/100));
-      var cn=Math.round(costo*(1+cy/100));
-      html+='<div class="ai" style="flex-wrap:wrap;gap:6px">'
-        +'<div class="ainfo" style="min-width:160px">'
-        +'<div class="an">'+p.marca+' '+p.modelo+'</div>'
-        +'<div class="as"><span class="bdg bb">'+p.btu+'.000 BTU</span> '+p.prov+'</div>'
-        +'<div class="av" style="margin-top:4px">Venta: '+fmt(wIVA(n))+' &nbsp;|&nbsp; Cyber: '+fmt(wIVA(cn))+'</div>'
-        +'</div>'
-        +'<div class="ainp">'
-        +'<div class="air" style="margin-bottom:3px"><span class="ail" style="width:52px;font-size:10px">Costo $</span>'
-        +'<input type="number" class="ainput-costo" value="'+costo+'" min="0" data-id="'+p.id+'" data-campo="costo" title="Costo neto del equipo"></div>'
-        +'<div class="air" style="margin-bottom:3px"><span class="ail" style="width:52px">% gan.</span>'
-        +'<input type="number" class="ainput" value="'+pct+'" min="0" max="100" data-id="'+p.id+'" data-campo="pct" title="% ganancia normal"></div>'
-        +'<div class="air"><span class="ail c" style="width:52px" title="Margen reducido para Cyber Day. 0% = vender a costo+IVA">% cyber</span>'
-        +'<input type="number" class="ainput" value="'+cy+'" min="0" max="50" data-id="'+p.id+'" data-campo="cyber" title="% descuento Cyber Day"></div>'
-        +'</div></div>';
-    });
-  });
-  document.getElementById("adminlista").innerHTML=html;
-}
+
 
 // EVENT LISTENERS - no inline onclick
 function loadNro(){
@@ -701,6 +667,40 @@ function incrementNro(){
   document.getElementById("hnum").textContent="COT #"+String(n).padStart(3,"0");
 }
 
+function renderAdmin(){
+  var grupos={};
+  CAT.forEach(function(p){if(!grupos[p.tipo])grupos[p.tipo]=[];grupos[p.tipo].push(p);});
+  var html='<div style="font-size:15px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita el <strong style="color:var(--acc)">Costo Neto</strong> y el <strong style="color:var(--acc)">% Ganancia</strong>. El precio de venta se recalcula automáticamente con IVA.</div>';
+  Object.keys(grupos).forEach(function(tipo){
+    html+='<div class="gl">'+tipo+'</div>';
+    grupos[tipo].forEach(function(p){
+      var pct=gPct(p),costo=getCosto(p);
+      var n=Math.round(costo*(1+pct/100));
+      html+='<div class="ai" style="flex-wrap:wrap;gap:6px">'
+        +'<div class="ainfo" style="min-width:160px">'
+        +'<div class="an">'+p.marca+' '+p.modelo+'</div>'
+        +'<div class="as"><span class="bdg bb">'+p.btu+'.000 BTU</span> '+p.prov+'</div>'
+        +'<div class="av" style="margin-top:4px">Precio venta: '+fmt(wIVA(n))+'</div>'
+        +'</div>'
+        +'<div class="ainp">'
+        +'<div class="air" style="margin-bottom:6px"><span class="ail" style="width:52px;font-size:13px">Costo $</span>'
+        +'<input type="number" class="ainput-costo" value="'+costo+'" min="0" data-id="'+p.id+'" data-campo="costo"></div>'
+        +'<div class="air"><span class="ail" style="width:52px">% gan.</span>'
+        +'<input type="number" class="ainput" value="'+pct+'" min="0" max="100" data-id="'+p.id+'" data-campo="pct"></div>'
+        +'</div></div>';
+    });
+  });
+  document.getElementById("adminlista").innerHTML=html;
+}
+
+function setOv(id,campo,val){
+  if(!ov[id])ov[id]={};
+  ov[id][campo]=val;
+  saveOv(id);
+  renderAdmin();
+  filtrar();
+}
+
 document.addEventListener("DOMContentLoaded", function(){
   // Tabs
   document.querySelectorAll(".tab").forEach(function(tab){
@@ -714,8 +714,7 @@ document.addEventListener("DOMContentLoaded", function(){
     if(pc)seleccionar(pc.getAttribute("data-pid"));
   });
   // Add buttons
-  document.getElementById("btnag").addEventListener("click",function(){agregar(false);});
-  document.getElementById("btncy").addEventListener("click",function(){agregar(true);});
+  document.getElementById("btnag").addEventListener("click",function(){agregar();});
   // Cart delete
   document.getElementById("cartlista").addEventListener("click",function(e){
     var btn=e.target.closest(".bdel");
