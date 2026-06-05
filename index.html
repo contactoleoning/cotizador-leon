@@ -519,8 +519,11 @@ function agregarInst(){
   if(mat>0){
     if(!vs("cantmat")){alert("Selecciona la cantidad de materiales.");return;}
     var cantMat=parseInt(vs("cantmat"))||1;
+    var matSel=document.getElementById("imateriales");
+    var matVal=matSel.value;
+    var matNombre=matVal==="46000"?"Kit de cañería":"Materiales Básicos";
     carrito.push({id:"MAT_"+Date.now(),cod:"MAT",
-      desc:"Materiales adicionales básico",tipo:"Materiales",
+      desc:matNombre,tipo:"Materiales",
       neto:mat,total:wIVA(mat),esCyber:false,cant:cantMat});
     agregado=true;
   }
@@ -634,11 +637,12 @@ function genPDF(){
   var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
   var rows=carrito.map(function(p,i){
     var c=p.cant||1;
+    var valConDesc=Math.round(p.neto*c*(1-(cyberPct/100)));
     return "<tr><td style='text-align:center'>"+( i+1)+"</td><td style='text-align:left'>"+p.cod+"</td><td>"+p.desc+"</td>"
       +"<td style='text-align:center'>"+c+"</td>"
       +"<td style='text-align:center'>$"+Math.round(p.neto).toLocaleString("es-CL")+"</td>"
       +"<td style='text-align:center'>"+(cyberPct>0?cyberPct+"%":"")+"</td>"
-      +"<td style='text-align:center'>$"+Math.round(p.neto*c).toLocaleString("es-CL")+"</td></tr>";
+      +"<td style='text-align:center'>$"+valConDesc.toLocaleString("es-CL")+"</td></tr>";
   }).join("");
   var blanks="";
   for(var i=carrito.length;i<10;i++){
