@@ -641,48 +641,49 @@ function genPDF(){
     var c=p.cant||1;
     var valConDesc=Math.round(p.neto*c*(1-(cyberPct/100)));
     var bg=i%2===1?"background:#f5f7fa;":"";
-    return "<tr style='height:20px;"+ bg +"'><td style='padding:3px 5px;border:1px solid #ccc;text-align:center'>"+( i+1)+"</td>"
-      +"<td style='padding:3px 8px;border:1px solid #ccc;text-align:center'>"+p.desc+"</td>"
-      +"<td style='padding:3px 5px;border:1px solid #ccc;text-align:center'>"+c+"</td>"
-      +"<td style='padding:3px 5px;border:1px solid #ccc;text-align:center'>$ "+Math.round(p.neto).toLocaleString("es-CL")+"</td>"
-      +"<td style='padding:3px 5px;border:1px solid #ccc;text-align:center'>"+(cyberPct>0?cyberPct+"%":"")+"</td>"
-      +"<td style='padding:3px 5px;border:1px solid #ccc;text-align:center'>$ "+valConDesc.toLocaleString("es-CL")+"</td></tr>";
+    return "<tr style='"+ bg +"'><td style='padding:5px 6px;border:1px solid #ccc;text-align:center;font-size:10px'>"+( i+1)+"</td>"
+      +"<td style='padding:5px 8px;border:1px solid #ccc;text-align:center;font-size:10px'>"+p.desc+"</td>"
+      +"<td style='padding:5px 6px;border:1px solid #ccc;text-align:center;font-size:10px'>"+c+"</td>"
+      +"<td style='padding:5px 6px;border:1px solid #ccc;text-align:center;font-size:10px'>$ "+Math.round(p.neto).toLocaleString("es-CL")+"</td>"
+      +"<td style='padding:5px 6px;border:1px solid #ccc;text-align:center;font-size:10px'>"+(cyberPct>0?cyberPct+"%":"")+"</td>"
+      +"<td style='padding:5px 6px;border:1px solid #ccc;text-align:center;font-size:10px'>$ "+valConDesc.toLocaleString("es-CL")+"</td></tr>";
   }).join("");
   var blanks="";
   for(var i=carrito.length;i<10;i++){
-    var bbg=i%2===1?"background:#f5f7fa;":"";blanks+="<tr style='height:16px;"+bbg+"'><td style='padding:1px 5px;border:1px solid #ccc;text-align:center'>"+(i+1)+"</td><td style='padding:1px 5px;border:1px solid #ccc;text-align:center'>-</td><td style='padding:1px 5px;border:1px solid #ccc;text-align:center'></td><td style='padding:1px 5px;border:1px solid #ccc;text-align:center'>$ -</td><td style='padding:1px 5px;border:1px solid #ccc;text-align:center'></td><td style='padding:1px 5px;border:1px solid #ccc;text-align:center'>$ -</td></tr>";
+    var bbg=i%2===1?"background:#f5f7fa;":"";blanks+="<tr style='"+bbg+"'><td style='padding:5px 6px;border:1px solid #ccc;text-align:center;font-size:10px'>"+(i+1)+"</td><td style='padding:5px 6px;border:1px solid #ccc;text-align:center;font-size:10px'>-</td><td style='padding:5px 6px;border:1px solid #ccc'></td><td style='padding:5px 6px;border:1px solid #ccc;text-align:center;font-size:10px'>$ -</td><td style='padding:5px 6px;border:1px solid #ccc'></td><td style='padding:5px 6px;border:1px solid #ccc;text-align:center;font-size:10px'>$ -</td></tr>";
   }
 
   var css="*{box-sizing:border-box;margin:0;padding:0}"
-    +"body{font-family:Arial,sans-serif;font-size:9px;color:#1a1a1a;background:#fff;margin:0;padding:0}"
-    +"@page{size:A4 portrait;margin:5mm 7mm}"
-    +"@media print{body{padding:0!important;margin:0!important}button,.no-print{display:none!important}html,body{height:auto}}"
-    +".wrap{padding:6px 8px}"
-    +".page{max-width:100%;margin:0}"
-    +".hdr{display:grid;grid-template-columns:95px 1fr auto;align-items:center;gap:5px;border-bottom:3px solid #0a1f3d;padding-bottom:5px;margin-bottom:5px}"
-    +".logo{width:90px;height:auto}"
+    +"html,body{width:100%}"
+    +"body{font-family:Arial,sans-serif;font-size:10px;color:#1a1a1a;background:#fff;margin:0;padding:0}"
+    +"@page{size:Letter portrait;margin:10mm 12mm}"
+    +"@media print{body{padding:0!important;margin:0!important}button,.no-print{display:none!important}html,body{height:auto}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}"
+    +"a{color:inherit!important;text-decoration:none!important}"
+    +".wrap{padding:10px 12px}"
+    +".hdr{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:8px;border-bottom:3px solid #0a1f3d;padding-bottom:8px;margin-bottom:8px}"
+    +".logo{width:105px;height:auto}"
     +".hdr-mid{text-align:center}"
-    +".hdr-addr{font-size:8.5px;color:#444;line-height:1.4}"
-    +".hdr-tel{font-size:9px;font-weight:700;color:#0a1f3d}"
-    +".cbox{border:2px solid #0a1f3d;padding:2px 7px;text-align:center;min-width:75px}"
-    +".clbl{font-size:8px;font-weight:700;color:#0a1f3d;text-transform:uppercase;letter-spacing:.04em}"
-    +".cnum{font-size:21px;font-weight:800;color:#1a1a1a;line-height:1.1}"
-    +".title{text-align:center;font-size:11px;font-weight:800;margin:4px 0;text-transform:uppercase;color:#1a1a1a}"
+    +".hdr-addr{font-size:10px;color:#444;line-height:1.6}"
+    +".hdr-tel{font-size:11px;font-weight:700;color:#0a1f3d}"
+    +".cbox{border:2px solid #0a1f3d;padding:4px 10px;text-align:center;min-width:85px}"
+    +".clbl{font-size:9px;font-weight:700;color:#0a1f3d;text-transform:uppercase;letter-spacing:.04em}"
+    +".cnum{font-size:26px;font-weight:800;color:#1a1a1a;line-height:1.1}"
+    +".title{text-align:center;font-size:13px;font-weight:800;margin:6px 0;text-transform:uppercase;color:#1a1a1a;border:1px solid #ccc;padding:6px 0;background:#f9f9f9}"
     +"table{width:100%;border-collapse:collapse}"
-    +"th{background:#0a1f3d;color:#fff;padding:4px 5px;font-size:8.5px;font-weight:800;text-align:center;text-transform:uppercase;border:1px solid #0a1f3d}"
-    +"td{padding:3px 5px;font-size:8.5px;border:1px solid #ccc;text-align:center}"
+    +"th{background:#0a1f3d;color:#fff;padding:6px 7px;font-size:10px;font-weight:800;text-align:center;text-transform:uppercase;border:1px solid #0a1f3d}"
+    +"td{padding:5px 7px;font-size:10px;border:1px solid #ccc;text-align:center;vertical-align:middle}"
     +"tr:nth-child(even) td{background:#f5f7fa}"
-    +".trow td{background:#0a1f3d!important;color:#fff!important;font-weight:800;font-size:9px;border:1px solid #0a1f3d;text-align:center;text-transform:uppercase;white-space:nowrap}"
-    +".grow td{background:#c9a830!important;color:#1a1a1a!important;font-weight:800;font-size:9px;border:1px solid #c9a830;text-align:center;text-transform:uppercase;white-space:nowrap}"
-    +".lbl{text-align:right!important;font-weight:700;white-space:nowrap;padding-right:8px!important}"
-    +".val{text-align:center!important;font-weight:700;white-space:nowrap;min-width:62px}"
-    +".obs-td{background:#fff!important;font-size:8.5px;line-height:1.5;padding:5px 8px;vertical-align:middle;text-align:center!important;border:1px solid #ccc}"
-    +".sec-title{font-size:8.5px;font-weight:800;text-transform:uppercase;margin-bottom:2px}"
-    +".bank-th{background:#0a1f3d;color:#fff;padding:3px 5px;font-size:8px;font-weight:800;border:1px solid #0a1f3d;text-align:center;text-transform:uppercase}"
-    +".bank-td{padding:3px 5px;border:1px solid #ccc;font-size:8.5px;text-align:center}"
-    +".tl{text-align:center;font-style:italic;font-weight:800;margin-top:5px;font-size:10px;letter-spacing:1.5px;border-top:2px solid #0a1f3d;padding-top:5px;color:#0a1f3d}";
+    +".trow td{background:#0a1f3d!important;color:#fff!important;font-weight:800;font-size:10px;border:1px solid #0a1f3d;-webkit-print-color-adjust:exact;print-color-adjust:exact}"
+    +".grow td{background:#c9a830!important;color:#1a1a1a!important;font-weight:800;font-size:10px;border:1px solid #c9a830;-webkit-print-color-adjust:exact;print-color-adjust:exact}"
+    +".obs-td{background:#fff!important;font-size:10px;line-height:1.6;padding:8px 10px;vertical-align:middle;text-align:center!important;border:1px solid #ccc}"
+    +".sec-title{font-size:10px;font-weight:800;text-transform:uppercase;margin-bottom:4px}"
+    +".bank-th{background:#0a1f3d!important;color:#fff!important;padding:5px 6px;font-size:9px;font-weight:800;border:1px solid #0a1f3d;text-align:center;text-transform:uppercase;-webkit-print-color-adjust:exact;print-color-adjust:exact}"
+    +".bank-td{padding:5px 6px;border:1px solid #ccc;font-size:10px;text-align:center}"
+    +".tot-lbl{text-align:center!important;font-weight:700;padding:5px 8px!important;white-space:nowrap;border:1px solid #ccc}"
+    +".tot-val{text-align:center!important;font-weight:700;padding:5px 8px!important;white-space:nowrap;border:1px solid #ccc;font-size:13px}"
+    +".tl{text-align:center;font-style:italic;font-weight:800;margin-top:8px;font-size:12px;letter-spacing:2px;border-top:3px solid #0a1f3d;padding-top:8px;color:#0a1f3d}";
 
-  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Cotizacion "+nro+"</title><style>"+css+"</style></head><body><div class='wrap'><div class='page'>";
+  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='format-detection' content='telephone=no'><title>Cotizacion "+nro+"</title><style>"+css+"</style></head><body><div class='wrap'>";
 
   // HEADER
   h+="<div class='hdr'>"
@@ -698,32 +699,33 @@ function genPDF(){
   h+="<div class='title'>Aire Acondicionado y Electricidad</div>";
 
   // CLIENT ROW 1
-  h+="<table style='margin-bottom:2px'>"
-    +"<tr><th style='width:11%'>RUT</th><th style='width:25%'>CLIENTE</th><th style='width:18%'>CONTACTO</th><th style='width:13%'>FECHA</th><th>CIUDAD</th></tr>"
+  h+="<table style='margin-bottom:3px'>"
+    +"<tr><th style='width:11%'>RUT</th><th style='width:24%'>CLIENTE</th><th style='width:18%'>CONTACTO</th><th style='width:14%'>FECHA</th><th>CIUDAD</th></tr>"
     +"<tr><td>"+rut+"</td><td style='font-weight:700'>"+nombre+"</td><td>"+contacto+"</td><td>"+fecha+"</td><td>"+comuna+"</td></tr>"
     +"</table>";
 
   // CLIENT ROW 2
-  h+="<table style='margin-bottom:5px'>"
-    +"<tr><th style='width:14%'>TELÉFONO</th><th style='width:32%'>DIRECCIÓN</th><th style='width:26%'>E-MAIL</th><th>T.PAGO</th></tr>"
+  h+="<table style='margin-bottom:8px'>"
+    +"<tr><th style='width:14%'>TELÉFONO</th><th style='width:32%'>DIRECCIÓN</th><th style='width:25%'>E-MAIL</th><th>T.PAGO</th></tr>"
     +"<tr><td>"+tel+"</td><td>"+dir+"</td><td>"+email+"</td><td style='font-weight:700'>Transferencia</td></tr>"
     +"</table>";
 
   // ITEMS TABLE
-  // Columnas: ÍTEMS(5%) | DESCRIPCIÓN(47%) | CANT(7%) | VLR UNIT(13%) | DESC(7%) | TOTAL(13%) | → totales usan últimas 2 cols = 20%
+  // 6 columnas: ITEMS(5%) | DESC(52%) | CANT(7%) | VLR UNIT(13%) | DESC%(8%) | TOTAL(15%)
+  // Totales: obs=cols1+2+3 (64%), lbl=col4 (13%), val=cols5+6 (23%)
   h+="<table style='table-layout:fixed'>"
     +"<thead><tr>"
     +"<th style='width:5%'>ÍTEMS</th>"
-    +"<th style='width:57%'>DESCRIPCIÓN</th>"
+    +"<th style='width:52%'>DESCRIPCIÓN</th>"
     +"<th style='width:7%'>CANT.</th>"
     +"<th style='width:13%'>VLR UNIT.</th>"
     +"<th style='width:8%'>DESC.</th>"
-    +"<th style='width:10%'>TOTAL</th>"
+    +"<th style='width:15%'>TOTAL</th>"
     +"</tr></thead>"
     +"<tbody>"+rows+blanks;
 
-  // TOTALS — obs ocupa 4 cols (5+47+7+13=72%), totales usan 2 cols (7+13=20%) + label col separado
-  // Usamos: obs=colspan4, label=colspan1(7%), valor=colspan1(13%)
+  // TOTALS
+  // obs ocupa cols 1+2+3 (colspan=3), lbl ocupa col4, val ocupa cols 5+6 (colspan=2)
   h+="<tr>"
     +"<td colspan='3' class='obs-td' rowspan='5'>"
     +"<div class='sec-title'>OBSERVACIONES</div>"
@@ -731,30 +733,30 @@ function genPDF(){
     +"Tres meses de garantía en bombas de condensado. "
     +"Un mes de garantía en mantenciones."
     +"</td>"
-    +"<td class='lbl' style='border:1px solid #ccc;white-space:nowrap'>DESCUENTO GLOBAL</td>"
-    +"<td colspan='2' class='val' style='border:1px solid #ccc;white-space:nowrap'>"+(dM>0?"$ "+Math.round(dM).toLocaleString("es-CL"):"$ -")+"</td>"
+    +"<td colspan='2' class='tot-lbl'>DESCUENTO GLOBAL</td>"
+    +"<td class='tot-val'>"+(dM>0?"$ "+Math.round(dM).toLocaleString("es-CL"):"$ -")+"</td>"
     +"</tr>"
     +"<tr>"
-    +"<td class='lbl' style='border:1px solid #ccc;white-space:nowrap'>MONTO NETO</td>"
-    +"<td colspan='2' class='val' style='border:1px solid #ccc;white-space:nowrap'>$ "+Math.round(nD).toLocaleString("es-CL")+"</td>"
+    +"<td colspan='2' class='tot-lbl'>MONTO NETO</td>"
+    +"<td class='tot-val'>$ "+Math.round(nD).toLocaleString("es-CL")+"</td>"
     +"</tr>"
     +"<tr>"
-    +"<td class='lbl' style='border:1px solid #ccc;white-space:nowrap'>I.V.A 19%</td>"
-    +"<td colspan='2' class='val' style='border:1px solid #ccc;white-space:nowrap'>$ "+Math.round(iva).toLocaleString("es-CL")+"</td>"
+    +"<td colspan='2' class='tot-lbl'>I.V.A 19%</td>"
+    +"<td class='tot-val'>$ "+Math.round(iva).toLocaleString("es-CL")+"</td>"
     +"</tr>"
     +"<tr class='trow'>"
-    +"<td style='text-align:right;padding-right:6px;white-space:nowrap'>TOTAL A PAGAR TRANSFERENCIA</td>"
-    +"<td colspan='2' style='white-space:nowrap'>$ "+Math.round(tot).toLocaleString("es-CL")+"</td>"
+    +"<td colspan='2' class='tot-lbl' style='background:#0a1f3d!important;color:#fff!important;border:1px solid #0a1f3d;font-size:8.5px;white-space:nowrap'>TOTAL TRANSFERENCIA</td>"
+    +"<td class='tot-val' style='background:#0a1f3d!important;color:#fff!important;border:1px solid #0a1f3d;font-size:13px;white-space:nowrap'>$ "+Math.round(tot).toLocaleString("es-CL")+"</td>"
     +"</tr>"
     +"<tr class='grow'>"
-    +"<td style='text-align:right;padding-right:6px;white-space:nowrap'>TOTAL A PAGAR TARJETA DE CRÉDITO</td>"
-    +"<td colspan='2' style='white-space:nowrap'>$ "+Math.round(totTC).toLocaleString("es-CL")+"</td>"
+    +"<td colspan='2' class='tot-lbl' style='background:#c9a830!important;color:#1a1a1a!important;border:1px solid #c9a830;font-size:8.5px;white-space:nowrap'>TOTAL TARJETA DE CRÉDITO</td>"
+    +"<td class='tot-val' style='background:#c9a830!important;color:#1a1a1a!important;border:1px solid #c9a830;font-size:13px;white-space:nowrap'>$ "+Math.round(totTC).toLocaleString("es-CL")+"</td>"
     +"</tr>"
     +"</tbody></table>";
 
   // DATOS BANCARIOS
-  h+="<table style='width:100%;border-collapse:collapse;margin-top:4px'><tr>"
-    +"<td style='width:48%;vertical-align:top;padding-right:4px'>"
+  h+="<table style='width:100%;border-collapse:collapse;margin-top:8px'><tr>"
+    +"<td style='width:48%;vertical-align:top;padding-right:6px'>"
     +"<table style='width:100%;border-collapse:collapse'>"
     +"<tr><th colspan='4' class='bank-th' style='text-align:left'>DATOS DE TRANSFERENCIA</th></tr>"
     +"<tr><th class='bank-th'>BANCO</th><th class='bank-th'>N° CUENTA</th><th class='bank-th'>CUENTA</th><th class='bank-th'>RUT</th></tr>"
@@ -763,8 +765,8 @@ function genPDF(){
     +"<tr><td colspan='2' class='bank-td' style='font-weight:700'>Isaac León</td><td colspan='2' class='bank-td'>contactoleoning@gmail.com</td></tr>"
     +"</table>"
     +"</td>"
-    +"<td style='width:52%;vertical-align:top;padding-left:4px'>"
-    +"<table style='width:100%;border-collapse:collapse;margin-bottom:3px'>"
+    +"<td style='width:52%;vertical-align:top;padding-left:6px'>"
+    +"<table style='width:100%;border-collapse:collapse;margin-bottom:5px'>"
     +"<tr><th class='bank-th'>TRANSFERENCIA</th><th class='bank-th'>FINALIZADO EL TRABAJO</th><th class='bank-th'>COMIENZO DE TRABAJO</th></tr>"
     +"<tr><td class='bank-td'>Abono 70%</td><td class='bank-td'>Restante 30%</td><td class='bank-td'>Acordar con el cliente</td></tr>"
     +"</table>"
@@ -776,15 +778,15 @@ function genPDF(){
     +"</tr></table>";
 
   // FOOTER
-  h+="<div style='text-align:center;font-size:8.5px;color:#555;margin-top:4px;line-height:1.4'>"
+  h+="<div style='text-align:center;font-size:10px;color:#555;margin-top:8px;line-height:1.6'>"
     +"León Ingeniería Y Proyectos Spa. Somos una empresa dedicada a satisfacer las necesidades de nuestros clientes, entregando calidad y compromiso."
     +"</div>"
-    +"<div style='text-align:right;font-size:8.5px;font-weight:700;margin-top:3px'>Cotización Válida: "+validez+"</div>"
+    +"<div style='text-align:right;font-size:10px;font-weight:700;margin-top:4px'>Cotización Válida: "+validez+"</div>"
     +"<div class='tl'>——— UNA SOLUCION INTELIGENTE ———</div>"
-    +"<div style='text-align:center;margin-top:8px' class='no-print'>"
-    +"<button onclick='window.print()' style='background:#c9a830;color:#1a1a1a;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer'>Imprimir / Guardar PDF</button>"
+    +"<div style='text-align:center;margin-top:10px' class='no-print'>"
+    +"<button onclick='window.print()' style='background:#c9a830;color:#1a1a1a;border:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer'>Imprimir / Guardar PDF</button>"
     +"</div>"
-    +"</div></div></body></html>";
+    +"</div></body></html>";
 
 
   incrementNro();
