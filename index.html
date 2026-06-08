@@ -207,7 +207,7 @@ select option{background:#0f2647;color:var(--txt)}
     </div>
   </div>
   <div class="card">
-    <div class="ct">Seleccionar Equipo</div>
+    <div class="ct">Seleccionar Servicio</div>
     <div class="fr"><span class="fl">Modelo de Equipo</span>
       <select id="tiposel">
         <option value="">Todos</option>
@@ -216,7 +216,7 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="Piso Cielo">Piso Cielo</option>
       </select>
     </div>
-    <div class="fr"><span class="fl">Capacidad BTU</span>
+    <div class="fr" id="rowbtu"><span class="fl">Capacidad BTU</span>
       <select id="btusel">
         <option value="">— Selecciona —</option>
         <option value="9">9.000 BTU — 15 a 18 m²</option>
@@ -225,6 +225,13 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="22">22.000 BTU — 40 a 50 m²</option>
         <option value="24">24.000 BTU — 40 a 50 m²</option>
         <option value="36">36.000 BTU — 60 m² o más</option>
+      </select>
+    </div>
+    <div class="fr"><span class="fl">Mantención A/C</span>
+      <select id="mantencionsel" onchange="onMantencionChange()">
+        <option value="">— Selecciona —</option>
+        <option value="mant1">Mantención Split Muro 9.000 y 12.000 BTU</option>
+        <option value="mant2">Mantención Split Muro 18.000 y 24.000 BTU</option>
       </select>
     </div>
     <div class="pg" id="prodlista"></div>
@@ -236,6 +243,17 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="4">4</option>
         <option value="5">5</option>
       </select>
+    </div>
+    <div id="rowmant" style="display:none;margin-top:12px;flex-direction:column;gap:8px">
+      <div style="font-size:13px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em">Cantidad de Mantenciones</div>
+      <select id="cantmant" style="width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:11px 13px;font-size:16px;color:var(--txt);font-family:'DM Sans',sans-serif;outline:none;font-weight:500">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+      <button class="btn badd" onclick="agregarMantencion()" style="width:100%;margin-top:4px">+ Agregar Mantención al Presupuesto</button>
     </div>
     <button class="btn badd" id="btnag" style="display:none">+ Agregar Equipo al Presupuesto</button>
   </div>
@@ -498,6 +516,42 @@ function calcInst(){
     +'<div class="met"><div class="ml">Total c/IVA</div><div class="mv g">'+fmt(neto+iva)+'</div></div>';
 }
 
+
+function onMantencionChange(){
+  var val=document.getElementById("mantencionsel").value;
+  var rowmant=document.getElementById("rowmant");
+  if(val){
+    rowmant.style.display="flex";rowmant.style.flexDirection="column";rowmant.style.gap="8px";
+  } else {
+    rowmant.style.display="none";
+    document.getElementById("cantmant").value="1";
+  }
+}
+
+function agregarMantencion(){
+  var sel=document.getElementById("mantencionsel");
+  var val=sel.value;
+  if(!val){alert("Selecciona un tipo de mantención.");return;}
+  var cant=parseInt(document.getElementById("cantmant").value)||1;
+  var desc="";
+  var neto=0;
+  if(val==="mant1"){
+    desc="Mantención Split Muro 9.000 y 12.000 BTU";
+    neto=40000;
+  } else if(val==="mant2"){
+    desc="Mantención Split Muro 18.000 y 24.000 BTU";
+    neto=55000;
+  }
+  if(!neto) return;
+  carrito.push({id:"MANT_"+Date.now(),cod:"MANT",
+    desc:desc,tipo:"Mantención",
+    neto:neto,total:wIVA(neto),esCyber:false,cant:cant});
+  // Reset
+  sel.value="";
+  document.getElementById("cantmant").value="1";
+  document.getElementById("rowmant").style.display="none";
+  renderCarrito();
+}
 
 function agregarInst(){
   var agregado=false;
