@@ -654,34 +654,33 @@ function genPDF(){
   }
 
   var css="*{box-sizing:border-box;margin:0;padding:0}"
-    +"body{font-family:Arial,sans-serif;font-size:9.5px;color:#1a1a1a;background:#fff;margin:0;padding:0}"
-    +"@page{size:A4 portrait;margin:6mm 8mm}"
+    +"body{font-family:Arial,sans-serif;font-size:9px;color:#1a1a1a;background:#fff;margin:0;padding:0}"
+    +"@page{size:A4 portrait;margin:5mm 7mm}"
     +"@media print{body{padding:0!important;margin:0!important}button,.no-print{display:none!important}html,body{height:auto}}"
-    +".wrap{padding:8px 10px}"
+    +".wrap{padding:6px 8px}"
     +".page{max-width:100%;margin:0}"
-    /* HEADER */
-    +".hdr{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:6px;border-bottom:3px solid #0a1f3d;padding-bottom:6px;margin-bottom:6px}"
-    +".logo{width:100px;height:auto}"
+    +".hdr{display:grid;grid-template-columns:95px 1fr auto;align-items:center;gap:5px;border-bottom:3px solid #0a1f3d;padding-bottom:5px;margin-bottom:5px}"
+    +".logo{width:90px;height:auto}"
     +".hdr-mid{text-align:center}"
-    +".hdr-addr{font-size:9px;color:#444;line-height:1.5}"
-    +".hdr-tel{font-size:9.5px;font-weight:700;color:#0a1f3d}"
-    +".cbox{border:2px solid #0a1f3d;padding:3px 8px;text-align:center;min-width:80px}"
+    +".hdr-addr{font-size:8.5px;color:#444;line-height:1.4}"
+    +".hdr-tel{font-size:9px;font-weight:700;color:#0a1f3d}"
+    +".cbox{border:2px solid #0a1f3d;padding:2px 7px;text-align:center;min-width:75px}"
     +".clbl{font-size:8px;font-weight:700;color:#0a1f3d;text-transform:uppercase;letter-spacing:.04em}"
-    +".cnum{font-size:22px;font-weight:800;color:#1a1a1a;line-height:1.1}"
-    +".title{text-align:center;font-size:12px;font-weight:800;margin:5px 0;text-transform:uppercase;color:#1a1a1a}"
-    /* TABLES */
+    +".cnum{font-size:21px;font-weight:800;color:#1a1a1a;line-height:1.1}"
+    +".title{text-align:center;font-size:11px;font-weight:800;margin:4px 0;text-transform:uppercase;color:#1a1a1a}"
     +"table{width:100%;border-collapse:collapse}"
-    +"th{background:#0a1f3d;color:#ffffff;padding:5px 6px;font-size:9px;font-weight:700;text-align:center;text-transform:uppercase;border:1px solid #0a1f3d}"
-    +"td{padding:4px 6px;font-size:9px;border:1px solid #ccc;text-align:center}"
+    +"th{background:#0a1f3d;color:#fff;padding:4px 5px;font-size:8.5px;font-weight:800;text-align:center;text-transform:uppercase;border:1px solid #0a1f3d}"
+    +"td{padding:3px 5px;font-size:8.5px;border:1px solid #ccc;text-align:center}"
     +"tr:nth-child(even) td{background:#f5f7fa}"
-    +".items-table td{border:1px solid #ccc}"
-    +".trow td{background:#0a1f3d!important;color:#ffffff!important;font-weight:800;font-size:10px;border:1px solid #0a1f3d;text-align:center;text-transform:uppercase}"
-    +".grow td{background:#c9a830!important;color:#1a1a1a!important;font-weight:800;font-size:10px;border:1px solid #c9a830;text-align:center;text-transform:uppercase}"
-    +".obs-td{background:#fff!important;font-size:9px;line-height:1.5;padding:6px 10px;vertical-align:middle;text-align:center!important;border:1px solid #ccc}"
-    +".sec-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}"
-    +".bank-th{background:#0a1f3d;color:#ffffff;padding:4px 6px;font-size:8.5px;font-weight:700;border:1px solid #0a1f3d;text-align:center;text-transform:uppercase}"
-    +".bank-td{padding:4px 6px;border:1px solid #ccc;font-size:9px;text-align:center}"
-    +".tl{text-align:center;font-style:italic;font-weight:800;margin-top:6px;font-size:11px;letter-spacing:2px;border-top:2px solid #0a1f3d;padding-top:6px;color:#0a1f3d}";
+    +".trow td{background:#0a1f3d!important;color:#fff!important;font-weight:800;font-size:9px;border:1px solid #0a1f3d;text-align:center;text-transform:uppercase;white-space:nowrap}"
+    +".grow td{background:#c9a830!important;color:#1a1a1a!important;font-weight:800;font-size:9px;border:1px solid #c9a830;text-align:center;text-transform:uppercase;white-space:nowrap}"
+    +".lbl{text-align:right!important;font-weight:700;white-space:nowrap;padding-right:8px!important}"
+    +".val{text-align:center!important;font-weight:700;white-space:nowrap;min-width:62px}"
+    +".obs-td{background:#fff!important;font-size:8.5px;line-height:1.5;padding:5px 8px;vertical-align:middle;text-align:center!important;border:1px solid #ccc}"
+    +".sec-title{font-size:8.5px;font-weight:800;text-transform:uppercase;margin-bottom:2px}"
+    +".bank-th{background:#0a1f3d;color:#fff;padding:3px 5px;font-size:8px;font-weight:800;border:1px solid #0a1f3d;text-align:center;text-transform:uppercase}"
+    +".bank-td{padding:3px 5px;border:1px solid #ccc;font-size:8.5px;text-align:center}"
+    +".tl{text-align:center;font-style:italic;font-weight:800;margin-top:5px;font-size:10px;letter-spacing:1.5px;border-top:2px solid #0a1f3d;padding-top:5px;color:#0a1f3d}";
 
   var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Cotizacion "+nro+"</title><style>"+css+"</style></head><body><div class='wrap'><div class='page'>";
 
@@ -699,54 +698,63 @@ function genPDF(){
   h+="<div class='title'>Aire Acondicionado y Electricidad</div>";
 
   // CLIENT ROW 1
-  h+="<table class='items-table' style='margin-bottom:2px'>"
-    +"<tr><th style='width:12%'>RUT</th><th style='width:26%'>CLIENTE</th><th style='width:20%'>CONTACTO</th><th style='width:14%'>FECHA</th><th style='width:14%'>CIUDAD</th></tr>"
+  h+="<table style='margin-bottom:2px'>"
+    +"<tr><th style='width:11%'>RUT</th><th style='width:25%'>CLIENTE</th><th style='width:18%'>CONTACTO</th><th style='width:13%'>FECHA</th><th>CIUDAD</th></tr>"
     +"<tr><td>"+rut+"</td><td style='font-weight:700'>"+nombre+"</td><td>"+contacto+"</td><td>"+fecha+"</td><td>"+comuna+"</td></tr>"
     +"</table>";
 
   // CLIENT ROW 2
-  h+="<table class='items-table' style='margin-bottom:6px'>"
-    +"<tr><th style='width:16%'>TELÉFONO</th><th style='width:35%'>DIRECCIÓN</th><th style='width:28%'>E-MAIL</th><th>T.PAGO</th></tr>"
+  h+="<table style='margin-bottom:5px'>"
+    +"<tr><th style='width:14%'>TELÉFONO</th><th style='width:32%'>DIRECCIÓN</th><th style='width:26%'>E-MAIL</th><th>T.PAGO</th></tr>"
     +"<tr><td>"+tel+"</td><td>"+dir+"</td><td>"+email+"</td><td style='font-weight:700'>Transferencia</td></tr>"
     +"</table>";
 
-  // ITEMS TABLE — sin columna Código
-  h+="<table class='items-table'>"
+  // ITEMS TABLE
+  // Columnas: ÍTEMS(5%) | DESCRIPCIÓN(47%) | CANT(7%) | VLR UNIT(13%) | DESC(7%) | TOTAL(13%) | → totales usan últimas 2 cols = 20%
+  h+="<table>"
     +"<thead><tr>"
-    +"<th style='width:6%'>ÍTEMS</th>"
-    +"<th style='width:54%'>DESCRIPCIÓN</th>"
-    +"<th style='width:8%'>CANTIDAD</th>"
-    +"<th style='width:14%'>VLR UNITARIO</th>"
-    +"<th style='width:9%'>DESC.</th>"
-    +"<th style='width:14%'>TOTAL</th>"
+    +"<th style='width:5%'>ÍTEMS</th>"
+    +"<th style='width:47%'>DESCRIPCIÓN</th>"
+    +"<th style='width:7%'>CANT.</th>"
+    +"<th style='width:13%'>VLR UNIT.</th>"
+    +"<th style='width:7%'>DESC.</th>"
+    +"<th style='width:13%'>TOTAL</th>"
     +"</tr></thead>"
     +"<tbody>"+rows+blanks;
 
-  // TOTALS — observaciones centradas
+  // TOTALS — obs ocupa 4 cols (5+47+7+13=72%), totales usan 2 cols (7+13=20%) + label col separado
+  // Usamos: obs=colspan4, label=colspan1(7%), valor=colspan1(13%)
   h+="<tr>"
-    +"<td colspan='3' class='obs-td' rowspan='5'>"
+    +"<td colspan='4' class='obs-td' rowspan='5'>"
     +"<div class='sec-title'>OBSERVACIONES</div>"
-    +"<strong>Garantías:</strong><br>"
-    +"Un año de garantía en los equipos nuevos.<br>"
-    +"Tres meses de garantía en bombas de condensado.<br>"
+    +"<strong>Garantías:</strong> Un año de garantía en los equipos nuevos. "
+    +"Tres meses de garantía en bombas de condensado. "
     +"Un mes de garantía en mantenciones."
     +"</td>"
-    +"<td colspan='2' style='text-align:right;font-weight:700;border:1px solid #ccc;padding:3px 6px;text-transform:uppercase'>DESCUENTO GLOBAL</td>"
-    +"<td style='text-align:center;font-weight:700;border:1px solid #ccc;padding:3px 6px'>"+(dM>0?"$ "+Math.round(dM).toLocaleString("es-CL"):"$ -")+"</td>"
+    +"<td class='lbl' style='border:1px solid #ccc'>DESCUENTO GLOBAL</td>"
+    +"<td class='val' style='border:1px solid #ccc'>"+(dM>0?"$"+Math.round(dM).toLocaleString("es-CL"):"$ -")+"</td>"
     +"</tr>"
-    +"<tr><td colspan='2' style='text-align:right;font-weight:700;border:1px solid #ccc;padding:3px 6px;text-transform:uppercase'>MONTO NETO</td>"
-    +"<td style='text-align:center;font-weight:700;border:1px solid #ccc;padding:3px 6px'>$ "+Math.round(nD).toLocaleString("es-CL")+"</td></tr>"
-    +"<tr><td colspan='2' style='text-align:right;font-weight:700;border:1px solid #ccc;padding:3px 6px;text-transform:uppercase'>I.V.A 19%</td>"
-    +"<td style='text-align:center;font-weight:700;border:1px solid #ccc;padding:3px 6px'>$ "+Math.round(iva).toLocaleString("es-CL")+"</td></tr>"
-    +"<tr class='trow'><td colspan='2' style='text-align:right'>TOTAL A PAGAR TRANSFERENCIA</td>"
-    +"<td>$ "+Math.round(tot).toLocaleString("es-CL")+"</td></tr>"
-    +"<tr class='grow'><td colspan='2' style='text-align:right'>TOTAL A PAGAR TARJETA DE CRÉDITO</td>"
-    +"<td>$ "+Math.round(totTC).toLocaleString("es-CL")+"</td></tr>"
+    +"<tr>"
+    +"<td class='lbl' style='border:1px solid #ccc'>MONTO NETO</td>"
+    +"<td class='val' style='border:1px solid #ccc'>$"+Math.round(nD).toLocaleString("es-CL")+"</td>"
+    +"</tr>"
+    +"<tr>"
+    +"<td class='lbl' style='border:1px solid #ccc'>I.V.A 19%</td>"
+    +"<td class='val' style='border:1px solid #ccc'>$"+Math.round(iva).toLocaleString("es-CL")+"</td>"
+    +"</tr>"
+    +"<tr class='trow'>"
+    +"<td style='text-align:right;padding-right:6px'>TRANSFERENCIA</td>"
+    +"<td>$"+Math.round(tot).toLocaleString("es-CL")+"</td>"
+    +"</tr>"
+    +"<tr class='grow'>"
+    +"<td style='text-align:right;padding-right:6px'>TARJETA CRÉDITO</td>"
+    +"<td>$"+Math.round(totTC).toLocaleString("es-CL")+"</td>"
+    +"</tr>"
     +"</tbody></table>";
 
   // DATOS BANCARIOS
-  h+="<table style='width:100%;border-collapse:collapse;margin-top:5px'><tr>"
-    +"<td style='width:50%;vertical-align:top;padding-right:5px'>"
+  h+="<table style='width:100%;border-collapse:collapse;margin-top:4px'><tr>"
+    +"<td style='width:48%;vertical-align:top;padding-right:4px'>"
     +"<table style='width:100%;border-collapse:collapse'>"
     +"<tr><th colspan='4' class='bank-th' style='text-align:left'>DATOS DE TRANSFERENCIA</th></tr>"
     +"<tr><th class='bank-th'>BANCO</th><th class='bank-th'>N° CUENTA</th><th class='bank-th'>CUENTA</th><th class='bank-th'>RUT</th></tr>"
@@ -755,7 +763,7 @@ function genPDF(){
     +"<tr><td colspan='2' class='bank-td' style='font-weight:700'>Isaac León</td><td colspan='2' class='bank-td'>contactoleoning@gmail.com</td></tr>"
     +"</table>"
     +"</td>"
-    +"<td style='width:50%;vertical-align:top;padding-left:5px'>"
+    +"<td style='width:52%;vertical-align:top;padding-left:4px'>"
     +"<table style='width:100%;border-collapse:collapse;margin-bottom:3px'>"
     +"<tr><th class='bank-th'>TRANSFERENCIA</th><th class='bank-th'>FINALIZADO EL TRABAJO</th><th class='bank-th'>COMIENZO DE TRABAJO</th></tr>"
     +"<tr><td class='bank-td'>Abono 70%</td><td class='bank-td'>Restante 30%</td><td class='bank-td'>Acordar con el cliente</td></tr>"
@@ -768,10 +776,10 @@ function genPDF(){
     +"</tr></table>";
 
   // FOOTER
-  h+="<div style='text-align:center;font-size:9px;color:#555;margin-top:5px;line-height:1.5'>"
+  h+="<div style='text-align:center;font-size:8.5px;color:#555;margin-top:4px;line-height:1.4'>"
     +"León Ingeniería Y Proyectos Spa. Somos una empresa dedicada a satisfacer las necesidades de nuestros clientes, entregando calidad y compromiso."
     +"</div>"
-    +"<div style='text-align:right;font-size:9px;font-weight:700;margin-top:3px'>Cotización Válida: "+validez+"</div>"
+    +"<div style='text-align:right;font-size:8.5px;font-weight:700;margin-top:3px'>Cotización Válida: "+validez+"</div>"
     +"<div class='tl'>——— UNA SOLUCION INTELIGENTE ———</div>"
     +"<div style='text-align:center;margin-top:8px' class='no-print'>"
     +"<button onclick='window.print()' style='background:#c9a830;color:#1a1a1a;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer'>Imprimir / Guardar PDF</button>"
