@@ -342,6 +342,8 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="">— Selecciona —</option>
         <option value="split9">Instalación Split Muro 9.000 BTU</option>
         <option value="split12">Instalación Split Muro 12.000 BTU</option>
+        <option value="split9exp">Instalación Experta Split Muro 9.000 BTU</option>
+        <option value="split12exp">Instalación Experta Split Muro 12.000 BTU</option>
         <option value="split18">Instalación Split Muro 18.000 BTU</option>
         <option value="split22">Instalación Split Muro 22.000 BTU</option>
         <option value="split24">Instalación Split Muro 24.000 BTU</option>
@@ -369,6 +371,7 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="0">— Selecciona —</option>
         <option value="109235">Básico — $109.235 neto</option>
         <option value="46000">Kit de cañería — $46.000 neto</option>
+        <option value="225850">Materiales Adicionales Experto — $225.850 neto</option>
       </select>
     </div>
     <div class="fr"><span class="fl">Cantidad materiales</span>
@@ -390,7 +393,7 @@ select option{background:#0f2647;color:var(--txt)}
 
     <div class="ss">Otros Recargos</div>
     <div class="fr"><span class="fl">Bomba Condensado</span>
-      <select id="ibomba"><option value="0">No</option><option value="115000">Sí (+$115.000)</option></select>
+      <select id="ibomba"><option value="0">No</option><option value="154700">Sí (+$130.000)</option></select>
     </div>
     <div id="rowbomba" style="display:none"><div class="fr"><span class="fl">Cantidad bombas</span>
       <select id="cantbomba">
@@ -451,7 +454,7 @@ select option{background:#0f2647;color:var(--txt)}
 
 var IVA=0.19;
 var IBASE={
-  split9:126050, split12:126050, split18:151260, split22:151260, split24:151260,
+  split9:126050, split12:126050, split18:151260, split22:151260, split24:151260, split9exp:180000, split12exp:180000,
   cassette12:180000, cassette18:180000, cassette24:200000, cassette36:280000,
   pisocielo18:180000, pisocielo24:200000
 };
@@ -463,6 +466,8 @@ var MO_INST={
 var INOMBRES={
   split9:"Instalación Split Muro 9.000 BTU",
   split12:"Instalación Split Muro 12.000 BTU",
+  split9exp:"Instalación Experta Split Muro 9.000 BTU",
+  split12exp:"Instalación Experta Split Muro 12.000 BTU",
   split18:"Instalación Split Muro 18.000 BTU",
   split22:"Instalación Split Muro 22.000 BTU",
   split24:"Instalación Split Muro 24.000 BTU",
@@ -666,7 +671,7 @@ function agregarInst(){
     var cantMat=parseInt(vs("cantmat"))||1;
     var matSel=document.getElementById("imateriales");
     var matVal=matSel.value;
-    var matNombre=matVal==="46000"?"Kit de cañería":"Materiales Básicos";
+    var matNombre=matVal==="46000"?"Kit de cañería":matVal==="225850"?"Materiales Adicionales Experto":"Materiales Básicos";
     carrito.push({id:"MAT_"+Date.now(),cod:"MAT",
       desc:matNombre,tipo:"Materiales",
       neto:mat,total:wIVA(mat),esCyber:false,cant:cantMat});
