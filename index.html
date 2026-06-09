@@ -406,7 +406,14 @@ select option{background:#0f2647;color:var(--txt)}
       </select>
     </div></div>
 
-
+    <div class="ss">Traslado Fuera de Santiago</div>
+    <div class="fr"><span class="fl">Región</span>
+      <select id="traslado" onchange="document.getElementById('rowtraslado').style.display=this.value?'block':'none'">
+        <option value="">— Sin traslado —</option>
+        <option value="207000">Región de Valparaíso — $207.000 neto</option>
+        <option value="189000">VI Región — $189.000 neto</option>
+      </select>
+    </div>
 
   </div>
 
@@ -569,6 +576,7 @@ function agregar(){
 function calcInst(){
   var base=IBASE[vs("itipo")]||0;
   var bomba=vn("ibomba");
+  var traslado=vn("traslado");
   var can100=vn("ican100")*6500;
   var can20=vn("ican20")*1200;
   var mat=vn("imateriales");
@@ -654,7 +662,7 @@ function agregarMantencion(){
 function agregarInst(){
   var agregado=false;
 
-  // Instalacion (solo si se seleccionó tipo de trabajo)
+  // Instalacion
   if(vs("itipo")){
     if(!vs("cantinst")){alert("Selecciona la cantidad de instalaciones.");return;}
     var base=IBASE[vs("itipo")]||0;
@@ -668,21 +676,20 @@ function agregarInst(){
     agregado=true;
   }
 
-  // Materiales adicionales (independiente de la instalación)
+  // Materiales
   var mat=vn("imateriales");
   if(mat>0){
     if(!vs("cantmat")){alert("Selecciona la cantidad de materiales.");return;}
     var cantMat=parseInt(vs("cantmat"))||1;
-    var matSel=document.getElementById("imateriales");
-    var matVal=matSel.value;
-    var matNombre=matVal==="46000"?"Kit de cañería":matVal==="225850"?"Materiales Adicionales Experto":"Materiales Básicos";
+    var matVal=document.getElementById("imateriales").value;
+    var matNombre=matVal==="46000"?"Kit de cañería":matVal==="150000"?"Materiales Adicionales Experto":"Materiales Básicos";
     carrito.push({id:"MAT_"+Date.now(),cod:"MAT",
       desc:matNombre,tipo:"Materiales",
       neto:mat,total:wIVA(mat),esCyber:false,cant:cantMat});
     agregado=true;
   }
 
-  // Bomba de condensado (independiente)
+  // Bomba de condensado
   var bomba=vn("ibomba");
   if(bomba>0){
     var cantBomba=parseInt(document.getElementById("cantbomba").value)||1;
@@ -693,22 +700,36 @@ function agregarInst(){
     agregado=true;
   }
 
+  // Traslado fuera de Santiago
+  var trasladoSel=document.getElementById("traslado");
+  var trasladoVal=parseInt(trasladoSel.value)||0;
+  if(trasladoVal>0){
+    var trasRegion=trasladoSel.options[trasladoSel.selectedIndex].text.split(" —")[0];
+    carrito.push({id:"TRASL_"+Date.now(),cod:"TRASL",
+      desc:"Traslado Fuera de Santiago — "+trasRegion,tipo:"Traslado",
+      neto:trasladoVal,total:wIVA(trasladoVal),esCyber:false,cant:1});
+    agregado=true;
+  }
+
   if(!agregado){
-    alert("Selecciona al menos un ítem: instalación, materiales o bomba.");
+    alert("Selecciona al menos un ítem: instalación, materiales, bomba o traslado.");
     return;
   }
-  // Auto-reset de todos los campos después de agregar
+
+  // Reset
   document.getElementById("itipo").value="";
   document.getElementById("cantinst").value="";
   document.getElementById("imateriales").value="0";
   document.getElementById("cantmat").value="";
   document.getElementById("ibomba").value="0";
   document.getElementById("rowbomba").style.display="none";
+  document.getElementById("traslado").value="";
   document.getElementById("ican100").value="0";
   document.getElementById("ican20").value="0";
   document.getElementById("instmets").innerHTML="";
   renderCarrito();
 }
+
 
 function removeItem(i){carrito.splice(i,1);renderCarrito();}
 
