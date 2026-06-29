@@ -23,7 +23,7 @@ body{background:var(--bg);color:var(--txt);font-family:"DM Sans",sans-serif;min-
 .tab{padding:10px 16px;border-radius:var(--rs) var(--rs) 0 0;font-size:14px;font-weight:700;cursor:pointer;color:var(--txt2);border:2px solid transparent;border-bottom:none;transition:all .15s;letter-spacing:.02em;white-space:nowrap;flex-shrink:0}
 .tab:hover{color:var(--txt);background:var(--bg3)}
 .tab.act{background:var(--bg);color:var(--acc);border-color:var(--brd)}
-.main{max-width:640px;margin:0 auto;padding:16px 12px 110px}
+.main{width:100%;padding:16px 16px 40px;box-sizing:border-box}
 .card{background:var(--bg2);border:2px solid var(--brd);border-radius:var(--r);padding:14px;margin-bottom:12px}
 .ct{font-size:17px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.06em;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid var(--brd)}
 .ss{font-size:16px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 12px;padding-top:14px;border-top:1px solid var(--brd)}
@@ -107,6 +107,18 @@ select option{background:#0f2647;color:var(--txt)}
   .card{padding:12px 10px}
   .hbadge{font-size:14px;padding:4px 11px}
 }
+
+/* ── Layout dos columnas ── */
+#cot-wrap{display:flex;flex-direction:row;align-items:flex-start;gap:16px;width:100%}
+#cot-left{width:35%;flex-shrink:0;position:sticky;top:72px;max-height:calc(100vh - 88px);overflow-y:auto}
+#cot-right{flex:1;min-width:0}
+/* Secciones colapsables */
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:14px 0;border-bottom:2px solid var(--brd);user-select:none}
+.sec-hdr .ct{margin-bottom:0;border-bottom:none;padding-bottom:0}
+.sec-arrow{font-size:18px;color:var(--acc);transition:transform .2s;flex-shrink:0}
+.sec-arrow.open{transform:rotate(180deg)}
+.sec-body{overflow:hidden;transition:max-height .3s ease}
+@media(max-width:860px){#cot-wrap{flex-direction:column}#cot-left{width:100%;position:static;max-height:none}}
 </style>
 </head>
 <body>
@@ -121,8 +133,79 @@ select option{background:#0f2647;color:var(--txt)}
 </nav>
 <main class="main">
 <div id="view-cot">
+<div id="cot-wrap">
+
+<!-- ── IZQUIERDA: PRESUPUESTO ── -->
+<div id="cot-left">
+  <div class="card" id="cartcard" style="display:none">
+    <div class="ct">Presupuesto</div>
+    <div class="fr" style="margin-bottom:14px;padding:12px 14px;background:var(--bg3);border:2px solid var(--brd);border-radius:var(--rs);align-items:center">
+      <span style="font-size:17px;font-weight:700;color:var(--cy);flex:1">⚡ Descuento CyberDay</span>
+      <select id="cyberdisc" onchange="renderCarrito()" style="max-width:220px;border-color:var(--cy)">
+        <option value="0">Sin descuento</option>
+        <option value="1">1% de descuento</option>
+        <option value="2">2% de descuento</option>
+        <option value="3">3% de descuento</option>
+        <option value="4">4% de descuento</option>
+        <option value="5">5% de descuento</option>
+        <option value="6">6% de descuento</option>
+        <option value="7">7% de descuento</option>
+        <option value="8">8% de descuento</option>
+        <option value="9">9% de descuento</option>
+        <option value="10">10% de descuento</option>
+        <option value="11">11% de descuento</option>
+        <option value="12">12% de descuento</option>
+        <option value="13">13% de descuento</option>
+        <option value="14">14% de descuento</option>
+        <option value="15">15% de descuento</option>
+        <option value="16">16% de descuento</option>
+        <option value="17">17% de descuento</option>
+        <option value="18">18% de descuento</option>
+        <option value="19">19% de descuento</option>
+        <option value="20">20% de descuento</option>
+        <option value="21">21% de descuento</option>
+        <option value="22">22% de descuento</option>
+        <option value="23">23% de descuento</option>
+        <option value="24">24% de descuento</option>
+        <option value="25">25% de descuento</option>
+        <option value="26">26% de descuento</option>
+        <option value="27">27% de descuento</option>
+        <option value="28">28% de descuento</option>
+        <option value="29">29% de descuento</option>
+        <option value="30">30% de descuento</option>
+        <option value="31">31% de descuento</option>
+        <option value="32">32% de descuento</option>
+        <option value="33">33% de descuento</option>
+        <option value="34">34% de descuento</option>
+        <option value="35">35% de descuento</option>
+        <option value="36">36% de descuento</option>
+        <option value="37">37% de descuento</option>
+        <option value="38">38% de descuento</option>
+        <option value="39">39% de descuento</option>
+        <option value="40">40% de descuento</option>
+      </select>
+    </div>
+    <div id="cartlista"></div>
+    <div class="tots" id="totales"></div>
+  </div>
+  <div class="btnrow" id="actbtns" style="display:none">
+    <button class="btn bpdf" id="btnpdf">📄 Generar PDF Formal</button>
+  </div>
+
+  <div class="btnrow" id="actbtns" style="display:none">
+    <button class="btn bpdf" id="btnpdf">📄 Generar PDF Formal</button>
+  </div>
+</div><!-- /cot-left -->
+
+<!-- ── DERECHA: FORMULARIOS ── -->
+<div id="cot-right">
+
   <div class="card">
-    <div class="ct">Datos del cliente</div>
+    <div class="sec-hdr" onclick="toggleSec(this)">
+      <div class="ct">📋 Datos del Cliente</div>
+      <span class="sec-arrow open">▼</span>
+    </div>
+    <div class="sec-body" >
     <div class="fr"><span class="fl">N° Cotización</span><input type="text" id="nro" readonly style="opacity:0.7;cursor:default;font-weight:600;color:var(--acc)"></div>
     <div class="fr"><span class="fl">Fecha</span><input type="text" id="fecha" placeholder="dd/mm/aaaa" readonly style="opacity:0.6;cursor:default"></div>
     <div class="fr"><span class="fl">RUT Cliente</span><input type="text" id="crut" placeholder="12.345.678-9"></div>
@@ -205,9 +288,15 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="5 Dias Habiles" selected>5 Días Hábiles</option>
       </select>
     </div>
+  
+    </div>
   </div>
   <div class="card">
-    <div class="ct">Seleccionar Servicio</div>
+    <div class="sec-hdr" onclick="toggleSec(this)">
+      <div class="ct">🔍 Seleccionar Servicio</div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body" style="max-height:0">
     <div class="fr"><span class="fl">Modelo de Equipo</span>
       <select id="tiposel">
         <option value="">Todos</option>
@@ -278,68 +367,15 @@ select option{background:#0f2647;color:var(--txt)}
       <button class="btn badd" onclick="agregarMantencion()" style="width:100%;margin-top:4px">+ Agregar Mantención al Presupuesto</button>
     </div>
     <button class="btn badd" id="btnag" style="display:none">+ Agregar Equipo al Presupuesto</button>
-  </div>
-  <div class="card" id="cartcard" style="display:none">
-    <div class="ct">Presupuesto</div>
-    <div class="fr" style="margin-bottom:14px;padding:12px 14px;background:var(--bg3);border:2px solid var(--brd);border-radius:var(--rs);align-items:center">
-      <span style="font-size:17px;font-weight:700;color:var(--cy);flex:1">⚡ Descuento CyberDay</span>
-      <select id="cyberdisc" onchange="renderCarrito()" style="max-width:220px;border-color:var(--cy)">
-        <option value="0">Sin descuento</option>
-        <option value="1">1% de descuento</option>
-        <option value="2">2% de descuento</option>
-        <option value="3">3% de descuento</option>
-        <option value="4">4% de descuento</option>
-        <option value="5">5% de descuento</option>
-        <option value="6">6% de descuento</option>
-        <option value="7">7% de descuento</option>
-        <option value="8">8% de descuento</option>
-        <option value="9">9% de descuento</option>
-        <option value="10">10% de descuento</option>
-        <option value="11">11% de descuento</option>
-        <option value="12">12% de descuento</option>
-        <option value="13">13% de descuento</option>
-        <option value="14">14% de descuento</option>
-        <option value="15">15% de descuento</option>
-        <option value="16">16% de descuento</option>
-        <option value="17">17% de descuento</option>
-        <option value="18">18% de descuento</option>
-        <option value="19">19% de descuento</option>
-        <option value="20">20% de descuento</option>
-        <option value="21">21% de descuento</option>
-        <option value="22">22% de descuento</option>
-        <option value="23">23% de descuento</option>
-        <option value="24">24% de descuento</option>
-        <option value="25">25% de descuento</option>
-        <option value="26">26% de descuento</option>
-        <option value="27">27% de descuento</option>
-        <option value="28">28% de descuento</option>
-        <option value="29">29% de descuento</option>
-        <option value="30">30% de descuento</option>
-        <option value="31">31% de descuento</option>
-        <option value="32">32% de descuento</option>
-        <option value="33">33% de descuento</option>
-        <option value="34">34% de descuento</option>
-        <option value="35">35% de descuento</option>
-        <option value="36">36% de descuento</option>
-        <option value="37">37% de descuento</option>
-        <option value="38">38% de descuento</option>
-        <option value="39">39% de descuento</option>
-        <option value="40">40% de descuento</option>
-      </select>
+  
     </div>
-    <div id="cartlista"></div>
-    <div class="tots" id="totales"></div>
   </div>
-  <div class="btnrow" id="actbtns" style="display:none">
-    <button class="btn bpdf" id="btnpdf">📄 Generar PDF Formal</button>
-    <button class="btn bwa" id="btnwa">📱 Copiar WhatsApp</button>
-  </div>
-  <div class="wabox" id="waprev" style="display:none"></div>
-
-  <!-- INSTALACION -->
-
   <div class="card">
-    <div class="ct">Configurar Instalación</div>
+    <div class="sec-hdr" onclick="toggleSec(this)">
+      <div class="ct">🔧 Configurar Instalación</div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body" style="max-height:0">
 
     <div class="ss f">Pack de Instalación</div>
     <div class="fr"><span class="fl">Tipo de Trabajo</span>
@@ -408,10 +444,15 @@ select option{background:#0f2647;color:var(--txt)}
     </div></div>
 
 
+  
+    </div>
   </div>
-
   <div class="card">
-    <div class="ct">Traslado Fuera de Santiago</div>
+    <div class="sec-hdr" onclick="toggleSec(this)">
+      <div class="ct">🚗 Traslado Fuera de Santiago</div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body" style="max-height:0">
     <div class="fr"><span class="fl">Región</span>
       <select id="traslado">
         <option value="">— Sin traslado —</option>
@@ -419,14 +460,16 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="189000">VI Región — $189.000 neto</option>
       </select>
     </div>
+  
+    </div>
   </div>
-
   <div class="g3" id="instmets"></div>
   <button class="btn badd" id="btnagregarinst">+ Agregar al Presupuesto</button>
 
 
-</div>
 
+</div><!-- /cot-right -->
+</div><!-- /cot-wrap -->
 <div id="view-info" style="display:none">
 
   <!-- BLOQUE 1: INFO OBLIGATORIA -->
@@ -588,10 +631,7 @@ function calcInst(){
   var mat=vn("imateriales");
   var neto=base+bomba+can100+can20+mat;
   var iva=Math.round(neto*IVA);
-  document.getElementById("instmets").innerHTML=
-    '<div class="met"><div class="ml">Neto</div><div class="mv a">'+fmt(neto)+'</div></div>'
-    +'<div class="met"><div class="ml">IVA 19%</div><div class="mv">'+fmt(iva)+'</div></div>'
-    +'<div class="met"><div class="ml">Total c/IVA</div><div class="mv g">'+fmt(neto+iva)+'</div></div>';
+  document.getElementById("instmets").innerHTML="";
 }
 
 
@@ -740,7 +780,7 @@ function agregarInst(){
 function removeItem(i){carrito.splice(i,1);renderCarrito();}
 
 function renderCarrito(){
-  var cc=document.getElementById("cartcard"),ab=document.getElementById("actbtns"),wp=document.getElementById("waprev");
+  var cc=document.getElementById("cartcard"),ab=document.getElementById("actbtns");
   if(!carrito.length){cc.style.display="none";ab.style.display="none";wp.style.display="none";return;}
   cc.style.display="block";ab.style.display="flex";
   var cyberPct=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
@@ -786,20 +826,10 @@ function updWA(sN,dM,nD,iva,tot){
   msg+="\n\n*Detalle:*\n"+items+"\n\n--------------";
   if(cyberPctWA>0)msg+="\n⚡ CyberDay -"+cyberPctWA+"%: -"+fmt(dM);
   msg+="\nMonto neto: "+fmt(nD)+"\nIVA 19%: "+fmt(iva)+"\nTOTAL: "+fmt(tot)+"\n\nCotizacion valida por "+vs("validez")+"\nLeon Ingenieria - Una Solucion Inteligente";
-  document.getElementById("waprev").style.display="block";
-  document.getElementById("waprev").textContent=msg;
+
 }
 
-function copiarWA(){
-  var txt=document.getElementById("waprev").textContent;
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(txt).then(function(){
-      var b=document.getElementById("btnwa");
-      b.textContent="Copiado!";
-      setTimeout(function(){b.textContent="📱 Copiar WhatsApp";},3000);
-    });
-  }
-}
+function copiarWA(){}
 
 function genPDF(){
   var nro=document.getElementById("nro").value.trim()||"-";
@@ -1158,6 +1188,12 @@ document.addEventListener("DOMContentLoaded", function(){
     if(pc)seleccionar(pc.getAttribute("data-pid"));
   });
   // Add buttons
+
+  // Abrir primera sección al cargar
+  (function(){
+    var first=document.querySelector('.sec-body');
+    if(first){first.style.maxHeight=first.scrollHeight+'px';}
+  })();
   document.getElementById("btnag").addEventListener("click",function(){agregar();});
   // Cart delete
   document.getElementById("cartlista").addEventListener("click",function(e){
@@ -1167,7 +1203,6 @@ document.addEventListener("DOMContentLoaded", function(){
   // Instalacion
   document.getElementById("btnagregarinst").addEventListener("click",agregarInst);
   document.getElementById("btnpdf").addEventListener("click",genPDF);
-  document.getElementById("btnwa").addEventListener("click",copiarWA);
   // Install form changes
   ["itipo","ibomba","imateriales"].forEach(function(id){
     document.getElementById(id).addEventListener("change",calcInst);
@@ -1388,6 +1423,27 @@ function initInfo() {
 }
 
 
+
+function toggleSec(hdr){
+  var body=hdr.nextElementSibling;
+  var arrow=hdr.querySelector('.sec-arrow');
+  if(body.style.maxHeight&&body.style.maxHeight!=='0px'){
+    body.style.maxHeight='0';
+    arrow.classList.remove('open');
+  } else {
+    body.style.maxHeight=body.scrollHeight+'px';
+    arrow.classList.add('open');
+  }
+}
+// Expandir sección que contiene el botón de equipo seleccionado
+function openParentSec(el){
+  var body=el.closest('.sec-body');
+  if(body&&(!body.style.maxHeight||body.style.maxHeight==='0px')){
+    body.style.maxHeight=body.scrollHeight+'px';
+    var arrow=body.previousElementSibling&&body.previousElementSibling.querySelector('.sec-arrow');
+    if(arrow)arrow.classList.add('open');
+  }
+}
 </script>
 </body>
 </html>
