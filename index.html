@@ -594,6 +594,9 @@ function filtrar(){
       +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span>'
       +'<span class="piv">c/IVA</span></div></div>';
   }).join("");
+  // Fix: si la sección tiene max-height fijo, liberarlo para mostrar contenido dinámico
+  var _sb=lista.closest('.sec-body');
+  if(_sb&&_sb.style.maxHeight!=='none'&&_sb.style.maxHeight!=='0px'){_sb.style.maxHeight='none';}
 }
 
 function seleccionar(id){
@@ -603,6 +606,9 @@ function seleccionar(id){
   selProd=CAT.find(function(p){return p.id===id;});
   document.getElementById("btnag").style.display=selProd?"block":"none";
   document.getElementById("rowcant").style.display=selProd?"flex":"none";
+  // Fix: liberar max-height para mostrar botón y cantidad
+  var _lista=document.getElementById("prodlista");
+  if(_lista){var _sb2=_lista.closest('.sec-body');if(_sb2&&_sb2.style.maxHeight!=='none'&&_sb2.style.maxHeight!=='0px'){_sb2.style.maxHeight='none';}}
 }
 
 function agregar(){
@@ -1192,7 +1198,10 @@ document.addEventListener("DOMContentLoaded", function(){
   // Abrir primera sección al cargar
   (function(){
     var first=document.querySelector('.sec-body');
-    if(first){first.style.maxHeight=first.scrollHeight+'px';}
+    if(first){
+      first.style.maxHeight=first.scrollHeight+'px';
+      setTimeout(function(){first.style.maxHeight='none';},310);
+    }
   })();
   document.getElementById("btnag").addEventListener("click",function(){agregar();});
   // Cart delete
@@ -1431,7 +1440,9 @@ function toggleSec(hdr){
     body.style.maxHeight='0';
     arrow.classList.remove('open');
   } else {
+    // Primero animamos con scrollHeight, luego quitamos el límite
     body.style.maxHeight=body.scrollHeight+'px';
+    setTimeout(function(){ body.style.maxHeight='none'; },310);
     arrow.classList.add('open');
   }
 }
