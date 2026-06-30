@@ -1230,7 +1230,6 @@ function enviarWhatsApp(){
   var P=armarPDF();
   showLoader("Generando PDF...");
 
-  // Render en iframe oculto para preservar el diseño exacto
   var iframe=document.createElement("iframe");
   iframe.style.cssText="position:fixed;left:-9999px;top:0;width:816px;height:1056px;border:0";
   document.body.appendChild(iframe);
@@ -1250,26 +1249,29 @@ function enviarWhatsApp(){
       var payload=pdfRecord(P);
       payload.pdf=base64;
       payload.accion="pdf";
-      return fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
-    }).then(function(r){return r.text();}).then(function(link){
-      link=(link||"").trim();
-      // Teléfono del cliente en formato internacional
-      var pre=document.getElementById("ctel-pre"),num=document.getElementById("ctel-num");
-      var digits="";
-      if(pre&&num&&num.value.trim()){
-        digits=(pre.value.replace(/[^0-9]/g,"")+num.value.replace(/[^0-9]/g,""));
-      }
-      var msg="Hola"+(P.nombre&&P.nombre!=="Particular"?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
-      if(link)msg+="\n\nPuedes verla y descargarla aquí:\n"+link;
-      var wa=digits?("https://wa.me/"+digits+"?text="+encodeURIComponent(msg)):("https://wa.me/?text="+encodeURIComponent(msg));
-      incrementNro();
-      iframe.remove();
-      hideLoader();
-      window.open(wa,"_blank");
+      postToGAS(payload, function(link){
+        link=(link||"").trim();
+        var pre=document.getElementById("ctel-pre"),num=document.getElementById("ctel-num");
+        var digits="";
+        if(pre&&num&&num.value.trim()){
+          digits=(pre.value.replace(/[^0-9]/g,"")+num.value.replace(/[^0-9]/g,""));
+        }
+        var msg="Hola"+(P.nombre&&P.nombre!=="Particular"?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
+        if(link)msg+="\n\nPuedes verla y descargarla aquí:\n"+link;
+        var wa=digits?("https://wa.me/"+digits+"?text="+encodeURIComponent(msg)):("https://wa.me/?text="+encodeURIComponent(msg));
+        incrementNro();
+        iframe.remove();
+        hideLoader();
+        window.open(wa,"_blank");
+      }, function(){
+        iframe.remove();
+        hideLoader();
+        alert("No se pudo subir el PDF a Drive. Revisa tu conexión e intenta de nuevo.");
+      });
     }).catch(function(err){
       iframe.remove();
       hideLoader();
-      alert("No se pudo generar o subir el PDF. Revisa tu conexión e intenta de nuevo.");
+      alert("No se pudo generar el PDF. Intenta de nuevo.");
     });
   },450);
 }
@@ -1369,13 +1371,23 @@ function saveCloudData(){
   .catch(function(){setSyncStatus(false);});
 }
 
+function postToGAS(payload, onDone, onError){
+  if(!GAS_URL){if(onError)onError();return;}
+  var xhr=new XMLHttpRequest();
+  xhr.open("POST", GAS_URL, true);
+  xhr.setRequestHeader("Content-Type","text/plain;charset=utf-8");
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status>=200&&xhr.status<400){ if(onDone)onDone(xhr.responseText||""); }
+      else{ if(onError)onError(); }
+    }
+  };
+  xhr.onerror=function(){ if(onError)onError(); };
+  xhr.send(JSON.stringify(payload));
+}
+
 function saveQuoteRecord(data){
-  if(!GAS_URL)return;
-  fetch(GAS_URL,{
-    method:"POST",
-    headers:{"Content-Type":"text/plain"},
-    body:JSON.stringify(data)
-  }).catch(function(){});
+  postToGAS(data);
 }
 
 function renderAdmin(){
