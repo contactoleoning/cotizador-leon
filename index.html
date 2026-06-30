@@ -1039,12 +1039,12 @@ function genPDF(){
   // TÍTULO + EMPRESA + LOGO
   h+="<table style='width:100%;margin-bottom:6px'><tr>"
     +"<td style='vertical-align:top;padding:0'>"
-    +"<div style='font-size:26px;font-weight:800;color:#cc0000;letter-spacing:.02em'>COTIZACIÓN &nbsp; N°: "+nro+"</div>"
+    +"<div style='font-size:26px;font-weight:800;color:#e8291c;letter-spacing:.02em'>COTIZACIÓN &nbsp; N°: "+nro+"</div>"
     +"<div style='font-size:15px;font-weight:700;color:#1a1a1a;margin-top:5px'>LEÓN INGENIERÍA Y PROYECTOS SPA</div>"
     +"<div style='font-size:12px;color:#1a1a1a;margin-top:3px'>Giro: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Construcción Climatización Y Transporte</div>"
     +"<div style='font-size:12px;color:#1a1a1a;margin-top:2px'>Dirección: Islas Guaitecas #936 MZ E 1</div>"
     +"<table style='width:auto;border-collapse:collapse;margin-top:2px'>"
-    +"<tr><td style='padding:1px 40px 1px 0;font-size:12px'>Ciudad: &nbsp;&nbsp;&nbsp;&nbsp; Las Condes</td>"
+    +"<tr><td style='padding:1px 40px 1px 0;font-size:12px'>Ciudad: &nbsp;&nbsp;&nbsp;&nbsp; Santiago</td>"
     +"<td style='padding:1px 0;font-size:12px'>E-mail: &nbsp; contactoleoning@gmail.com</td></tr>"
     +"<tr><td style='padding:1px 40px 1px 0;font-size:12px'>Comuna: &nbsp;&nbsp; Las Condes</td>"
     +"<td style='padding:1px 0;font-size:12px'>Tel. Oficina: +569 6371 0820</td></tr>"
@@ -1055,11 +1055,11 @@ function genPDF(){
     +"</td>"
     +"</tr></table>";
 
-  // BOX CLIENTE — sin hr, solo borde de la tabla como en Moreto
-  h+="<table style='width:100%;border-collapse:collapse;border:1px solid #aaa;margin-top:6px;margin-bottom:0'>"
+  // BOX CLIENTE — un solo recuadro, dos columnas con divisor fino
+  h+="<table style='width:100%;border-collapse:collapse;border:1px solid #999;margin-top:6px;margin-bottom:0'>"
     +"<tr>"
-    +"<td style='padding:4px 8px;vertical-align:top;width:55%;border-right:1px solid #aaa'>"
-    +"<div style='font-size:10px;line-height:1.8'>"
+    +"<td style='padding:5px 10px;vertical-align:top;width:55%;border-right:1px solid #ccc'>"
+    +"<div style='font-size:10.5px;line-height:1.85'>"
     +"<b>SEÑOR(ES):</b> "+nombre+"<br>"
     +"<b>RUT:</b> "+rut+"<br>"
     +"<b>GIRO:</b> "+(giro||"")+"<br>"
@@ -1068,8 +1068,8 @@ function genPDF(){
     +"<b>CONTACTO:</b> "+contacto
     +"</div>"
     +"</td>"
-    +"<td style='padding:4px 8px;vertical-align:top'>"
-    +"<div style='font-size:10px;line-height:1.8'>"
+    +"<td style='padding:5px 10px;vertical-align:top'>"
+    +"<div style='font-size:10.5px;line-height:1.85'>"
     +"<b>FECHA EMISIÓN:</b> "+fecha+"<br>"
     +"<b>TELÉFONO:</b> "+tel+"<br>"
     +"<b>CORREO:</b> "+email
