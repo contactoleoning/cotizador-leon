@@ -475,28 +475,42 @@ select option{background:#0f2647;color:var(--txt)}
   </div>
 
   <!-- BLOQUE 1: INFO OBLIGATORIA -->
-  <div class="card">
-    <div class="ct">📋 Información obligatoria por llamada</div>
-    <div style="font-size:15px;color:var(--cy);font-weight:700;margin-bottom:14px;padding:10px 14px;background:#2a1a00;border-left:4px solid var(--cy);border-radius:6px">
-      El closer NO puede terminar una conversación sin obtener toda esta información.
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="sec-hdr" onclick="toggleSec(this)" style="padding:14px 16px">
+      <div class="ct" style="margin:0;border:none;padding:0">📋 Información obligatoria por llamada</div>
+      <span class="sec-arrow">▶</span>
     </div>
-    <div id="checklist-oblig" style="display:flex;flex-direction:column;gap:8px"></div>
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button onclick="resetChecklist()" style="flex:1;padding:11px;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);color:var(--txt2);font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">↺ Reiniciar</button>
-      <button onclick="copiarChecklist()" style="flex:1;padding:11px;background:#128c7e;border:none;border-radius:var(--rs);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">📱 Copiar resumen</button>
+    <div class="sec-body" style="max-height:0;padding:0 16px">
+      <div style="padding-top:14px">
+        <div style="font-size:15px;color:var(--cy);font-weight:700;margin-bottom:14px;padding:10px 14px;background:#2a1a00;border-left:4px solid var(--cy);border-radius:6px">
+          El closer NO puede terminar una conversación sin obtener toda esta información.
+        </div>
+        <div id="checklist-oblig" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;padding-bottom:16px">
+          <button onclick="resetChecklist()" style="flex:1;padding:11px;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);color:var(--txt2);font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">↺ Reiniciar</button>
+          <button onclick="copiarChecklist()" style="flex:1;padding:11px;background:#128c7e;border:none;border-radius:var(--rs);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">📱 Copiar resumen</button>
+        </div>
+        <div id="checklist-pct" style="text-align:center;font-size:14px;color:var(--txt2);margin-bottom:14px"></div>
+      </div>
     </div>
-    <div id="checklist-pct" style="text-align:center;font-size:14px;color:var(--txt2);margin-top:10px"></div>
   </div>
 
   <!-- BLOQUE 2: GUIÓN DE VENTAS -->
-  <div class="card">
-    <div class="ct">🎯 Guión de llamada — Paso a paso</div>
-    <div style="font-size:15px;color:var(--txt2);margin-bottom:16px;line-height:1.6">
-      Sigue cada paso en orden. Marca la casilla cuando hayas hecho la pregunta y anota la respuesta del cliente.
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="sec-hdr" onclick="toggleSec(this)" style="padding:14px 16px">
+      <div class="ct" style="margin:0;border:none;padding:0">🎯 Guión de llamada — Paso a paso</div>
+      <span class="sec-arrow">▶</span>
     </div>
-    <div id="guion-pasos"></div>
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button onclick="resetGuion()" style="flex:1;padding:11px;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);color:var(--txt2);font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">↺ Nueva llamada</button>
+    <div class="sec-body" style="max-height:0;padding:0 16px">
+      <div style="padding-top:14px">
+        <div style="font-size:15px;color:var(--txt2);margin-bottom:16px;line-height:1.6">
+          Sigue cada paso en orden. Marca la casilla cuando hayas hecho la pregunta y anota la respuesta del cliente.
+        </div>
+        <div id="guion-pasos"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;padding-bottom:16px">
+          <button onclick="resetGuion()" style="flex:1;padding:11px;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);color:var(--txt2);font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">↺ Nueva llamada</button>
+        </div>
+      </div>
     </div>
   </div>
 
