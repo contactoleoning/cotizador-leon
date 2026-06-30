@@ -1130,7 +1130,7 @@ function armarPDF(){
     +"</table>";
 
   // TABLA DE ÍTEMS — solo dos líneas horizontales (arriba y abajo), sin bordes internos
-  var TH="font-weight:700;font-size:10px;padding:6px 8px;border:none;background:#fff;";
+  var TH="font-weight:700;font-size:10px;padding:6px 8px;border:none;background:#fff;color:#1a1a1a;";
   h+="<table style='width:100%;border-collapse:collapse;margin-top:6px;border-top:1.5px solid #555;border-bottom:1.5px solid #555'>"
     +"<thead><tr>"
     +"<td style='"+TH+"text-align:center;width:10%'>CANTIDAD</td>"
@@ -1143,18 +1143,18 @@ function armarPDF(){
     +"</table>";
 
   // SECCIÓN INFERIOR — sin hr, el espacio lo dan los márgenes
-  h+="<table style='width:100%;border-collapse:collapse;margin-top:10px'><tr>"
-    +"<td style='vertical-align:top;padding-right:16px'>"
-    +"<div style='font-size:10px;font-weight:700;margin-bottom:8px'>Observaciones:</div>"
-    +"<div style='font-size:9.5px;margin-top:4px'>"
-    +"<div style='font-weight:700;margin-bottom:4px;text-decoration:underline'>TRANSFERENCIAS A:</div>"
-    +"<table style='border-collapse:collapse;font-size:9.5px'>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Banco:</td><td style='padding:1px 0'>Falabella</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Tipo:</td><td style='padding:1px 0'>Cuenta Corriente</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>N° Cuenta:</td><td style='padding:1px 0'>0-1983-154-6787</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>RUT:</td><td style='padding:1px 0'>18.245.550-4</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Nombre:</td><td style='padding:1px 0'>Isaac León</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Confirmación:</td><td style='padding:1px 0'>contactoleoning@gmail.com</td></tr>"
+  h+="<table style='width:100%;border-collapse:collapse;margin-top:10px;color:#1a1a1a'><tr>"
+    +"<td style='vertical-align:top;padding-right:16px;color:#1a1a1a'>"
+    +"<div style='font-size:10px;font-weight:700;margin-bottom:8px;color:#1a1a1a'>Observaciones:</div>"
+    +"<div style='font-size:9.5px;margin-top:4px;color:#1a1a1a'>"
+    +"<div style='font-weight:700;margin-bottom:4px;text-decoration:underline;color:#1a1a1a'>TRANSFERENCIAS A:</div>"
+    +"<table style='border-collapse:collapse;font-size:9.5px;color:#1a1a1a'>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Banco:</td><td style='padding:1px 0;color:#1a1a1a'>Falabella</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Tipo:</td><td style='padding:1px 0;color:#1a1a1a'>Cuenta Corriente</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>N° Cuenta:</td><td style='padding:1px 0;color:#1a1a1a'>0-1983-154-6787</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>RUT:</td><td style='padding:1px 0;color:#1a1a1a'>18.245.550-4</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Nombre:</td><td style='padding:1px 0;color:#1a1a1a'>Isaac León</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Confirmación:</td><td style='padding:1px 0;color:#1a1a1a'>contactoleoning@gmail.com</td></tr>"
     +"</table>"
     +"</div>"
     +"</td>"
@@ -1247,6 +1247,8 @@ function enviarWhatsApp(){
 
   setTimeout(function(){
     var el=doc.querySelector(".wrap")||doc.body;
+    var noprint=doc.querySelectorAll(".no-print");
+    noprint.forEach(function(n){n.style.display="none";});
     html2pdf().set({
       margin:0,
       image:{type:"jpeg",quality:0.95},
