@@ -769,7 +769,7 @@ function agregar(){
   renderCarrito();
 }
 
-function getIBASE(k){return (instOv[k]!==undefined)?instOv[k]:IBASE[k]||0;}
+function getIBASE(k){var it=INST_LIST.find(function(i){return i.id===k;});return it?it.precio:(IBASE[k]||0);}
 function calcInst(){
   var base=getIBASE(vs("itipo"));
   var bomba=vn("ibomba");
