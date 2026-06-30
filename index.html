@@ -203,9 +203,9 @@ select option{background:#0f2647;color:var(--txt)}
   <div class="card">
     <div class="sec-hdr" onclick="toggleSec(this)">
       <div class="ct">📋 Datos del Cliente</div>
-      <span class="sec-arrow open">▼</span>
+      <span class="sec-arrow">▶</span>
     </div>
-    <div class="sec-body" >
+    <div class="sec-body" style="display:none">
     <div class="fr"><span class="fl">N° Cotización</span><input type="text" id="nro" readonly style="opacity:0.7;cursor:default;font-weight:600;color:var(--acc)"></div>
     <div class="fr"><span class="fl">Fecha</span><input type="text" id="fecha" placeholder="dd/mm/aaaa" readonly style="opacity:0.6;cursor:default"></div>
     <div class="fr"><span class="fl">RUT Cliente</span><input type="text" id="crut" placeholder="12.345.678-9"></div>
@@ -366,8 +366,7 @@ select option{background:#0f2647;color:var(--txt)}
     </div>
     <div class="sec-body" style="max-height:0">
 
-    <div class="ss f">Pack de Instalación</div>
-    <div class="fr"><span class="fl">Tipo de Trabajo</span>
+<div class="fr"><span class="fl">Tipo de Trabajo</span>
       <select id="itipo"><option value="">— Selecciona —</option></select>
     </div>
     <div class="fr"><span class="fl">Cantidad instalaciones</span>
