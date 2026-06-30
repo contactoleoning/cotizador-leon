@@ -983,13 +983,13 @@ function copiarWA(){}
 function genPDF(){
   var nro=document.getElementById("nro").value.trim()||"-";
   var fecha=new Date().toLocaleDateString("es-CL");
-  var rut=document.getElementById("crut").value.trim()||"-";
-  var nombre=document.getElementById("cnombre").value.trim()||"-";
-  var contacto=document.getElementById("ccont").value.trim()||"-";
-  var tel=document.getElementById("ctel").value.trim()||"-";
-  var dir=document.getElementById("cdir").value.trim()||"-";
-  var comuna=document.getElementById("ccom").value.trim()||"-";
-  var email=document.getElementById("cemail").value.trim()||"-";
+  var rut=document.getElementById("crut").value.trim()||"";
+  var nombre=document.getElementById("cnombre").value.trim()||"";
+  var contacto=document.getElementById("ccont").value.trim()||"";
+  var tel=document.getElementById("ctel").value.trim()||"";
+  var dir=document.getElementById("cdir").value.trim()||"";
+  var comuna=document.getElementById("ccom").value.trim()||"";
+  var email=document.getElementById("cemail").value.trim()||"";
   var giro=document.getElementById("cgiro")?document.getElementById("cgiro").value.trim():"";
   var validez=vs("validez");
   var cyberPct=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
@@ -997,187 +997,141 @@ function genPDF(){
   var dM=cyberPct>0?Math.round(sN*cyberPct/100):0;
   var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
 
-  var TD="border:1px solid #b0b8c9;padding:5px 8px;font-size:10px;";
-  var TDC=TD+"text-align:center;";
+  var S="border:1px solid #aaa;padding:5px 8px;font-size:10px;color:#1a1a1a;";
+  var SC=S+"text-align:center;";
 
   var rows=carrito.map(function(p,i){
     var c=p.cant||1;
     var unitNet=Math.round(p.neto);
     var subtotal=Math.round(p.neto*c*(1-(cyberPct/100)));
-    var bg=i%2===0?"#fff":"#f4f6fb";
-    return "<tr style='background:"+bg+"'>"
-      +"<td style='"+TDC+"text-align:center'>"+c+"</td>"
-      +"<td style='"+TD+"text-align:left'>"+p.desc+"</td>"
-      +"<td style='"+TDC+"'>$ "+unitNet.toLocaleString("es-CL")+"</td>"
-      +"<td style='"+TDC+"'>"+(cyberPct>0?cyberPct+"%":"-")+"</td>"
-      +"<td style='"+TDC+"font-weight:700'>$ "+subtotal.toLocaleString("es-CL")+"</td>"
+    return "<tr>"
+      +"<td style='"+SC+"'>"+c+"</td>"
+      +"<td style='"+S+"text-align:left'>"+p.desc+"</td>"
+      +"<td style='"+SC+"'>$ "+unitNet.toLocaleString("es-CL")+"</td>"
+      +"<td style='"+SC+"'>"+(cyberPct>0?cyberPct+" %":"0,0 %")+"</td>"
+      +"<td style='"+SC+"'>$ "+subtotal.toLocaleString("es-CL")+"</td>"
       +"</tr>";
   }).join("");
 
   var emptyRows=Math.max(0,8-carrito.length);
   var blanks="";
   for(var i=0;i<emptyRows;i++){
-    var bg2=((carrito.length+i)%2===0)?"#fff":"#f4f6fb";
-    blanks+="<tr style='background:"+bg2+"'>"
-      +"<td style='"+TDC+"'>&nbsp;</td>"
-      +"<td style='"+TD+"'>&nbsp;</td>"
-      +"<td style='"+TDC+"'>&nbsp;</td>"
-      +"<td style='"+TDC+"'>&nbsp;</td>"
-      +"<td style='"+TDC+"'>&nbsp;</td>"
+    blanks+="<tr>"
+      +"<td style='"+SC+"height:18px'></td>"
+      +"<td style='"+S+"'></td>"
+      +"<td style='"+SC+"'></td>"
+      +"<td style='"+SC+"'></td>"
+      +"<td style='"+SC+"'></td>"
       +"</tr>";
   }
-
-  var DARK="#0a1f3d";
-  var GOLD="#c9a830";
 
   var css="*{box-sizing:border-box;margin:0;padding:0}"
     +"html,body{width:100%;font-family:Arial,sans-serif;font-size:10px;color:#1a1a1a;background:#fff}"
     +"@page{size:Letter portrait;margin:10mm 12mm}"
     +"@media print{body{padding:0!important}button,.no-print{display:none!important}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}"
     +".wrap{padding:10px 14px}"
-    +".hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid "+DARK+";padding-bottom:10px;margin-bottom:10px}"
-    +".hdr-left{display:flex;flex-direction:column;justify-content:center}"
-    +".co-name{font-size:15px;font-weight:800;color:"+DARK+";letter-spacing:.02em;text-transform:uppercase}"
-    +".co-giro{font-size:10px;color:#555;margin-top:2px}"
-    +".co-info{font-size:10px;color:#444;margin-top:5px;line-height:1.7}"
-    +".logo{width:100px;height:auto}"
-    +".cot-title{text-align:center;margin:10px 0 8px}"
-    +".cot-title-label{font-size:11px;font-weight:700;color:"+DARK+";text-transform:uppercase;letter-spacing:.08em}"
-    +".cot-title-num{font-size:28px;font-weight:800;color:"+DARK+";line-height:1.1;letter-spacing:.04em}"
-    +".client-box{border:2px solid "+DARK+";margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr}"
-    +".client-col{padding:8px 12px}"
-    +".client-col:first-child{border-right:1px solid "+DARK+"}"
-    +".cf{display:flex;align-items:baseline;gap:4px;margin-bottom:5px;font-size:10px}"
-    +".cf-lbl{font-size:8.5px;font-weight:800;text-transform:uppercase;color:"+DARK+";white-space:nowrap;min-width:70px}"
-    +".cf-val{font-weight:700;color:#1a1a1a;flex:1}"
     +"table{width:100%;border-collapse:collapse}"
-    +".th{background:"+DARK+";color:#fff;padding:6px 8px;font-size:10px;font-weight:800;text-transform:uppercase;border:1px solid "+DARK+";text-align:center}"
-    +".th-left{text-align:left}"
-    +".bot{display:grid;grid-template-columns:1fr 200px;gap:10px;margin-top:10px;align-items:start}"
-    +".obs-box{border:1px solid #b0b8c9;padding:8px 10px;font-size:10px;line-height:1.7}"
-    +".obs-title{font-size:9px;font-weight:800;text-transform:uppercase;color:"+DARK+";margin-bottom:4px}"
-    +".bank-box{border:1px solid #b0b8c9;margin-top:8px;overflow:hidden}"
-    +".bank-hdr{background:"+DARK+";color:#fff;padding:5px 8px;font-size:9px;font-weight:800;text-transform:uppercase}"
-    +".bank-row{display:flex;border-top:1px solid #b0b8c9}"
-    +".bank-lbl{font-size:8.5px;font-weight:800;color:"+DARK+";padding:4px 6px;min-width:70px;text-transform:uppercase}"
-    +".bank-val{font-size:10px;padding:4px 6px;color:#1a1a1a;border-left:1px solid #b0b8c9;flex:1}"
-    +".tot-box{border:2px solid "+DARK+";overflow:hidden}"
-    +".tot-row{display:flex;border-bottom:1px solid #b0b8c9}"
-    +".tot-row:last-child{border-bottom:none}"
-    +".tot-lbl{padding:7px 10px;font-size:9px;font-weight:800;text-transform:uppercase;color:"+DARK+";flex:1;border-right:1px solid #b0b8c9}"
-    +".tot-val{padding:7px 10px;font-size:12px;font-weight:800;text-align:right;min-width:90px;color:#1a1a1a}"
-    +".tot-row-dark{background:"+DARK+"!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}"
-    +".tot-row-dark .tot-lbl{color:#fff!important;border-right:1px solid #2a3f6d}"
-    +".tot-row-dark .tot-val{color:#fff!important}"
-    +".tot-row-gold{background:"+GOLD+"!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}"
-    +".tot-row-gold .tot-lbl{color:#1a1a1a!important;border-right:1px solid #a88720}"
-    +".tot-row-gold .tot-val{color:#1a1a1a!important}"
-    +".cond-box{border:1px solid #b0b8c9;margin-top:8px;overflow:hidden}"
-    +".cond-hdr{background:"+DARK+";color:#fff;padding:5px 8px;font-size:9px;font-weight:800;text-transform:uppercase}"
-    +".cond-grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #b0b8c9}"
-    +".cond-item{padding:5px 8px;border-right:1px solid #b0b8c9;border-bottom:1px solid #b0b8c9}"
-    +".cond-item:nth-child(even){border-right:none}"
-    +".cond-label{font-size:8px;font-weight:800;text-transform:uppercase;color:"+DARK+"}"
-    +".cond-val{font-size:10px;color:#1a1a1a;margin-top:1px}"
-    +".footer-line{text-align:center;font-size:9px;color:#888;margin-top:10px;border-top:2px solid "+DARK+";padding-top:7px;font-style:italic;letter-spacing:1px}"
-    +".valid{text-align:right;font-size:9.5px;font-weight:700;color:"+DARK+";margin-top:5px}";
+    +".th{font-weight:700;font-size:10px;text-align:center;padding:5px 8px;border:1px solid #aaa;background:#fff;color:#1a1a1a}"
+    +".th-l{text-align:left}";
 
   var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='format-detection' content='telephone=no'><title>Cotizacion "+nro+"</title><style>"+css+"</style></head><body><div class='wrap'>";
 
-  // HEADER: empresa izquierda, logo derecha
-  h+="<div class='hdr'>"
-    +"<div class='hdr-left'>"
-    +"<div class='co-name'>León Ingeniería Y Proyectos Spa</div>"
-    +"<div class='co-giro'>RUT: 77.242.599-6 &nbsp;|&nbsp; Giro: Construcción Climatización Y Transporte</div>"
-    +"<div class='co-info'>"
-    +"Dirección: Islas Guaitecas #936, Las Condes<br>"
-    +"Teléfono: +569 6371 0820 &nbsp;|&nbsp; contactoleoning@gmail.com"
-    +"</div>"
-    +"</div>"
-    +"<div style='text-align:right'>"
-    +"<img class='logo' src='"+LOGO_B64+"'>"
-    +"</div>"
-    +"</div>";
+  // TÍTULO + EMPRESA + LOGO (igual a Moreto: título arriba-izq en rojo, logo arriba-der)
+  h+="<table style='margin-bottom:6px'><tr>"
+    +"<td style='vertical-align:top;padding:0'>"
+    +"<div style='font-size:18px;font-weight:800;color:#cc0000;letter-spacing:.02em'>COTIZACIÓN &nbsp; N°: "+nro+"</div>"
+    +"<div style='font-size:11px;font-weight:700;color:#1a1a1a;margin-top:4px'>LEÓN INGENIERÍA Y PROYECTOS SPA</div>"
+    +"<div style='font-size:10px;color:#1a1a1a;margin-top:2px'>Giro: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Construcción Climatización Y Transporte</div>"
+    +"<div style='font-size:10px;color:#1a1a1a;margin-top:2px'>Dirección: Islas Guaitecas #936 MZ E 1</div>"
+    +"<table style='width:auto;border-collapse:collapse;margin-top:2px'>"
+    +"<tr><td style='padding:1px 30px 1px 0;font-size:10px'>Ciudad: &nbsp;&nbsp;&nbsp;&nbsp; Las Condes</td>"
+    +"<td style='padding:1px 0;font-size:10px'>E-mail: &nbsp; contactoleoning@gmail.com</td></tr>"
+    +"<tr><td style='padding:1px 30px 1px 0;font-size:10px'>Comuna: &nbsp;&nbsp; Las Condes</td>"
+    +"<td style='padding:1px 0;font-size:10px'>Tel. Oficina: +569 6371 0820</td></tr>"
+    +"</table>"
+    +"</td>"
+    +"<td style='vertical-align:top;text-align:right;padding:0;width:120px'>"
+    +"<img src='"+LOGO_B64+"' style='width:110px;height:auto'>"
+    +"</td>"
+    +"</tr></table>";
 
-  // TÍTULO COTIZACIÓN
-  h+="<div class='cot-title'>"
-    +"<div class='cot-title-label'>Cotización N°:</div>"
-    +"<div class='cot-title-num'>"+nro+"</div>"
-    +"</div>";
+  // SEPARADOR
+  h+="<hr style='border:none;border-top:1px solid #aaa;margin:6px 0'>";
 
-  // BOX CLIENTE
-  h+="<div class='client-box'>"
-    +"<div class='client-col'>"
-    +"<div class='cf'><span class='cf-lbl'>Señor(es)</span><span class='cf-val'>"+nombre+"</span></div>"
-    +"<div class='cf'><span class='cf-lbl'>RUT</span><span class='cf-val'>"+rut+"</span></div>"
-    +"<div class='cf'><span class='cf-lbl'>Giro</span><span class='cf-val'>"+(giro||"-")+"</span></div>"
-    +"<div class='cf'><span class='cf-lbl'>Dirección</span><span class='cf-val'>"+dir+"</span></div>"
-    +"<div class='cf'><span class='cf-lbl'>Comuna</span><span class='cf-val'>"+comuna+"</span></div>"
-    +"</div>"
-    +"<div class='client-col'>"
-    +"<div class='cf'><span class='cf-lbl'>Fecha Emisión</span><span class='cf-val'>"+fecha+"</span></div>"
-    +"<div class='cf'><span class='cf-lbl'>Contacto</span><span class='cf-val'>"+contacto+"</span></div>"
-    +"<div class='cf'><span class='cf-lbl'>Teléfono</span><span class='cf-val'>"+tel+"</span></div>"
-    +"<div class='cf'><span class='cf-lbl'>Correo</span><span class='cf-val'>"+email+"</span></div>"
-    +"<div class='cf'><span class='cf-lbl'>Validez</span><span class='cf-val'>"+validez+"</span></div>"
-    +"</div>"
-    +"</div>";
+  // BOX CLIENTE (igual a Moreto: borde delgado, etiquetas en negrita, dos columnas)
+  h+="<table style='border:1px solid #aaa;margin-bottom:8px'>"
+    +"<tr>"
+    +"<td style='padding:4px 8px;vertical-align:top;width:55%'>"
+    +"<table style='border-collapse:collapse;width:100%'>"
+    +"<tr><td style='padding:2px 4px;font-size:10px'><b>SEÑOR(ES):</b> "+nombre+"</td></tr>"
+    +"<tr><td style='padding:2px 4px;font-size:10px'><b>RUT:</b> "+rut+"</td></tr>"
+    +"<tr><td style='padding:2px 4px;font-size:10px'><b>GIRO:</b> "+(giro||"")+"</td></tr>"
+    +"<tr><td style='padding:2px 4px;font-size:10px'><b>DIRECCIÓN:</b> "+dir+"</td></tr>"
+    +"<tr><td style='padding:2px 4px;font-size:10px'><b>COMUNA:</b> "+comuna+"</td></tr>"
+    +"<tr><td style='padding:2px 4px;font-size:10px'><b>CONTACTO:</b> "+contacto+"</td></tr>"
+    +"</table>"
+    +"</td>"
+    +"<td style='padding:4px 8px;vertical-align:top;border-left:1px solid #aaa'>"
+    +"<table style='border-collapse:collapse;width:100%'>"
+    +"<tr><td style='padding:2px 4px;font-size:10px'><b>FECHA EMISIÓN:</b> "+fecha+"</td></tr>"
+    +"<tr><td style='padding:2px 4px;font-size:10px'><b>TELÉFONO:</b> "+tel+"</td></tr>"
+    +"<tr><td style='padding:2px 4px;font-size:10px'><b>CORREO:</b> "+email+"</td></tr>"
+    +"</table>"
+    +"</td>"
+    +"</tr>"
+    +"</table>";
 
   // TABLA DE ÍTEMS
   h+="<table style='table-layout:fixed;margin-bottom:0'>"
     +"<thead><tr>"
-    +"<th class='th' style='width:9%'>CANTIDAD</th>"
-    +"<th class='th th-left' style='width:51%'>DESCRIPCIÓN</th>"
-    +"<th class='th' style='width:16%'>VALOR UNITARIO</th>"
-    +"<th class='th' style='width:9%'>% DSCTO.</th>"
+    +"<th class='th' style='width:10%'>CANTIDAD</th>"
+    +"<th class='th th-l' style='width:48%'>DESCRIPCIÓN</th>"
+    +"<th class='th' style='width:17%'>VALOR UNITARIO</th>"
+    +"<th class='th' style='width:10%'>% DESCUENTO</th>"
     +"<th class='th' style='width:15%'>SUBTOTAL</th>"
     +"</tr></thead>"
     +"<tbody>"+rows+blanks+"</tbody>"
     +"</table>";
 
-  // SECCIÓN INFERIOR: izquierda (obs + banco) | derecha (totales)
-  h+="<div class='bot'>"
-    // COLUMNA IZQUIERDA
-    +"<div>"
-    +"<div class='obs-box'>"
-    +"<div class='obs-title'>Observaciones</div>"
-    +"Un año de garantía en equipos nuevos. Tres meses en bombas de condensado. Un mes en mantenciones."
-    +"</div>"
-    +"<div class='bank-box'>"
-    +"<div class='bank-hdr'>Datos de Transferencia</div>"
-    +"<div class='bank-row'><span class='bank-lbl'>Banco</span><span class='bank-val'>Falabella</span></div>"
-    +"<div class='bank-row'><span class='bank-lbl'>N° Cuenta</span><span class='bank-val'>0-1983-154-6787</span></div>"
-    +"<div class='bank-row'><span class='bank-lbl'>Tipo</span><span class='bank-val'>Cuenta Corriente</span></div>"
-    +"<div class='bank-row'><span class='bank-lbl'>RUT</span><span class='bank-val'>18.245.550-4</span></div>"
-    +"<div class='bank-row'><span class='bank-lbl'>Nombre</span><span class='bank-val'>Isaac León</span></div>"
-    +"<div class='bank-row'><span class='bank-lbl'>Correo</span><span class='bank-val'>contactoleoning@gmail.com</span></div>"
-    +"</div>"
-    +"</div>"
-    // COLUMNA DERECHA: totales
-    +"<div>"
-    +"<div class='tot-box'>"
-    +(dM>0?"<div class='tot-row'><span class='tot-lbl'>Descuento Global</span><span class='tot-val'>$ "+Math.round(dM).toLocaleString("es-CL")+"</span></div>":"")
-    +"<div class='tot-row'><span class='tot-lbl'>Neto ($)</span><span class='tot-val'>$ "+Math.round(nD).toLocaleString("es-CL")+"</span></div>"
-    +"<div class='tot-row'><span class='tot-lbl'>IVA (19%)</span><span class='tot-val'>$ "+Math.round(iva).toLocaleString("es-CL")+"</span></div>"
-    +"<div class='tot-row tot-row-dark'><span class='tot-lbl'>Total Transferencia</span><span class='tot-val'>$ "+Math.round(tot).toLocaleString("es-CL")+"</span></div>"
-    +"<div class='tot-row tot-row-gold'><span class='tot-lbl'>Total Tarj. Crédito</span><span class='tot-val'>$ "+Math.round(totTC).toLocaleString("es-CL")+"</span></div>"
-    +"</div>"
-    // CONDICIONES DE PAGO
-    +"<div class='cond-box' style='margin-top:8px'>"
-    +"<div class='cond-hdr'>Condiciones de Pago</div>"
-    +"<div class='cond-grid'>"
-    +"<div class='cond-item'><div class='cond-label'>Transferencia</div><div class='cond-val'>Abono 70% al inicio</div></div>"
-    +"<div class='cond-item'><div class='cond-label'>Al finalizar</div><div class='cond-val'>Restante 30%</div></div>"
-    +"<div class='cond-item'><div class='cond-label'>Inicio de trabajo</div><div class='cond-val'>Acordar con el cliente</div></div>"
-    +"<div class='cond-item'><div class='cond-label'>Tarjeta de crédito</div><div class='cond-val'>3,5% adicional · inicio 3 días hábiles</div></div>"
-    +"</div>"
-    +"</div>"
-    +"</div>"
-    +"</div>";
+  // SEPARADOR INFERIOR
+  h+="<hr style='border:none;border-top:1px solid #aaa;margin:8px 0'>";
 
-  h+="<div class='footer-line'>——— UNA SOLUCIÓN INTELIGENTE ———</div>"
-    +"<div style='text-align:center;margin-top:12px' class='no-print'>"
-    +"<button onclick='window.print()' style='background:"+GOLD+";color:#1a1a1a;border:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer'>Imprimir / Guardar PDF</button>"
+  // SECCIÓN INFERIOR: observaciones+banco izquierda | totales derecha
+  h+="<table style='border-collapse:collapse'><tr>"
+    // IZQUIERDA
+    +"<td style='vertical-align:top;padding-right:16px'>"
+    +"<div style='font-size:10px;font-weight:700;margin-bottom:4px'>Observaciones:</div>"
+    +"<div style='font-size:9px;color:#1a1a1a;line-height:1.6;margin-bottom:10px'>"
+    +"Un año de garantía en equipos nuevos.<br>"
+    +"Tres meses en bombas de condensado.<br>"
+    +"Un mes en mantenciones."
+    +"</div>"
+    +"<table style='border-collapse:collapse;font-size:9px'>"
+    +"<tr><th colspan='2' style='background:#fff;color:#1a1a1a;font-weight:700;padding:3px 6px;border:1px solid #aaa;text-align:center'>TRANSFERENCIAS A:</th></tr>"
+    +"<tr>"
+    +"<td style='padding:3px 8px;border:1px solid #aaa;vertical-align:top'>"
+    +"BANCO FALABELLA<br>Isaac León RUT: 18.245.550-4<br>Cuenta Corriente N° 0-1983-154-6787<br>MAIL CONFIRMACIÓN: contactoleoning@gmail.com"
+    +"</td>"
+    +"</tr>"
+    +"</table>"
+    +"</td>"
+    // DERECHA: totales
+    +"<td style='vertical-align:top;min-width:180px'>"
+    +"<table style='border-collapse:collapse;width:100%'>"
+    +(dM>0?"<tr><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px'>DESCUENTO GLOBAL</td><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px;text-align:right'>$ "+Math.round(dM).toLocaleString("es-CL")+"</td></tr>":"")
+    +"<tr><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px'>NETO($)</td><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px;text-align:right'>$ "+Math.round(nD).toLocaleString("es-CL")+"</td></tr>"
+    +"<tr><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px'>I.V.A(19%)</td><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px;text-align:right'>$ "+Math.round(iva).toLocaleString("es-CL")+"</td></tr>"
+    +"<tr><td style='padding:5px 10px;border:1px solid #aaa;font-weight:700;font-size:10px'>TOTAL</td><td style='padding:5px 10px;border:1px solid #aaa;font-weight:700;font-size:10px;text-align:right'>$ "+Math.round(tot).toLocaleString("es-CL")+"</td></tr>"
+    +"<tr><td style='padding:5px 10px;border:1px solid #aaa;font-size:9px'>TOTAL TARJ. CRÉDITO (+3,5%)</td><td style='padding:5px 10px;border:1px solid #aaa;font-size:9px;text-align:right'>$ "+Math.round(totTC).toLocaleString("es-CL")+"</td></tr>"
+    +"</table>"
+    +"<div style='font-size:8.5px;font-weight:700;margin-top:8px;text-align:center'>"
+    +"ESTA COTIZACIÓN ES VÁLIDA POR "+validez
+    +"</div>"
+    +"</td>"
+    +"</tr></table>";
+
+  h+="<div style='text-align:center;margin-top:10px' class='no-print'>"
+    +"<button onclick='window.print()' style='background:#c9a830;color:#1a1a1a;border:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer'>Imprimir / Guardar PDF</button>"
     +"</div>"
     +"</div></body></html>";
 
