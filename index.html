@@ -211,7 +211,7 @@ select option{background:#0f2647;color:var(--txt)}
     <div class="fr"><span class="fl">RUT Cliente</span><input type="text" id="crut" placeholder="12.345.678-9"></div>
     <div class="fr"><span class="fl">Nombre / Empresa</span><input type="text" id="cnombre" placeholder="Particular" value="Particular"></div>
     <div class="fr"><span class="fl">Contacto</span><input type="text" id="ccont" placeholder="Nombre contacto"></div>
-    <div class="fr"><span class="fl">Teléfono</span><input type="text" id="ctel" placeholder="+56 9 XXXX XXXX"></div>
+    <div class="fr"><span class="fl">Teléfono</span><div style="display:flex;gap:6px;flex:1"><select id="ctel-pre" style="width:80px;flex:0 0 80px;background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:9px 6px;font-size:14px"><option value="+569">+569</option><option value="+562">+562</option></select><input type="text" id="ctel-num" placeholder="XXXX XXXX" style="flex:1"></div></div>
     <div class="fr"><span class="fl">Dirección</span><input type="text" id="cdir" placeholder="Calle, numero, depto"></div>
     <div class="fr"><span class="fl">Comuna</span>
       <select id="ccom">
@@ -272,20 +272,9 @@ select option{background:#0f2647;color:var(--txt)}
       </select>
     </div>
     <div class="fr"><span class="fl">Email</span><input type="text" id="cemail" placeholder="correo@email.com"></div>
-    <div class="fr" style="align-items:flex-start"><span class="fl" style="padding-top:8px">Tipo de inmueble</span>
-      <div style="flex:1">
-        <div class="tipoinm">
-          <div class="tipoinm-opt" data-inm="Casa"><span class="tipoinm-box"></span>Casa</div>
-          <div class="tipoinm-opt" data-inm="Departamento"><span class="tipoinm-box"></span>Departamento</div>
-          <div class="tipoinm-opt" data-inm="Oficinas"><span class="tipoinm-box"></span>Oficinas</div>
-          <div class="tipoinm-opt" data-inm="Instituciones"><span class="tipoinm-box"></span>Instituciones</div>
-        </div>
-        <input type="hidden" id="tipoinm" value="">
-      </div>
-    </div>
     <div class="fr"><span class="fl">Validez</span>
       <select id="validez">
-        <option value="5 Dias Habiles" selected>5 Días Hábiles</option>
+        <option value="5 Días" selected>5 Días</option>
       </select>
     </div>
   
@@ -961,7 +950,7 @@ function renderCarrito(){
 function updWA(sN,dM,nD,iva,tot){
   var nombre=document.getElementById("cnombre").value.trim()||"Cliente";
   var nro=document.getElementById("nro").value.trim()||"-";
-  var tel=document.getElementById("ctel").value.trim();
+  var tel=(function(){var p=document.getElementById("ctel-pre"),n=document.getElementById("ctel-num");return p&&n&&n.value.trim()?p.value+" "+n.value.trim():"";})();
   var dir=document.getElementById("cdir").value.trim();
   var com=document.getElementById("ccom").value.trim();
   var inm=document.getElementById("tipoinm").value;
@@ -1079,7 +1068,6 @@ function genPDF(){
     +"<table style='border-collapse:collapse;width:100%'>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top;width:90px'>SEÑOR(ES):</td><td style='padding:2px 0;vertical-align:top'>"+nombre+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>RUT:</td><td style='padding:2px 0;vertical-align:top'>"+rut+"</td></tr>"
-    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>GIRO:</td><td style='padding:2px 0;vertical-align:top'>"+(giro||"")+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>DIRECCIÓN:</td><td style='padding:2px 0;vertical-align:top'>"+dir+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>COMUNA:</td><td style='padding:2px 0;vertical-align:top'>"+comuna+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>CONTACTO:</td><td style='padding:2px 0;vertical-align:top'>"+contacto+"</td></tr>"
