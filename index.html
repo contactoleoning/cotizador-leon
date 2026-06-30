@@ -974,7 +974,7 @@ function genPDF(){
   var rut=document.getElementById("crut").value.trim()||"";
   var nombre=document.getElementById("cnombre").value.trim()||"";
   var contacto=document.getElementById("ccont").value.trim()||"";
-  var tel=document.getElementById("ctel").value.trim()||"";
+  var tel=(function(){var p=document.getElementById("ctel-pre"),n=document.getElementById("ctel-num");return p&&n&&n.value.trim()?p.value+" "+n.value.trim():"";})();
   var dir=document.getElementById("cdir").value.trim()||"";
   var comuna=document.getElementById("ccom").value.trim()||"";
   var email=document.getElementById("cemail").value.trim()||"";
@@ -1324,14 +1324,6 @@ document.addEventListener("DOMContentLoaded", function(){
   });
   // Add buttons
 
-  // Abrir primera sección al cargar
-  (function(){
-    var first=document.querySelector('.sec-body');
-    if(first){
-      first.style.maxHeight=first.scrollHeight+'px';
-      setTimeout(function(){first.style.maxHeight='none';},310);
-    }
-  })();
   document.getElementById("btnag").addEventListener("click",function(){agregar();});
   // Cart delete
   document.getElementById("cartlista").addEventListener("click",function(e){
