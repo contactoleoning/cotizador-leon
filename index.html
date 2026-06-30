@@ -1099,10 +1099,11 @@ function renderAdmin(){
         +'<div><div style="'+lbl+'">Proveedor</div><input type="text" style="'+si+'" value="'+p.prov+'" data-id="'+p.id+'" data-campo="prov" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
         +'</div>'
 
-        // Fila 3: Costo + % Gan + Precio Venta
-        +'<div style="display:grid;grid-template-columns:2fr 1fr 2fr;gap:8px;align-items:end">'
+        // Fila 3: Costo + % Gan + Ganancia $ + Precio Venta
+        +'<div style="display:grid;grid-template-columns:2fr 1fr 1.5fr 2fr;gap:8px;align-items:end">'
         +'<div><div style="'+lbl+'">Costo $</div><input type="number" class="ainput-costo" style="width:100%;box-sizing:border-box" value="'+costo+'" min="0" data-id="'+p.id+'" data-campo="costo"></div>'
         +'<div><div style="'+lbl+'">% Gan.</div><input type="number" class="ainput" style="width:100%;box-sizing:border-box" value="'+pct+'" min="0" max="100" data-id="'+p.id+'" data-campo="pct"></div>'
+        +'<div><div style="'+lbl+'">Ganancia $</div><div style="font-size:15px;font-weight:700;color:var(--cy);padding:9px 2px">'+fmt(n - costo)+'</div></div>'
         +'<div><div style="'+lbl+'">Precio Venta</div><div style="font-size:16px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(wIVA(n))+'</div></div>'
         +'</div>'
 
