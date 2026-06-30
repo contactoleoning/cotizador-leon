@@ -1227,6 +1227,15 @@ function enviarWhatsApp(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
   if(!GAS_URL){alert("Falta configurar el servidor de Google. Avísale a Isaac.");return;}
   if(typeof html2pdf==="undefined"){alert("La librería de PDF aún no carga. Espera unos segundos y reintenta.");return;}
+
+  // Abrir la pestaña YA (sincrónico, dentro del clic) para que el navegador no la bloquee.
+  // Más tarde le asignamos la URL real de WhatsApp.
+  var waWin=window.open("","_blank");
+  if(waWin&&waWin.document){
+    waWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Preparando…</title></head><body style='font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0a1628;color:#fff'><div>Generando cotización y subiendo a Drive…</div></body></html>");
+    waWin.document.close();
+  }
+
   var P=armarPDF();
   showLoader("Generando PDF...");
 
@@ -1262,15 +1271,18 @@ function enviarWhatsApp(){
         incrementNro();
         iframe.remove();
         hideLoader();
-        window.open(wa,"_blank");
+        if(waWin&&!waWin.closed){ waWin.location.href=wa; }
+        else{ window.open(wa,"_blank"); }
       }, function(){
         iframe.remove();
         hideLoader();
+        if(waWin&&!waWin.closed)waWin.close();
         alert("No se pudo subir el PDF a Drive. Revisa tu conexión e intenta de nuevo.");
       });
     }).catch(function(err){
       iframe.remove();
       hideLoader();
+      if(waWin&&!waWin.closed)waWin.close();
       alert("No se pudo generar el PDF. Intenta de nuevo.");
     });
   },450);
