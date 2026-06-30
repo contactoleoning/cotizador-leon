@@ -997,19 +997,19 @@ function genPDF(){
   var dM=cyberPct>0?Math.round(sN*cyberPct/100):0;
   var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
 
-  var S="border:1px solid #aaa;padding:5px 8px;font-size:10px;color:#1a1a1a;";
-  var SC=S+"text-align:center;";
+  var TC="padding:6px 8px;font-size:10px;color:#1a1a1a;text-align:center;border:none;";
+  var TL="padding:6px 8px;font-size:10px;color:#1a1a1a;text-align:left;border:none;";
 
-  var rows=carrito.map(function(p,i){
+  var rows=carrito.map(function(p){
     var c=p.cant||1;
     var unitNet=Math.round(p.neto);
     var subtotal=Math.round(p.neto*c*(1-(cyberPct/100)));
     return "<tr>"
-      +"<td style='"+SC+"'>"+c+"</td>"
-      +"<td style='"+S+"text-align:left'>"+p.desc+"</td>"
-      +"<td style='"+SC+"'>$ "+unitNet.toLocaleString("es-CL")+"</td>"
-      +"<td style='"+SC+"'>"+(cyberPct>0?cyberPct+" %":"0,0 %")+"</td>"
-      +"<td style='"+SC+"'>$ "+subtotal.toLocaleString("es-CL")+"</td>"
+      +"<td style='"+TC+"'>"+c+"</td>"
+      +"<td style='"+TL+"'>"+p.desc+"</td>"
+      +"<td style='"+TC+"'>$ "+unitNet.toLocaleString("es-CL")+"</td>"
+      +"<td style='"+TC+"'>"+(cyberPct>0?cyberPct+" %":"0,0 %")+"</td>"
+      +"<td style='"+TC+"'>$ "+subtotal.toLocaleString("es-CL")+"</td>"
       +"</tr>";
   }).join("");
 
@@ -1017,11 +1017,11 @@ function genPDF(){
   var blanks="";
   for(var i=0;i<emptyRows;i++){
     blanks+="<tr>"
-      +"<td style='"+SC+"height:18px'></td>"
-      +"<td style='"+S+"'></td>"
-      +"<td style='"+SC+"'></td>"
-      +"<td style='"+SC+"'></td>"
-      +"<td style='"+SC+"'></td>"
+      +"<td style='"+TC+"height:20px'>&nbsp;</td>"
+      +"<td style='"+TL+"'>&nbsp;</td>"
+      +"<td style='"+TC+"'>&nbsp;</td>"
+      +"<td style='"+TC+"'>&nbsp;</td>"
+      +"<td style='"+TC+"'>&nbsp;</td>"
       +"</tr>";
   }
 
@@ -1055,11 +1055,11 @@ function genPDF(){
     +"</td>"
     +"</tr></table>";
 
-  // BOX CLIENTE — un solo recuadro, dos columnas con divisor fino
+  // BOX CLIENTE — un solo recuadro
   h+="<table style='width:100%;border-collapse:collapse;border:1px solid #999;margin-top:6px;margin-bottom:0'>"
-    +"<tr>"
-    +"<td style='padding:5px 10px;vertical-align:top;width:55%;border-right:1px solid #ccc'>"
-    +"<div style='font-size:10.5px;line-height:1.85'>"
+    +"<tr><td style='padding:6px 10px'>"
+    +"<div style='display:flex;font-size:10.5px;line-height:1.9'>"
+    +"<div style='flex:0 0 55%'>"
     +"<b>SEÑOR(ES):</b> "+nombre+"<br>"
     +"<b>RUT:</b> "+rut+"<br>"
     +"<b>GIRO:</b> "+(giro||"")+"<br>"
@@ -1067,25 +1067,24 @@ function genPDF(){
     +"<b>COMUNA:</b> "+comuna+"<br>"
     +"<b>CONTACTO:</b> "+contacto
     +"</div>"
-    +"</td>"
-    +"<td style='padding:5px 10px;vertical-align:top'>"
-    +"<div style='font-size:10.5px;line-height:1.85'>"
+    +"<div style='flex:0 0 45%'>"
     +"<b>FECHA EMISIÓN:</b> "+fecha+"<br>"
     +"<b>TELÉFONO:</b> "+tel+"<br>"
     +"<b>CORREO:</b> "+email
     +"</div>"
-    +"</td>"
-    +"</tr>"
+    +"</div>"
+    +"</td></tr>"
     +"</table>";
 
-  // TABLA DE ÍTEMS — igual a Moreto: cabecera en negrita, sin fondo de color
-  h+="<table style='width:100%;border-collapse:collapse;margin-top:6px'>"
+  // TABLA DE ÍTEMS — solo dos líneas horizontales (arriba y abajo), sin bordes internos
+  var TH="font-weight:700;font-size:10px;padding:6px 8px;border:none;background:#fff;";
+  h+="<table style='width:100%;border-collapse:collapse;margin-top:6px;border-top:1.5px solid #555;border-bottom:1.5px solid #555'>"
     +"<thead><tr>"
-    +"<td style='font-weight:700;font-size:10px;text-align:center;padding:5px 6px;border:1px solid #aaa;width:10%'>CANTIDAD</td>"
-    +"<td style='font-weight:700;font-size:10px;text-align:left;padding:5px 6px;border:1px solid #aaa;width:48%'>DESCRIPCIÓN</td>"
-    +"<td style='font-weight:700;font-size:10px;text-align:center;padding:5px 6px;border:1px solid #aaa;width:17%'>VALOR UNITARIO</td>"
-    +"<td style='font-weight:700;font-size:10px;text-align:center;padding:5px 6px;border:1px solid #aaa;width:10%'>% DESCUENTO</td>"
-    +"<td style='font-weight:700;font-size:10px;text-align:center;padding:5px 6px;border:1px solid #aaa;width:15%'>SUBTOTAL</td>"
+    +"<td style='"+TH+"text-align:center;width:10%'>CANTIDAD</td>"
+    +"<td style='"+TH+"text-align:left;width:48%'>DESCRIPCIÓN</td>"
+    +"<td style='"+TH+"text-align:center;width:17%'>VALOR UNITARIO</td>"
+    +"<td style='"+TH+"text-align:center;width:10%'>% DESCUENTO</td>"
+    +"<td style='"+TH+"text-align:center;width:15%'>SUBTOTAL</td>"
     +"</tr></thead>"
     +"<tbody>"+rows+blanks+"</tbody>"
     +"</table>";
