@@ -228,7 +228,11 @@ select option{background:#0f2647;color:var(--txt)}
     <div class="fr"><span class="fl">Fecha</span><input type="text" id="fecha" placeholder="dd/mm/aaaa" readonly style="opacity:0.6;cursor:default"></div>
     <div class="fr"><span class="fl">RUT Cliente</span><input type="text" id="crut" placeholder="12.345.678-9" oninput="checkRut(this)"></div>
     <div id="rut-msg" style="font-size:12px;margin:-8px 0 8px 0;display:none"></div>
-    <div class="fr"><span class="fl">Nombre / Empresa</span><input type="text" id="cnombre" placeholder="Particular" value="Particular"></div>
+    <div class="fr"><span class="fl">Tipo Cliente</span><div style="display:flex;gap:6px;flex:1">
+      <button type="button" id="tipo-particular" class="tipo-cliente-btn active" onclick="setTipoCliente('Particular')" style="flex:1;padding:9px;border-radius:6px;border:2px solid var(--brd);background:var(--acc);color:#1a1a1a;font-weight:700;cursor:pointer">Particular</button>
+      <button type="button" id="tipo-empresa" class="tipo-cliente-btn" onclick="setTipoCliente('Empresa')" style="flex:1;padding:9px;border-radius:6px;border:2px solid var(--brd);background:var(--inp);color:var(--txt);font-weight:700;cursor:pointer">Empresa</button>
+    </div></div>
+    <div class="fr"><span class="fl" id="cnombre-label">Nombre Cliente</span><input type="text" id="cnombre" placeholder="Nombre del cliente"></div>
     <div class="fr"><span class="fl">Contacto</span><input type="text" id="ccont" placeholder="Nombre contacto"></div>
     <div class="fr"><span class="fl">Teléfono</span><div style="display:flex;gap:6px;flex:1"><select id="ctel-pre" style="width:80px;flex:0 0 80px;background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:9px 6px;font-size:14px"><option value="+569">+569</option><option value="+562">+562</option></select><input type="text" id="ctel-num" placeholder="XXXX XXXX" style="flex:1"></div></div>
     <div class="fr"><span class="fl">Dirección</span><input type="text" id="cdir" placeholder="Calle, numero, depto"></div>
@@ -964,7 +968,7 @@ var FIREBASE_DB_URL="https://leon-clientes-default-rtdb.firebaseio.com";
 function enviarAIndicador(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
   var nombre=document.getElementById("cnombre").value.trim();
-  if(!nombre||nombre==="Particular"){alert("Ingresa el nombre del cliente en \"Datos del Cliente\" antes de enviarlo al Indicador.");return;}
+  if(!nombre){alert("Ingresa el nombre del cliente en \"Datos del Cliente\" antes de enviarlo al Indicador.");return;}
   var comuna=document.getElementById("ccom").value.trim();
   var servicio=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"Instalación";
   var hoy=new Date();
@@ -1024,6 +1028,23 @@ function dvRut(rutNum){
   if(resto===11)return "0";
   if(resto===10)return "K";
   return String(resto);
+}
+
+function setTipoCliente(tipo){
+  var btnP=document.getElementById("tipo-particular"), btnE=document.getElementById("tipo-empresa");
+  var lbl=document.getElementById("cnombre-label"), inp=document.getElementById("cnombre");
+  if(tipo==="Empresa"){
+    btnE.style.background="var(--acc)"; btnE.style.color="#1a1a1a";
+    btnP.style.background="var(--inp)"; btnP.style.color="var(--txt)";
+    lbl.textContent="Nombre Empresa";
+    inp.placeholder="Razón social";
+  }else{
+    btnP.style.background="var(--acc)"; btnP.style.color="#1a1a1a";
+    btnE.style.background="var(--inp)"; btnE.style.color="var(--txt)";
+    lbl.textContent="Nombre Cliente";
+    inp.placeholder="Nombre del cliente";
+  }
+  inp.dataset.tipo=tipo;
 }
 
 function formatRut(cuerpo,dv){
@@ -1387,7 +1408,7 @@ function enviarWhatsApp(){
         if(pre&&num&&num.value.trim()){
           digits=(pre.value.replace(/[^0-9]/g,"")+num.value.replace(/[^0-9]/g,""));
         }
-        var msg="Hola"+(P.nombre&&P.nombre!=="Particular"?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
+        var msg="Hola"+(P.nombre?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
         if(link)msg+="\n\nPuedes verla y descargarla aquí:\n"+link;
         var wa=digits?("https://wa.me/"+digits+"?text="+encodeURIComponent(msg)):("https://wa.me/?text="+encodeURIComponent(msg));
         incrementNro();
