@@ -1063,7 +1063,7 @@ function armarPDF(){
     +"html,body{width:100%;font-family:Arial,sans-serif;font-size:10px;color:#1a1a1a;background:#fff}"
     +"@page{size:Letter portrait;margin:10mm 12mm}"
     +"@media print{body{padding:0!important}button,.no-print{display:none!important}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}"
-    +".wrap{padding:10px 14px}"
+    +".wrap{padding:26px 30px}"
     +"table{width:100%;border-collapse:collapse}"
     +".th{font-weight:700;font-size:10px;text-align:center;padding:5px 8px;border:1px solid #aaa;background:#fff;color:#1a1a1a}"
     +".th-l{text-align:left}";
@@ -1250,7 +1250,7 @@ function enviarWhatsApp(){
     var noprint=doc.querySelectorAll(".no-print");
     noprint.forEach(function(n){n.style.display="none";});
     html2pdf().set({
-      margin:[28,34,28,34],
+      margin:0,
       image:{type:"jpeg",quality:0.95},
       html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
       jsPDF:{unit:"pt",format:"letter",orientation:"portrait"}
