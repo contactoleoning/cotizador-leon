@@ -665,7 +665,7 @@ function renderInstAdmin(){
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
-      html+='<div style="display:grid;grid-template-columns:1fr 130px 130px 90px;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--brd)">'
+      html+='<div style="display:grid;grid-template-columns:1fr 130px 110px auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--brd)">'
         +'<div><div style="'+lbl+'">Nombre</div>'
         +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-instid="'+it.id+'" data-instcampo="nombre" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.nombre=el.value;saveInstList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
