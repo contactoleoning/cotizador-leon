@@ -1026,19 +1026,39 @@ function dvRut(rutNum){
   return String(resto);
 }
 
+function formatRut(cuerpo,dv){
+  var rev=cuerpo.split("").reverse().join("");
+  var conPuntos="";
+  for(var i=0;i<rev.length;i++){
+    if(i>0&&i%3===0)conPuntos+=".";
+    conPuntos+=rev[i];
+  }
+  return conPuntos.split("").reverse().join("")+"-"+dv;
+}
+
 function checkRut(input){
   var msg=document.getElementById("rut-msg");
-  var raw=input.value.trim();
-  if(!raw){ msg.style.display="none"; input.style.borderColor=""; return; }
-  var clean=raw.replace(/[.\s]/g,"").toUpperCase();
-  var m=clean.match(/^(\d{1,8})-?([0-9K])$/);
-  if(!m){
+  var raw=input.value;
+  var clean=raw.replace(/[^0-9kK]/g,"").toUpperCase();
+  if(!clean){ msg.style.display="none"; input.style.borderColor=""; return; }
+
+  var cuerpo=clean.slice(0,-1), dv=clean.slice(-1);
+  if(!cuerpo){
+    msg.style.display="none"; input.style.borderColor="";
+    return;
+  }
+
+  var cursorAlFinal=(input.selectionStart===raw.length);
+  input.value=formatRut(cuerpo,dv);
+  if(cursorAlFinal)input.setSelectionRange(input.value.length,input.value.length);
+
+  if(cuerpo.length<7){
     msg.style.display="block"; msg.style.color="#e67e22";
-    msg.textContent="Formato inválido. Ej: 12.345.678-9";
+    msg.textContent="Formato incompleto. Ej: 12.345.678-9";
     input.style.borderColor="#e67e22";
     return;
   }
-  var cuerpo=m[1], dv=m[2];
+
   var dvCalc=dvRut(cuerpo);
   if(dv===dvCalc){
     msg.style.display="block"; msg.style.color="#2ecc71";
