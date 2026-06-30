@@ -1154,28 +1154,7 @@ function genPDF(){
   h+="<div style='text-align:center;margin-top:10px' class='no-print'>"
     +"<button onclick='window.print()' style='background:#c9a830;color:#1a1a1a;border:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer'>Imprimir / Guardar PDF</button>"
     +"</div>"
-    +"</div>
-<script>
-(function(){
-  if(sessionStorage.getItem('leon_auth')==='ok'){
-    document.getElementById('lock-overlay').style.display='none';
-  }
-})();
-function checkPass(){
-  var v=document.getElementById('lock-input').value;
-  if(v==='2846'){
-    sessionStorage.setItem('leon_auth','ok');
-    document.getElementById('lock-overlay').style.display='none';
-  } else {
-    var e=document.getElementById('lock-err');
-    e.textContent='Contraseña incorrecta';
-    document.getElementById('lock-input').value='';
-    document.getElementById('lock-input').focus();
-    setTimeout(function(){e.textContent='';},2000);
-  }
-}
-</script>
-</body></html>";
+    +"</div></body></html>";
 
 
   incrementNro();
@@ -1635,6 +1614,26 @@ function openParentSec(el){
     body.style.maxHeight=body.scrollHeight+'px';
     var arrow=body.previousElementSibling&&body.previousElementSibling.querySelector('.sec-arrow');
     if(arrow)arrow.classList.add('open');
+  }
+}
+</script>
+<script>
+(function(){
+  if(sessionStorage.getItem('leon_auth')==='ok'){
+    document.getElementById('lock-overlay').style.display='none';
+  }
+})();
+function checkPass(){
+  var v=document.getElementById('lock-input').value;
+  if(v==='2846'){
+    sessionStorage.setItem('leon_auth','ok');
+    document.getElementById('lock-overlay').style.display='none';
+  } else {
+    var e=document.getElementById('lock-err');
+    e.textContent='Contraseña incorrecta';
+    document.getElementById('lock-input').value='';
+    document.getElementById('lock-input').focus();
+    setTimeout(function(){e.textContent='';},2000);
   }
 }
 </script>
