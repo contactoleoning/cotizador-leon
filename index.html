@@ -1250,7 +1250,7 @@ function enviarWhatsApp(){
     var noprint=doc.querySelectorAll(".no-print");
     noprint.forEach(function(n){n.style.display="none";});
     html2pdf().set({
-      margin:0,
+      margin:[28,34,28,34],
       image:{type:"jpeg",quality:0.95},
       html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
       jsPDF:{unit:"pt",format:"letter",orientation:"portrait"}
