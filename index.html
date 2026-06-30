@@ -211,6 +211,7 @@ select option{background:#0f2647;color:var(--txt)}
   <div class="btnrow" id="actbtns" style="display:none;flex-direction:column">
     <button class="btn bwa" id="btnwa" style="background:#25d366;color:#073b22">📲 Enviar PDF por WhatsApp</button>
     <button class="btn bpdf" id="btnpdf">📄 Generar PDF Formal</button>
+    <button class="btn" id="btnindicador" style="background:#3b6ea5;color:#fff">📅 Agregar a Indicador de Vencimiento</button>
   </div>
 </div><!-- /cot-left -->
 
@@ -958,6 +959,60 @@ function agregarInst(){
 
 function removeItem(i){carrito.splice(i,1);renderCarrito();}
 
+var FIREBASE_DB_URL="https://leon-clientes-default-rtdb.firebaseio.com";
+
+function enviarAIndicador(){
+  if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
+  var nombre=document.getElementById("cnombre").value.trim();
+  if(!nombre||nombre==="Particular"){alert("Ingresa el nombre del cliente en \"Datos del Cliente\" antes de enviarlo al Indicador.");return;}
+  var comuna=document.getElementById("ccom").value.trim();
+  var servicio=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"Instalación";
+  var hoy=new Date();
+  var inicia=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
+  var nro=document.getElementById("nro").value.trim();
+  var btn=document.getElementById("btnindicador");
+  var textoOrig=btn.textContent;
+  btn.disabled=true; btn.textContent="Enviando...";
+
+  var xhr=new XMLHttpRequest();
+  xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?shallow=true", true);
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status>=200&&xhr.status<300){
+        var keys={};
+        try{keys=JSON.parse(xhr.responseText||"{}")||{};}catch(e){}
+        var maxId=0;
+        Object.keys(keys).forEach(function(k){
+          var n=parseInt(k.replace("c",""),10);
+          if(!isNaN(n)&&n>maxId)maxId=n;
+        });
+        var newId=maxId+1;
+        var row={id:newId,cliente:nombre,lugar:"",comuna:comuna,servicio:servicio,inicia:inicia,duracion:6,aviso:false,obs:"Generado desde cotización N°"+nro};
+        var xhr2=new XMLHttpRequest();
+        xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+newId+".json", true);
+        xhr2.setRequestHeader("Content-Type","application/json");
+        xhr2.onreadystatechange=function(){
+          if(xhr2.readyState===4){
+            btn.disabled=false; btn.textContent=textoOrig;
+            if(xhr2.status>=200&&xhr2.status<300){
+              alert("✓ "+nombre+" agregado al Indicador de Vencimiento (6 meses por defecto, editable allá).");
+            }else{
+              alert("No se pudo agregar al Indicador. Intenta de nuevo.");
+            }
+          }
+        };
+        xhr2.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo agregar al Indicador. Revisa tu conexión.");};
+        xhr2.send(JSON.stringify(row));
+      }else{
+        btn.disabled=false; btn.textContent=textoOrig;
+        alert("No se pudo conectar al Indicador. Intenta de nuevo.");
+      }
+    }
+  };
+  xhr.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo conectar al Indicador. Revisa tu conexión.");};
+  xhr.send();
+}
+
 function dvRut(rutNum){
   var suma=0, multiplo=2;
   var rev=String(rutNum).split("").reverse();
@@ -1586,6 +1641,7 @@ document.addEventListener("DOMContentLoaded", function(){
   document.getElementById("btnagregarinst").addEventListener("click",agregarInst);
   document.getElementById("btnpdf").addEventListener("click",genPDF);
   var _bwa=document.getElementById("btnwa");if(_bwa)_bwa.addEventListener("click",enviarWhatsApp);
+  var _bind=document.getElementById("btnindicador");if(_bind)_bind.addEventListener("click",enviarAIndicador);
   // Install form changes
   ["itipo","ibomba","imateriales"].forEach(function(id){
     document.getElementById(id).addEventListener("change",calcInst);
