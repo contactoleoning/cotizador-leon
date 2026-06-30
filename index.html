@@ -709,6 +709,7 @@ function saveOv(id){
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
   filtrar();
+  saveCloudData();
 }
 
 function showTab(t){
@@ -1158,6 +1159,20 @@ function genPDF(){
 
 
   incrementNro();
+  saveQuoteRecord({
+    nro:nro,
+    fecha:new Date().toLocaleDateString("es-CL"),
+    nombre:nombre,
+    rut:rut,
+    tel:tel,
+    comuna:comuna,
+    items:carrito.map(function(p){var c=p.cant||1;return p.desc+(c>1?" x"+c:"");}).join(" | "),
+    subtotal:Math.round(sN),
+    descuento:Math.round(dM),
+    neto:Math.round(nD),
+    iva:Math.round(iva),
+    total:Math.round(tot)
+  });
   var w=window.open("","_blank","width=820,height=900");
   if(w){w.document.write(h);w.document.close();}
   else{
@@ -1179,6 +1194,7 @@ function pvN(p){return Math.round(getCosto(p)*(1+gPct(p)/100));}
 // EVENT LISTENERS - no inline onclick
 // === CONTADOR COMPARTIDO EN LA NUBE (JSONBin.io) ===
 var JSONBIN_ID="6a442bcff5f4af5e2949b2e6";
+var GAS_URL="";  // URL del Google Apps Script para historial
 var JSONBIN_KEY="CLAVE_ROTADA_POR_EXPOSICION_PUBLICA";
 
 function setNroUI(n){
@@ -1195,7 +1211,8 @@ function setSyncStatus(ok){
   lbl.textContent=ok?"sincronizado":"sin conexión";
 }
 
-function loadNro(){
+function loadNro(){loadCloudData();}
+function loadCloudData(){
   var local=parseInt(localStorage.getItem("cot_nro")||"1")||1;
   setNroUI(local);
   if(JSONBIN_ID==="REEMPLAZAR_BIN_ID"){
@@ -1208,10 +1225,32 @@ function loadNro(){
   })
   .then(function(r){return r.json();})
   .then(function(data){
-    var n=data.record.nro||1;
+    var rec=data.record;
+    // nro
+    var n=rec.nro||1;
     localStorage.setItem("cot_nro",String(n));
     setNroUI(n);
+    // overrides de precios
+    if(rec.ov){
+      Object.keys(rec.ov).forEach(function(id){
+        ov[id]=rec.ov[id];
+        var p=CAT.find(function(x){return x.id===id;});
+        if(p){Object.keys(rec.ov[id]).forEach(function(c){p[c]=rec.ov[id][c];});}
+        try{localStorage.setItem("ov_"+id,JSON.stringify(rec.ov[id]));}catch(e){}
+      });
+    }
+    // productos personalizados
+    if(rec.cat_extra&&rec.cat_extra.length){
+      rec.cat_extra.forEach(function(e){if(!CAT.find(function(x){return x.id===e.id;}))CAT.push(e);});
+      try{localStorage.setItem("cat_extra",JSON.stringify(rec.cat_extra));}catch(e){}
+    }
+    // lista de instalaciones
+    if(rec.inst_list&&rec.inst_list.length){
+      INST_LIST=rec.inst_list;
+      try{localStorage.setItem("inst_list",JSON.stringify(INST_LIST));}catch(e){}
+    }
     setSyncStatus(true);
+    filtrar();
   })
   .catch(function(){
     setNroUI(local);
@@ -1224,14 +1263,29 @@ function incrementNro(){
   var siguiente=n+1;
   localStorage.setItem("cot_nro",String(siguiente));
   setNroUI(siguiente);
+  saveCloudData();
+}
+
+function saveCloudData(){
   if(JSONBIN_ID==="REEMPLAZAR_BIN_ID"){return;}
+  var nro=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  var catExtra=CAT.filter(function(p){return p._nuevo;});
   fetch("https://api.jsonbin.io/v3/b/"+JSONBIN_ID,{
     method:"PUT",
     headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},
-    body:JSON.stringify({nro:siguiente})
+    body:JSON.stringify({nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST})
   })
   .then(function(){setSyncStatus(true);})
   .catch(function(){setSyncStatus(false);});
+}
+
+function saveQuoteRecord(data){
+  if(!GAS_URL)return;
+  fetch(GAS_URL,{
+    method:"POST",
+    headers:{"Content-Type":"text/plain"},
+    body:JSON.stringify(data)
+  }).catch(function(){});
 }
 
 function renderAdmin(){
@@ -1317,7 +1371,7 @@ function eliminarEquipo(id){
   CAT=CAT.filter(function(p){return p.id!==id;});
   try{localStorage.removeItem("ov_"+id);}catch(e){}
   try{localStorage.setItem("cat_extra",JSON.stringify(CAT.filter(function(p){return p._nuevo;})));}catch(e){}
-  renderAdmin();filtrar();
+  renderAdmin();filtrar();saveCloudData();
 }
 
 function agregarEquipoNuevo(){
@@ -1333,7 +1387,7 @@ function agregarEquipoNuevo(){
   var nuevo={id:id,tipo:tipo,btu:btu,marca:marca,modelo:modelo,prov:prov,costo:costo,pct:pct,cyber:0,_nuevo:true};
   CAT.push(nuevo);
   try{var ex=JSON.parse(localStorage.getItem("cat_extra")||"[]");ex.push(nuevo);localStorage.setItem("cat_extra",JSON.stringify(ex));}catch(e){}
-  renderAdmin();filtrar();
+  renderAdmin();filtrar();saveCloudData();
 }
 
 
