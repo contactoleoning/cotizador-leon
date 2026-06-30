@@ -225,7 +225,8 @@ select option{background:#0f2647;color:var(--txt)}
     <div class="sec-body" style="max-height:0">
     <div class="fr"><span class="fl">N° Cotización</span><input type="text" id="nro" readonly style="opacity:0.7;cursor:default;font-weight:600;color:var(--acc)"></div>
     <div class="fr"><span class="fl">Fecha</span><input type="text" id="fecha" placeholder="dd/mm/aaaa" readonly style="opacity:0.6;cursor:default"></div>
-    <div class="fr"><span class="fl">RUT Cliente</span><input type="text" id="crut" placeholder="12.345.678-9"></div>
+    <div class="fr"><span class="fl">RUT Cliente</span><input type="text" id="crut" placeholder="12.345.678-9" oninput="checkRut(this)"></div>
+    <div id="rut-msg" style="font-size:12px;margin:-8px 0 8px 0;display:none"></div>
     <div class="fr"><span class="fl">Nombre / Empresa</span><input type="text" id="cnombre" placeholder="Particular" value="Particular"></div>
     <div class="fr"><span class="fl">Contacto</span><input type="text" id="ccont" placeholder="Nombre contacto"></div>
     <div class="fr"><span class="fl">Teléfono</span><div style="display:flex;gap:6px;flex:1"><select id="ctel-pre" style="width:80px;flex:0 0 80px;background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:9px 6px;font-size:14px"><option value="+569">+569</option><option value="+562">+562</option></select><input type="text" id="ctel-num" placeholder="XXXX XXXX" style="flex:1"></div></div>
@@ -956,6 +957,44 @@ function agregarInst(){
 
 
 function removeItem(i){carrito.splice(i,1);renderCarrito();}
+
+function dvRut(rutNum){
+  var suma=0, multiplo=2;
+  var rev=String(rutNum).split("").reverse();
+  for(var i=0;i<rev.length;i++){
+    suma+=parseInt(rev[i],10)*multiplo;
+    multiplo=multiplo===7?2:multiplo+1;
+  }
+  var resto=11-(suma%11);
+  if(resto===11)return "0";
+  if(resto===10)return "K";
+  return String(resto);
+}
+
+function checkRut(input){
+  var msg=document.getElementById("rut-msg");
+  var raw=input.value.trim();
+  if(!raw){ msg.style.display="none"; input.style.borderColor=""; return; }
+  var clean=raw.replace(/[.\s]/g,"").toUpperCase();
+  var m=clean.match(/^(\d{1,8})-?([0-9K])$/);
+  if(!m){
+    msg.style.display="block"; msg.style.color="#e67e22";
+    msg.textContent="Formato inválido. Ej: 12.345.678-9";
+    input.style.borderColor="#e67e22";
+    return;
+  }
+  var cuerpo=m[1], dv=m[2];
+  var dvCalc=dvRut(cuerpo);
+  if(dv===dvCalc){
+    msg.style.display="block"; msg.style.color="#2ecc71";
+    msg.textContent="✓ RUT válido";
+    input.style.borderColor="#2ecc71";
+  }else{
+    msg.style.display="block"; msg.style.color="#e74c3c";
+    msg.textContent="✗ RUT inválido — verifica el dígito verificador";
+    input.style.borderColor="#e74c3c";
+  }
+}
 function changeItemDisc(i,val){carrito[i].disc=Math.min(100,Math.max(0,parseInt(val)||0));renderCarrito();}
 
 function renderCarrito(){
