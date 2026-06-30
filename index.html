@@ -1055,76 +1055,69 @@ function genPDF(){
     +"</td>"
     +"</tr></table>";
 
-  // SEPARADOR
-  h+="<hr style='border:none;border-top:1px solid #aaa;margin:6px 0'>";
-
-  // BOX CLIENTE (igual a Moreto: borde delgado, etiquetas en negrita, dos columnas)
-  h+="<table style='border:1px solid #aaa;margin-bottom:8px'>"
+  // BOX CLIENTE — sin hr, solo borde de la tabla como en Moreto
+  h+="<table style='width:100%;border-collapse:collapse;border:1px solid #aaa;margin-top:6px;margin-bottom:0'>"
     +"<tr>"
-    +"<td style='padding:4px 8px;vertical-align:top;width:55%'>"
-    +"<table style='border-collapse:collapse;width:100%'>"
-    +"<tr><td style='padding:2px 4px;font-size:10px'><b>SEÑOR(ES):</b> "+nombre+"</td></tr>"
-    +"<tr><td style='padding:2px 4px;font-size:10px'><b>RUT:</b> "+rut+"</td></tr>"
-    +"<tr><td style='padding:2px 4px;font-size:10px'><b>GIRO:</b> "+(giro||"")+"</td></tr>"
-    +"<tr><td style='padding:2px 4px;font-size:10px'><b>DIRECCIÓN:</b> "+dir+"</td></tr>"
-    +"<tr><td style='padding:2px 4px;font-size:10px'><b>COMUNA:</b> "+comuna+"</td></tr>"
-    +"<tr><td style='padding:2px 4px;font-size:10px'><b>CONTACTO:</b> "+contacto+"</td></tr>"
-    +"</table>"
+    +"<td style='padding:4px 8px;vertical-align:top;width:55%;border-right:1px solid #aaa'>"
+    +"<div style='font-size:10px;line-height:1.8'>"
+    +"<b>SEÑOR(ES):</b> "+nombre+"<br>"
+    +"<b>RUT:</b> "+rut+"<br>"
+    +"<b>GIRO:</b> "+(giro||"")+"<br>"
+    +"<b>DIRECCIÓN:</b> "+dir+"<br>"
+    +"<b>COMUNA:</b> "+comuna+"<br>"
+    +"<b>CONTACTO:</b> "+contacto
+    +"</div>"
     +"</td>"
-    +"<td style='padding:4px 8px;vertical-align:top;border-left:1px solid #aaa'>"
-    +"<table style='border-collapse:collapse;width:100%'>"
-    +"<tr><td style='padding:2px 4px;font-size:10px'><b>FECHA EMISIÓN:</b> "+fecha+"</td></tr>"
-    +"<tr><td style='padding:2px 4px;font-size:10px'><b>TELÉFONO:</b> "+tel+"</td></tr>"
-    +"<tr><td style='padding:2px 4px;font-size:10px'><b>CORREO:</b> "+email+"</td></tr>"
-    +"</table>"
+    +"<td style='padding:4px 8px;vertical-align:top'>"
+    +"<div style='font-size:10px;line-height:1.8'>"
+    +"<b>FECHA EMISIÓN:</b> "+fecha+"<br>"
+    +"<b>TELÉFONO:</b> "+tel+"<br>"
+    +"<b>CORREO:</b> "+email
+    +"</div>"
     +"</td>"
     +"</tr>"
     +"</table>";
 
-  // TABLA DE ÍTEMS
-  h+="<table style='table-layout:fixed;margin-bottom:0'>"
+  // TABLA DE ÍTEMS — igual a Moreto: cabecera en negrita, sin fondo de color
+  h+="<table style='width:100%;border-collapse:collapse;margin-top:6px'>"
     +"<thead><tr>"
-    +"<th class='th' style='width:10%'>CANTIDAD</th>"
-    +"<th class='th th-l' style='width:48%'>DESCRIPCIÓN</th>"
-    +"<th class='th' style='width:17%'>VALOR UNITARIO</th>"
-    +"<th class='th' style='width:10%'>% DESCUENTO</th>"
-    +"<th class='th' style='width:15%'>SUBTOTAL</th>"
+    +"<td style='font-weight:700;font-size:10px;text-align:center;padding:5px 6px;border:1px solid #aaa;width:10%'>CANTIDAD</td>"
+    +"<td style='font-weight:700;font-size:10px;text-align:left;padding:5px 6px;border:1px solid #aaa;width:48%'>DESCRIPCIÓN</td>"
+    +"<td style='font-weight:700;font-size:10px;text-align:center;padding:5px 6px;border:1px solid #aaa;width:17%'>VALOR UNITARIO</td>"
+    +"<td style='font-weight:700;font-size:10px;text-align:center;padding:5px 6px;border:1px solid #aaa;width:10%'>% DESCUENTO</td>"
+    +"<td style='font-weight:700;font-size:10px;text-align:center;padding:5px 6px;border:1px solid #aaa;width:15%'>SUBTOTAL</td>"
     +"</tr></thead>"
     +"<tbody>"+rows+blanks+"</tbody>"
     +"</table>";
 
-  // SEPARADOR INFERIOR
-  h+="<hr style='border:none;border-top:1px solid #aaa;margin:8px 0'>";
-
-  // SECCIÓN INFERIOR: observaciones+banco izquierda | totales derecha
-  h+="<table style='border-collapse:collapse'><tr>"
-    // IZQUIERDA
+  // SECCIÓN INFERIOR — sin hr, el espacio lo dan los márgenes
+  h+="<table style='width:100%;border-collapse:collapse;margin-top:10px'><tr>"
     +"<td style='vertical-align:top;padding-right:16px'>"
     +"<div style='font-size:10px;font-weight:700;margin-bottom:4px'>Observaciones:</div>"
-    +"<div style='font-size:9px;color:#1a1a1a;line-height:1.6;margin-bottom:10px'>"
+    +"<div style='font-size:9px;line-height:1.6;margin-bottom:8px'>"
     +"Un año de garantía en equipos nuevos.<br>"
     +"Tres meses en bombas de condensado.<br>"
     +"Un mes en mantenciones."
     +"</div>"
     +"<table style='border-collapse:collapse;font-size:9px'>"
-    +"<tr><th colspan='2' style='background:#fff;color:#1a1a1a;font-weight:700;padding:3px 6px;border:1px solid #aaa;text-align:center'>TRANSFERENCIAS A:</th></tr>"
-    +"<tr>"
-    +"<td style='padding:3px 8px;border:1px solid #aaa;vertical-align:top'>"
-    +"BANCO FALABELLA<br>Isaac León RUT: 18.245.550-4<br>Cuenta Corriente N° 0-1983-154-6787<br>MAIL CONFIRMACIÓN: contactoleoning@gmail.com"
-    +"</td>"
-    +"</tr>"
+    +"<tr><td style='font-weight:700;padding:3px 8px;border:1px solid #aaa;text-align:center'>TRANSFERENCIAS A:</td></tr>"
+    +"<tr><td style='padding:4px 8px;border:1px solid #aaa;line-height:1.6'>"
+    +"BANCO FALABELLA<br>"
+    +"Isaac León RUT: 18.245.550-4<br>"
+    +"Cuenta Corriente N° 0-1983-154-6787<br>"
+    +"MAIL CONFIRMACIÓN: contactoleoning@gmail.com"
+    +"</td></tr>"
     +"</table>"
     +"</td>"
-    // DERECHA: totales
-    +"<td style='vertical-align:top;min-width:180px'>"
+    +"<td style='vertical-align:top;min-width:200px;white-space:nowrap'>"
     +"<table style='border-collapse:collapse;width:100%'>"
-    +(dM>0?"<tr><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px'>DESCUENTO GLOBAL</td><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px;text-align:right'>$ "+Math.round(dM).toLocaleString("es-CL")+"</td></tr>":"")
-    +"<tr><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px'>NETO($)</td><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px;text-align:right'>$ "+Math.round(nD).toLocaleString("es-CL")+"</td></tr>"
-    +"<tr><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px'>I.V.A(19%)</td><td style='padding:5px 10px;border:1px solid #aaa;font-size:10px;text-align:right'>$ "+Math.round(iva).toLocaleString("es-CL")+"</td></tr>"
-    +"<tr><td style='padding:5px 10px;border:1px solid #aaa;font-weight:700;font-size:10px'>TOTAL</td><td style='padding:5px 10px;border:1px solid #aaa;font-weight:700;font-size:10px;text-align:right'>$ "+Math.round(tot).toLocaleString("es-CL")+"</td></tr>"
-    +"<tr><td style='padding:5px 10px;border:1px solid #aaa;font-size:9px'>TOTAL TARJ. CRÉDITO (+3,5%)</td><td style='padding:5px 10px;border:1px solid #aaa;font-size:9px;text-align:right'>$ "+Math.round(totTC).toLocaleString("es-CL")+"</td></tr>"
+    +(dM>0?"<tr><td style='padding:5px 12px;border:1px solid #aaa;font-size:10px'>DESCUENTO GLOBAL</td><td style='padding:5px 12px;border:1px solid #aaa;font-size:10px;text-align:right'>$ "+Math.round(dM).toLocaleString("es-CL")+"</td></tr>":"")
+    +"<tr><td style='padding:5px 12px;border:1px solid #aaa;font-size:10px'>NETO($)</td><td style='padding:5px 12px;border:1px solid #aaa;font-size:10px;text-align:right'>$ "+Math.round(nD).toLocaleString("es-CL")+"</td></tr>"
+    +"<tr><td style='padding:5px 12px;border:1px solid #aaa;font-size:10px'>I.V.A(19%)</td><td style='padding:5px 12px;border:1px solid #aaa;font-size:10px;text-align:right'>$ "+Math.round(iva).toLocaleString("es-CL")+"</td></tr>"
+    +"<tr><td style='padding:5px 12px;border:1px solid #aaa;font-weight:700;font-size:10px'>TOTAL</td><td style='padding:5px 12px;border:1px solid #aaa;font-weight:700;font-size:10px;text-align:right'>$ "+Math.round(tot).toLocaleString("es-CL")+"</td></tr>"
+    +"<tr><td style='padding:5px 12px;border:1px solid #aaa;font-size:9px'>TOTAL TARJ. CRÉDITO (+3,5%)</td><td style='padding:5px 12px;border:1px solid #aaa;font-size:9px;text-align:right'>$ "+Math.round(totTC).toLocaleString("es-CL")+"</td></tr>"
     +"</table>"
-    +"<div style='font-size:8.5px;font-weight:700;margin-top:8px;text-align:center'>"
+    +"<div style='font-size:8.5px;font-weight:700;margin-top:8px'>"
     +"ESTA COTIZACIÓN ES VÁLIDA POR "+validez
     +"</div>"
     +"</td>"
