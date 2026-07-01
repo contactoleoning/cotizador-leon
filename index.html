@@ -591,11 +591,11 @@ function loadOv(){
 
 var INST_LIST=[];
 var INST_DEFAULTS=[
-  {id:"split9",nombre:"Instalación Split Muro 9.000 BTU",tipo:"Split Muro",precio:126050},
-  {id:"split12",nombre:"Instalación Split Muro 12.000 BTU",tipo:"Split Muro",precio:126050},
-  {id:"split18",nombre:"Instalación Split Muro 18.000 BTU",tipo:"Split Muro",precio:151260},
-  {id:"split22",nombre:"Instalación Split Muro 22.000 BTU",tipo:"Split Muro",precio:151260},
-  {id:"split24",nombre:"Instalación Split Muro 24.000 BTU",tipo:"Split Muro",precio:151260},
+  {id:"split9",nombre:"Instalación Split Muro 9.000 BTU",tipo:"Split Muro Básica",precio:126050},
+  {id:"split12",nombre:"Instalación Split Muro 12.000 BTU",tipo:"Split Muro Básica",precio:126050},
+  {id:"split18",nombre:"Instalación Split Muro 18.000 BTU",tipo:"Split Muro Básica",precio:151260},
+  {id:"split22",nombre:"Instalación Split Muro 22.000 BTU",tipo:"Split Muro Básica",precio:151260},
+  {id:"split24",nombre:"Instalación Split Muro 24.000 BTU",tipo:"Split Muro Básica",precio:151260},
   {id:"split9exp",nombre:"Instalación Experta Split Muro 9.000 BTU",tipo:"Split Muro Experta",precio:180000},
   {id:"split12exp",nombre:"Instalación Experta Split Muro 12.000 BTU",tipo:"Split Muro Experta",precio:180000},
   {id:"cassette12",nombre:"Instalación Cassette 12.000 BTU",tipo:"Cassette",precio:180000},
@@ -607,7 +607,18 @@ var INST_DEFAULTS=[
 ];
 
 function loadInstList(){
-  try{var s=localStorage.getItem("inst_list");if(s){INST_LIST=JSON.parse(s);return;}}catch(e){}
+  try{
+    var s=localStorage.getItem("inst_list");
+    if(s){
+      INST_LIST=JSON.parse(s);
+      var migrado=false;
+      INST_LIST.forEach(function(it){
+        if(it.tipo==="Split Muro"){it.tipo="Split Muro Básica";migrado=true;}
+      });
+      if(migrado)saveInstList();
+      return;
+    }
+  }catch(e){}
   INST_LIST=INST_DEFAULTS.map(function(x){return Object.assign({},x);});
 }
 
