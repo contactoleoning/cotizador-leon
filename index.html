@@ -226,6 +226,7 @@ select option{background:#0f2647;color:var(--txt)}
     <div class="sec-body" style="max-height:0">
     <div class="fr"><span class="fl">N° Cotización</span><input type="text" id="nro" readonly style="opacity:0.7;cursor:default;font-weight:600;color:var(--acc)"></div>
     <div class="fr"><span class="fl">Fecha</span><input type="date" id="fecha"></div>
+    <div class="fr"><span class="fl">Vendedor</span><input type="text" id="cvendedor" placeholder="Nombre del vendedor" oninput="localStorage.setItem('vendedor_nombre',this.value)"></div>
     <div class="fr"><span class="fl">RUT Cliente</span><input type="text" id="crut" placeholder="12.345.678-9" oninput="checkRut(this)"></div>
     <div id="rut-msg" style="font-size:12px;margin:-8px 0 8px 0;display:none"></div>
     <div class="fr"><span class="fl">Tipo Cliente</span><div style="display:flex;gap:6px;flex:1">
@@ -1340,8 +1341,9 @@ function armarPDF(){
 }
 
 function pdfRecord(P){
+  var vendedor=document.getElementById("cvendedor")?document.getElementById("cvendedor").value.trim():"";
   return {nro:P.nro, fecha:P.fecha, nombre:P.nombre, rut:P.rut, tel:P.tel, comuna:P.comuna,
-          items:P.items, subtotal:P.sN, descuento:P.dM, neto:P.nD, iva:P.iva, total:P.tot};
+          items:P.items, subtotal:P.sN, descuento:P.dM, neto:P.nD, iva:P.iva, total:P.tot, vendedor:vendedor};
 }
 
 // Botón "Generar PDF Formal" — abre ventana imprimible como siempre
@@ -1739,6 +1741,7 @@ document.addEventListener("DOMContentLoaded", function(){
   // Init
   loadNro();
   (function(){var h=new Date();document.getElementById("fecha").value=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");})();
+  try{document.getElementById("cvendedor").value=localStorage.getItem("vendedor_nombre")||"";}catch(e){}
   showTab("cot");
   calcInst();
   loadOv();
