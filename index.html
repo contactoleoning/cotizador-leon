@@ -987,6 +987,28 @@ function agregarInst(){
 function removeItem(i){carrito.splice(i,1);renderCarrito();}
 
 var FIREBASE_DB_URL="https://leon-clientes-default-rtdb.firebaseio.com";
+var FIREBASE_API_KEY="AIzaSyAxAMLU39W9DyCZtUY4L-v_IqPR3KG--3Q";
+var _fbIdToken=null;
+
+function getFirebaseIdToken(cb){
+  if(_fbIdToken){cb(_fbIdToken);return;}
+  var xhr=new XMLHttpRequest();
+  xhr.open("POST","https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FIREBASE_API_KEY,true);
+  xhr.setRequestHeader("Content-Type","application/json");
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status>=200&&xhr.status<300){
+        try{
+          var res=JSON.parse(xhr.responseText);
+          _fbIdToken=res.idToken;
+          cb(_fbIdToken);
+        }catch(e){cb(null);}
+      }else{cb(null);}
+    }
+  };
+  xhr.onerror=function(){cb(null);};
+  xhr.send(JSON.stringify({returnSecureToken:true}));
+}
 
 function buscarCotizacion(){
   var nro=document.getElementById("buscar-nro").value.trim();
@@ -1048,43 +1070,50 @@ function enviarAIndicador(){
   var textoOrig=btn.textContent;
   btn.disabled=true; btn.textContent="Enviando...";
 
-  var xhr=new XMLHttpRequest();
-  xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?shallow=true", true);
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4){
-      if(xhr.status>=200&&xhr.status<300){
-        var keys={};
-        try{keys=JSON.parse(xhr.responseText||"{}")||{};}catch(e){}
-        var maxId=0;
-        Object.keys(keys).forEach(function(k){
-          var n=parseInt(k.replace("c",""),10);
-          if(!isNaN(n)&&n>maxId)maxId=n;
-        });
-        var newId=maxId+1;
-        var row={id:newId,cliente:nombre,lugar:"",comuna:comuna,servicio:servicio,inicia:inicia,duracion:6,aviso:false,obs:"Generado desde cotización N°"+nro};
-        var xhr2=new XMLHttpRequest();
-        xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+newId+".json", true);
-        xhr2.setRequestHeader("Content-Type","application/json");
-        xhr2.onreadystatechange=function(){
-          if(xhr2.readyState===4){
-            btn.disabled=false; btn.textContent=textoOrig;
-            if(xhr2.status>=200&&xhr2.status<300){
-              alert("✓ "+nombre+" agregado al Indicador de Vencimiento (6 meses por defecto, editable allá).");
-            }else{
-              alert("No se pudo agregar al Indicador. Intenta de nuevo.");
-            }
-          }
-        };
-        xhr2.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo agregar al Indicador. Revisa tu conexión.");};
-        xhr2.send(JSON.stringify(row));
-      }else{
-        btn.disabled=false; btn.textContent=textoOrig;
-        alert("No se pudo conectar al Indicador. Intenta de nuevo.");
-      }
+  getFirebaseIdToken(function(token){
+    if(!token){
+      btn.disabled=false; btn.textContent=textoOrig;
+      alert("No se pudo autenticar con el Indicador. Intenta de nuevo.");
+      return;
     }
-  };
-  xhr.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo conectar al Indicador. Revisa tu conexión.");};
-  xhr.send();
+    var xhr=new XMLHttpRequest();
+    xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?shallow=true&auth="+token, true);
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status>=200&&xhr.status<300){
+          var keys={};
+          try{keys=JSON.parse(xhr.responseText||"{}")||{};}catch(e){}
+          var maxId=0;
+          Object.keys(keys).forEach(function(k){
+            var n=parseInt(k.replace("c",""),10);
+            if(!isNaN(n)&&n>maxId)maxId=n;
+          });
+          var newId=maxId+1;
+          var row={id:newId,cliente:nombre,lugar:"",comuna:comuna,servicio:servicio,inicia:inicia,duracion:6,aviso:false,obs:"Generado desde cotización N°"+nro};
+          var xhr2=new XMLHttpRequest();
+          xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+newId+".json?auth="+token, true);
+          xhr2.setRequestHeader("Content-Type","application/json");
+          xhr2.onreadystatechange=function(){
+            if(xhr2.readyState===4){
+              btn.disabled=false; btn.textContent=textoOrig;
+              if(xhr2.status>=200&&xhr2.status<300){
+                alert("✓ "+nombre+" agregado al Indicador de Vencimiento (6 meses por defecto, editable allá).");
+              }else{
+                alert("No se pudo agregar al Indicador. Intenta de nuevo.");
+              }
+            }
+          };
+          xhr2.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo agregar al Indicador. Revisa tu conexión.");};
+          xhr2.send(JSON.stringify(row));
+        }else{
+          btn.disabled=false; btn.textContent=textoOrig;
+          alert("No se pudo conectar al Indicador. Intenta de nuevo.");
+        }
+      }
+    };
+    xhr.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo conectar al Indicador. Revisa tu conexión.");};
+    xhr.send();
+  });
 }
 
 function dvRut(rutNum){
