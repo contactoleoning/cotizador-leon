@@ -967,8 +967,9 @@ var FIREBASE_DB_URL="https://leon-clientes-default-rtdb.firebaseio.com";
 
 function enviarAIndicador(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
-  var nombre=document.getElementById("cnombre").value.trim();
-  if(!nombre){alert("Ingresa el nombre del cliente en \"Datos del Cliente\" antes de enviarlo al Indicador.");return;}
+  var contacto=document.getElementById("ccont").value.trim();
+  var nombre=contacto||document.getElementById("cnombre").value.trim();
+  if(!nombre){alert("Ingresa el nombre del cliente (campo Contacto o Nombre/Empresa) antes de enviarlo al Indicador.");return;}
   var comuna=document.getElementById("ccom").value.trim();
   var servicio=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"Instalación";
   var hoy=new Date();
