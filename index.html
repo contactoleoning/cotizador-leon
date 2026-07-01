@@ -225,7 +225,7 @@ select option{background:#0f2647;color:var(--txt)}
     </div>
     <div class="sec-body" style="max-height:0">
     <div class="fr"><span class="fl">N° Cotización</span><input type="text" id="nro" readonly style="opacity:0.7;cursor:default;font-weight:600;color:var(--acc)"></div>
-    <div class="fr"><span class="fl">Fecha</span><input type="text" id="fecha" placeholder="dd/mm/aaaa" readonly style="opacity:0.6;cursor:default"></div>
+    <div class="fr"><span class="fl">Fecha</span><input type="date" id="fecha"></div>
     <div class="fr"><span class="fl">RUT Cliente</span><input type="text" id="crut" placeholder="12.345.678-9" oninput="checkRut(this)"></div>
     <div id="rut-msg" style="font-size:12px;margin:-8px 0 8px 0;display:none"></div>
     <div class="fr"><span class="fl">Tipo Cliente</span><div style="display:flex;gap:6px;flex:1">
@@ -1160,7 +1160,12 @@ function copiarWA(){}
 
 function armarPDF(){
   var nro=document.getElementById("nro").value.trim()||"-";
-  var fecha=new Date().toLocaleDateString("es-CL");
+  var fecha=(function(){
+    var v=document.getElementById("fecha").value;
+    if(!v)return new Date().toLocaleDateString("es-CL");
+    var p=v.split("-");
+    return p[2]+"-"+p[1]+"-"+p[0];
+  })();
   var rut=document.getElementById("crut").value.trim()||"";
   var nombre=document.getElementById("cnombre").value.trim()||"";
   var tel=(function(){var p=document.getElementById("ctel-pre"),n=document.getElementById("ctel-num");return p&&n&&n.value.trim()?p.value+" "+n.value.trim():"";})();
@@ -1329,7 +1334,7 @@ function armarPDF(){
 
 
   var itemsStr=carrito.map(function(p){var c=p.cant||1;return p.desc+(c>1?" x"+c:"");}).join(" | ");
-  return {h:h, nro:nro, fecha:new Date().toLocaleDateString("es-CL"), nombre:nombre, rut:rut, tel:tel,
+  return {h:h, nro:nro, fecha:fecha, nombre:nombre, rut:rut, tel:tel,
           comuna:comuna, items:itemsStr, sN:Math.round(sN), dM:Math.round(dM), nD:Math.round(nD),
           iva:Math.round(iva), tot:Math.round(tot)};
 }
@@ -1733,7 +1738,7 @@ document.addEventListener("DOMContentLoaded", function(){
   });
   // Init
   loadNro();
-  document.getElementById("fecha").value=new Date().toLocaleDateString("es-CL");
+  (function(){var h=new Date();document.getElementById("fecha").value=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");})();
   showTab("cot");
   calcInst();
   loadOv();
