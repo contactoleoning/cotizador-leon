@@ -233,7 +233,6 @@ select option{background:#0f2647;color:var(--txt)}
       <button type="button" id="tipo-empresa" class="tipo-cliente-btn" onclick="setTipoCliente('Empresa')" style="flex:1;padding:9px;border-radius:6px;border:2px solid var(--brd);background:var(--inp);color:var(--txt);font-weight:700;cursor:pointer">Empresa</button>
     </div></div>
     <div class="fr"><span class="fl" id="cnombre-label">Nombre Cliente</span><input type="text" id="cnombre" placeholder="Nombre del cliente"></div>
-    <div class="fr"><span class="fl">Contacto</span><input type="text" id="ccont" placeholder="Nombre contacto"></div>
     <div class="fr"><span class="fl">Teléfono</span><div style="display:flex;gap:6px;flex:1"><select id="ctel-pre" style="width:80px;flex:0 0 80px;background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:9px 6px;font-size:14px"><option value="+569">+569</option><option value="+562">+562</option></select><input type="text" id="ctel-num" placeholder="XXXX XXXX" style="flex:1"></div></div>
     <div class="fr"><span class="fl">Dirección</span><input type="text" id="cdir" placeholder="Calle, numero, depto"></div>
     <div class="fr"><span class="fl">Comuna</span>
@@ -967,8 +966,7 @@ var FIREBASE_DB_URL="https://leon-clientes-default-rtdb.firebaseio.com";
 
 function enviarAIndicador(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
-  var contacto=document.getElementById("ccont").value.trim();
-  var nombre=contacto||document.getElementById("cnombre").value.trim();
+  var nombre=document.getElementById("cnombre").value.trim();
   if(!nombre){alert("Ingresa el nombre del cliente (campo Contacto o Nombre/Empresa) antes de enviarlo al Indicador.");return;}
   var comuna=document.getElementById("ccom").value.trim();
   var servicio=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"Instalación";
@@ -1154,7 +1152,6 @@ function armarPDF(){
   var fecha=new Date().toLocaleDateString("es-CL");
   var rut=document.getElementById("crut").value.trim()||"";
   var nombre=document.getElementById("cnombre").value.trim()||"";
-  var contacto=document.getElementById("ccont").value.trim()||"";
   var tel=(function(){var p=document.getElementById("ctel-pre"),n=document.getElementById("ctel-num");return p&&n&&n.value.trim()?p.value+" "+n.value.trim():"";})();
   var dir=document.getElementById("cdir").value.trim()||"";
   var comuna=document.getElementById("ccom").value.trim()||"";
@@ -1251,7 +1248,6 @@ function armarPDF(){
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>RUT:</td><td style='padding:2px 0;vertical-align:top'>"+rut+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>DIRECCIÓN:</td><td style='padding:2px 0;vertical-align:top'>"+dir+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>COMUNA:</td><td style='padding:2px 0;vertical-align:top'>"+comuna+"</td></tr>"
-    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>CONTACTO:</td><td style='padding:2px 0;vertical-align:top'>"+contacto+"</td></tr>"
     +"</table>"
     +"</div>"
     +"<div style='flex:0 0 45%'>"
