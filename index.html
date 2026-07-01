@@ -1452,8 +1452,10 @@ function enviarWhatsApp(){
   var P=armarPDF();
   showLoader("Generando PDF...");
 
+  // Iframe generosamente alto: el contenido real (una página Letter) nunca lo
+  // supera, así html2canvas captura el .wrap completo sin recortar nada.
   var iframe=document.createElement("iframe");
-  iframe.style.cssText="position:fixed;left:-9999px;top:0;width:816px;height:1056px;border:0";
+  iframe.style.cssText="position:fixed;left:-9999px;top:0;width:816px;height:1600px;border:0";
   document.body.appendChild(iframe);
   var doc=iframe.contentWindow.document;
   doc.open();doc.write(P.h);doc.close();
@@ -1462,10 +1464,6 @@ function enviarWhatsApp(){
     var el=doc.querySelector(".wrap")||doc.body;
     var noprint=doc.querySelectorAll(".no-print");
     noprint.forEach(function(n){n.style.display="none";});
-    // Ajustar la altura real del iframe al contenido para que html2canvas no recorte
-    // el sobrante cuando el contenido es un poco más alto que el alto fijo inicial.
-    var alturaReal=Math.max(el.scrollHeight,doc.body.scrollHeight,doc.documentElement.scrollHeight);
-    iframe.style.height=alturaReal+"px";
     html2pdf().set({
       margin:[0,30,0,30],
       image:{type:"jpeg",quality:0.95},
