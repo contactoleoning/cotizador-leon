@@ -478,6 +478,16 @@ select option{background:#0f2647;color:var(--txt)}
     <a href="https://docs.google.com/spreadsheets/d/1H9Lz00IfASszdgnBkC9leetto7fl3SZbI97kgzb721A/edit" target="_blank" style="background:var(--acc);color:#1a1a1a;font-weight:700;font-size:14px;padding:10px 20px;border-radius:var(--rs);text-decoration:none;white-space:nowrap">Ver en Sheets →</a>
   </div>
 
+  <!-- BUSCAR COTIZACIÓN -->
+  <div class="card">
+    <div class="ct">🔍 Reabrir Cotización</div>
+    <div style="display:flex;gap:10px">
+      <input type="text" id="buscar-nro" placeholder="N° de cotización (ej: 105)" inputmode="numeric" style="flex:1" onkeydown="if(event.key==='Enter')buscarCotizacion()">
+      <button onclick="buscarCotizacion()" style="background:var(--acc);color:#1a1a1a;font-weight:700;padding:0 24px;border:none;border-radius:var(--rs);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:15px">Buscar</button>
+    </div>
+    <div id="buscar-resultado" style="margin-top:14px"></div>
+  </div>
+
   <!-- BLOQUE 1: INFO OBLIGATORIA -->
   <div class="card" style="padding:0;overflow:hidden">
     <div class="sec-hdr" onclick="toggleSec(this)" style="padding:14px 16px">
@@ -975,6 +985,53 @@ function agregarInst(){
 function removeItem(i){carrito.splice(i,1);renderCarrito();}
 
 var FIREBASE_DB_URL="https://leon-clientes-default-rtdb.firebaseio.com";
+
+function buscarCotizacion(){
+  var nro=document.getElementById("buscar-nro").value.trim();
+  var res=document.getElementById("buscar-resultado");
+  if(!nro){res.innerHTML="";return;}
+  if(!GAS_URL){res.innerHTML="<div style=\'color:#e67e22;font-size:14px\'>Servidor no configurado.</div>";return;}
+  res.innerHTML="<div style=\'color:var(--txt2);font-size:14px\'>Buscando...</div>";
+
+  var xhr=new XMLHttpRequest();
+  xhr.open("GET", GAS_URL+"?nro="+encodeURIComponent(nro), true);
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status>=200&&xhr.status<300){
+        var data;
+        try{data=JSON.parse(xhr.responseText);}catch(e){data=null;}
+        if(!data||data.error){
+          res.innerHTML="<div style=\'color:#e74c3c;font-size:14px\'>No se encontró la cotización N°"+nro+".</div>";
+          return;
+        }
+        var linkBtn=data.link?
+          "<a href='"+data.link+"' target='_blank' style='display:inline-block;background:var(--acc);color:#1a1a1a;font-weight:700;padding:9px 18px;border-radius:6px;text-decoration:none;font-size:14px;margin-right:8px'>📄 Ver PDF</a>":"";
+        var waBtn="";
+        if(data.link){
+          var msg="Hola"+(data.nombre?" "+data.nombre:"")+", aquí está tu cotización N° "+data.nro+" de León Ingeniería. 💧❄️\n\nPuedes verla y descargarla aquí:\n"+data.link;
+          waBtn="<a href='https://wa.me/?text="+encodeURIComponent(msg)+"' target='_blank' style='display:inline-block;background:#25d366;color:#073b22;font-weight:700;padding:9px 18px;border-radius:6px;text-decoration:none;font-size:14px'>📲 Reenviar por WhatsApp</a>";
+        }
+        res.innerHTML="<div style='background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:14px 16px'>"
+          +"<div style='font-size:16px;font-weight:700;color:var(--txt);margin-bottom:8px'>Cotización N° "+data.nro+"</div>"
+          +"<div style='font-size:14px;color:var(--txt2);line-height:1.7'>"
+          +"<b>Cliente:</b> "+(data.nombre||"—")+"<br>"
+          +"<b>Fecha:</b> "+(data.fecha||"—")+"<br>"
+          +"<b>Comuna:</b> "+(data.comuna||"—")+"<br>"
+          +"<b>Ítems:</b> "+(data.items||"—")+"<br>"
+          +"<b>Total:</b> "+fmt(parseFloat(data.total)||0)+"<br>"
+          +"<b>Estado:</b> "+(data.estado||"Pendiente")
+          +(data.vendedor?"<br><b>Vendedor:</b> "+data.vendedor:"")
+          +"</div>"
+          +(data.link?"<div style='margin-top:12px'>"+linkBtn+waBtn+"</div>":"<div style='margin-top:10px;font-size:13px;color:var(--txt3)'>Esta cotización no tiene PDF guardado (se generó solo para imprimir).</div>")
+          +"</div>";
+      }else{
+        res.innerHTML="<div style=\'color:#e74c3c;font-size:14px\'>Error al buscar. Intenta de nuevo.</div>";
+      }
+    }
+  };
+  xhr.onerror=function(){res.innerHTML="<div style=\'color:#e74c3c;font-size:14px\'>Sin conexión. Intenta de nuevo.</div>";};
+  xhr.send();
+}
 
 function enviarAIndicador(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
