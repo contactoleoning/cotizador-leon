@@ -1464,10 +1464,14 @@ function enviarWhatsApp(){
     var el=doc.querySelector(".wrap")||doc.body;
     var noprint=doc.querySelectorAll(".no-print");
     noprint.forEach(function(n){n.style.display="none";});
+    // Medir el contenido real y pasar dimensiones EXPLÍCITAS a html2canvas
+    // para que la captura sea idéntica en cualquier navegador (sin depender
+    // del viewport del iframe, que varía entre dispositivos).
+    var cw=el.scrollWidth, ch=el.scrollHeight;
     html2pdf().set({
       margin:[0,30,0,30],
       image:{type:"jpeg",quality:0.95},
-      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",width:cw,height:ch,windowWidth:cw,windowHeight:ch,scrollX:0,scrollY:0},
       jsPDF:{unit:"pt",format:"letter",orientation:"portrait"}
     }).from(el).outputPdf("datauristring").then(function(datauri){
       var base64=datauri.substring(datauri.indexOf(",")+1);
