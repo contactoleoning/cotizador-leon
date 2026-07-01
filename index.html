@@ -1452,72 +1452,95 @@ function enviarWhatsApp(){
   var P=armarPDF();
   showLoader("Generando PDF...");
 
-  // Iframe generosamente alto: el contenido real (una página Letter) nunca lo
-  // supera, así html2canvas captura el .wrap completo sin recortar nada.
+  // Renderizamos el documento en un iframe DENTRO de la pantalla (no fuera con
+  // left:-9999px, porque algunas versiones de Chrome/Safari capturan mal los
+  // elementos fuera de pantalla y agregan espacio en blanco que recorta el
+  // contenido). Lo tapamos con el overlay de carga (z-index alto) para que no
+  // se vea, pero queda dentro del viewport para que html2canvas lo capture bien.
   var iframe=document.createElement("iframe");
-  iframe.style.cssText="position:fixed;left:-9999px;top:0;width:816px;height:1600px;border:0";
+  iframe.style.cssText="position:fixed;left:0;top:0;width:816px;height:1700px;border:0;z-index:1;background:#fff";
   document.body.appendChild(iframe);
   var doc=iframe.contentWindow.document;
   doc.open();doc.write(P.h);doc.close();
 
-  // Esperar a que TODAS las imágenes del iframe (logo 2362x2362) terminen de
-  // decodificar antes de capturar. En Safari, capturar antes de que el logo
-  // esté decodificado genera espacio fantasma que empuja y recorta el contenido.
+  // Recorta un canvas a los límites reales de su contenido (quita márgenes en
+  // blanco / espacio fantasma), devolviendo un canvas nuevo ajustado.
+  function recortar(canvas){
+    var ctx=canvas.getContext("2d");
+    var w=canvas.width, h=canvas.height;
+    var data;
+    try{ data=ctx.getImageData(0,0,w,h).data; }catch(e){ return canvas; }
+    var minX=w, minY=h, maxX=0, maxY=0, hay=false;
+    for(var y=0;y<h;y++){
+      var rowOff=y*w*4;
+      for(var x=0;x<w;x++){
+        var idx=rowOff+x*4;
+        if(data[idx]<248||data[idx+1]<248||data[idx+2]<248){
+          hay=true;
+          if(x<minX)minX=x; if(x>maxX)maxX=x;
+          if(y<minY)minY=y; if(y>maxY)maxY=y;
+        }
+      }
+    }
+    if(!hay) return canvas;
+    var pad=10;
+    minX=Math.max(0,minX-pad); minY=Math.max(0,minY-pad);
+    maxX=Math.min(w-1,maxX+pad); maxY=Math.min(h-1,maxY+pad);
+    var cw=maxX-minX+1, ch=maxY-minY+1;
+    var out=document.createElement("canvas");
+    out.width=cw; out.height=ch;
+    out.getContext("2d").drawImage(canvas, minX,minY,cw,ch, 0,0,cw,ch);
+    return out;
+  }
+
   function capturar(){
     var el=doc.querySelector(".wrap")||doc.body;
-    var noprint=doc.querySelectorAll(".no-print");
-    noprint.forEach(function(n){n.style.display="none";});
-    // Captura robusta: obtenemos el canvas completo y lo colocamos MANUALMENTE
-    // en una sola página Letter, escalado para que quepa entero (ancho y alto).
-    // Así nunca se corta contenido ni se genera una segunda página en blanco,
-    // sin importar diferencias de renderizado entre navegadores (Safari, etc.).
-    var worker=html2pdf().set({
+    doc.querySelectorAll(".no-print").forEach(function(n){n.style.display="none";});
+    html2pdf().set({
       image:{type:"jpeg",quality:0.95},
-      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",scrollX:0,scrollY:0},
       jsPDF:{unit:"pt",format:"letter",orientation:"portrait"}
-    }).from(el);
-    var _canvas=null;
-    worker.toCanvas().get("canvas").then(function(canvas){
-      _canvas=canvas;
-      return worker.toPdf().get("pdf");
-    }).then(function(pdf){
-      var pageW=pdf.internal.pageSize.getWidth(), pageH=pdf.internal.pageSize.getHeight();
-      while(pdf.internal.getNumberOfPages()>1){ pdf.deletePage(pdf.internal.getNumberOfPages()); }
-      pdf.setPage(1);
-      pdf.setFillColor(255,255,255);
-      pdf.rect(0,0,pageW,pageH,"F");
-      var m=28;
-      var availW=pageW-m*2, availH=pageH-m*2;
-      var sc=Math.min(availW/_canvas.width, availH/_canvas.height);
-      var dW=_canvas.width*sc, dH=_canvas.height*sc;
-      var px=(pageW-dW)/2, py=m;
-      pdf.addImage(_canvas.toDataURL("image/jpeg",0.95),"JPEG",px,py,dW,dH);
-      var datauri=pdf.output("datauristring");
-      var base64=datauri.substring(datauri.indexOf(",")+1);
-      showLoader("Subiendo a Drive...");
-      var payload=pdfRecord(P);
-      payload.pdf=base64;
-      payload.accion="pdf";
-      postToGAS(payload, function(link){
-        link=(link||"").trim();
-        var pre=document.getElementById("ctel-pre"),num=document.getElementById("ctel-num");
-        var digits="";
-        if(pre&&num&&num.value.trim()){
-          digits=(pre.value.replace(/[^0-9]/g,"")+num.value.replace(/[^0-9]/g,""));
-        }
-        var msg="Hola"+(P.nombre?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
-        if(link)msg+="\n\nPuedes verla y descargarla aquí:\n"+link;
-        var wa=digits?("https://wa.me/"+digits+"?text="+encodeURIComponent(msg)):("https://wa.me/?text="+encodeURIComponent(msg));
-        incrementNro();
-        iframe.remove();
-        hideLoader();
-        if(waWin&&!waWin.closed){ waWin.location.href=wa; }
-        else{ window.open(wa,"_blank"); }
-      }, function(){
-        iframe.remove();
-        hideLoader();
-        if(waWin&&!waWin.closed)waWin.close();
-        alert("No se pudo subir el PDF a Drive. Revisa tu conexión e intenta de nuevo.");
+    }).from(el).toCanvas().get("canvas").then(function(rawCanvas){
+      var canvas=recortar(rawCanvas);
+      return html2pdf().set({jsPDF:{unit:"pt",format:"letter",orientation:"portrait"}}).from(el).toPdf().get("pdf").then(function(pdf){
+        var pageW=pdf.internal.pageSize.getWidth(), pageH=pdf.internal.pageSize.getHeight();
+        while(pdf.internal.getNumberOfPages()>1){ pdf.deletePage(pdf.internal.getNumberOfPages()); }
+        pdf.setPage(1);
+        pdf.setFillColor(255,255,255);
+        pdf.rect(0,0,pageW,pageH,"F");
+        var m=28;
+        var availW=pageW-m*2, availH=pageH-m*2;
+        var sc=Math.min(availW/canvas.width, availH/canvas.height);
+        var dW=canvas.width*sc, dH=canvas.height*sc;
+        var px=(pageW-dW)/2, py=m;
+        pdf.addImage(canvas.toDataURL("image/jpeg",0.95),"JPEG",px,py,dW,dH);
+        var datauri=pdf.output("datauristring");
+        var base64=datauri.substring(datauri.indexOf(",")+1);
+        showLoader("Subiendo a Drive...");
+        var payload=pdfRecord(P);
+        payload.pdf=base64;
+        payload.accion="pdf";
+        postToGAS(payload, function(link){
+          link=(link||"").trim();
+          var pre=document.getElementById("ctel-pre"),num=document.getElementById("ctel-num");
+          var digits="";
+          if(pre&&num&&num.value.trim()){
+            digits=(pre.value.replace(/[^0-9]/g,"")+num.value.replace(/[^0-9]/g,""));
+          }
+          var msg="Hola"+(P.nombre?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
+          if(link)msg+="\n\nPuedes verla y descargarla aquí:\n"+link;
+          var wa=digits?("https://wa.me/"+digits+"?text="+encodeURIComponent(msg)):("https://wa.me/?text="+encodeURIComponent(msg));
+          incrementNro();
+          iframe.remove();
+          hideLoader();
+          if(waWin&&!waWin.closed){ waWin.location.href=wa; }
+          else{ window.open(wa,"_blank"); }
+        }, function(){
+          iframe.remove();
+          hideLoader();
+          if(waWin&&!waWin.closed)waWin.close();
+          alert("No se pudo subir el PDF a Drive. Revisa tu conexión e intenta de nuevo.");
+        });
       });
     }).catch(function(err){
       iframe.remove();
