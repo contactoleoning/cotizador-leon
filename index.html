@@ -636,7 +636,6 @@ function loadInstList(){
 function saveInstList(){
   try{localStorage.setItem("inst_list",JSON.stringify(INST_LIST));}catch(e){}
   updateItipoSelect();
-  renderInstAdmin();
   calcInst();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
@@ -667,6 +666,7 @@ function eliminarInst(id){
   if(!confirm("¿Eliminar esta instalación?"))return;
   INST_LIST=INST_LIST.filter(function(i){return i.id!==id;});
   saveInstList();
+  renderInstAdmin();
 }
 
 function moverInst(id,dir){
@@ -683,6 +683,7 @@ function moverInst(id,dir){
   INST_LIST[globalPos]=INST_LIST[swapPos];
   INST_LIST[swapPos]=tmp;
   saveInstList();
+  renderInstAdmin();
 }
 
 function agregarInstNueva(){
@@ -693,6 +694,7 @@ function agregarInstNueva(){
   var id="inst_"+Date.now();
   INST_LIST.push({id:id,nombre:nombre,tipo:tipo,precio:precio});
   saveInstList();
+  renderInstAdmin();
   document.getElementById("new-inst-nombre").value="";
   document.getElementById("new-inst-tipo").value="";
   document.getElementById("new-inst-precio").value="";
@@ -724,9 +726,9 @@ function renderInstAdmin(){
         +'<div><div style="'+lbl+'">Nombre</div>'
         +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-instid="'+it.id+'" data-instcampo="nombre" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.nombre=el.value;saveInstList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-instid="'+it.id+'" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.precio=parseFloat(el.value)||0;saveInstList();}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-instid="'+it.id+'" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.precio=parseFloat(el.value)||0;saveInstList();var civa=el.closest(\'div[style*=grid]\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
-        +'<div style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
+        +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
         +'<div style="display:flex;gap:4px">'
         +(isFirst?'<button style="'+btnUp+';opacity:.3" disabled>↑ Subir</button>':'<button style="'+btnUp+'" onclick="moverInst(\''+it.id+'\',\'up\')">↑ Subir</button>')
