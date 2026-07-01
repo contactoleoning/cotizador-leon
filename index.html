@@ -1464,16 +1464,32 @@ function enviarWhatsApp(){
     var el=doc.querySelector(".wrap")||doc.body;
     var noprint=doc.querySelectorAll(".no-print");
     noprint.forEach(function(n){n.style.display="none";});
-    // Medir el contenido real y pasar dimensiones EXPLÍCITAS a html2canvas
-    // para que la captura sea idéntica en cualquier navegador (sin depender
-    // del viewport del iframe, que varía entre dispositivos).
-    var cw=el.scrollWidth, ch=el.scrollHeight;
-    html2pdf().set({
-      margin:[0,30,0,30],
+    // Captura robusta: obtenemos el canvas completo y lo colocamos MANUALMENTE
+    // en una sola página Letter, escalado para que quepa entero (ancho y alto).
+    // Así nunca se corta contenido ni se genera una segunda página en blanco,
+    // sin importar diferencias de renderizado entre navegadores (Safari, etc.).
+    var worker=html2pdf().set({
       image:{type:"jpeg",quality:0.95},
-      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",width:cw,height:ch,windowWidth:cw,windowHeight:ch,scrollX:0,scrollY:0},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
       jsPDF:{unit:"pt",format:"letter",orientation:"portrait"}
-    }).from(el).outputPdf("datauristring").then(function(datauri){
+    }).from(el);
+    var _canvas=null;
+    worker.toCanvas().get("canvas").then(function(canvas){
+      _canvas=canvas;
+      return worker.toPdf().get("pdf");
+    }).then(function(pdf){
+      var pageW=pdf.internal.pageSize.getWidth(), pageH=pdf.internal.pageSize.getHeight();
+      while(pdf.internal.getNumberOfPages()>1){ pdf.deletePage(pdf.internal.getNumberOfPages()); }
+      pdf.setPage(1);
+      pdf.setFillColor(255,255,255);
+      pdf.rect(0,0,pageW,pageH,"F");
+      var m=28;
+      var availW=pageW-m*2, availH=pageH-m*2;
+      var sc=Math.min(availW/_canvas.width, availH/_canvas.height);
+      var dW=_canvas.width*sc, dH=_canvas.height*sc;
+      var px=(pageW-dW)/2, py=m;
+      pdf.addImage(_canvas.toDataURL("image/jpeg",0.95),"JPEG",px,py,dW,dH);
+      var datauri=pdf.output("datauristring");
       var base64=datauri.substring(datauri.indexOf(",")+1);
       showLoader("Subiendo a Drive...");
       var payload=pdfRecord(P);
