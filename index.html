@@ -407,12 +407,11 @@ select option{background:#0f2647;color:var(--txt)}
   </div>
   <div class="card">
     <div class="sec-hdr" onclick="toggleSec(this)">
-      <div class="ct">🧱 Materiales y Extras</div>
+      <div class="ct">🧱 Materiales</div>
       <span class="sec-arrow">▼</span>
     </div>
     <div class="sec-body" style="max-height:0">
 
-    <div class="ss">Materiales</div>
     <div class="fr"><span class="fl">Tipo de materiales</span>
       <select id="imateriales" onchange="calcInst()">
         <option value="0">— Selecciona —</option>
@@ -431,8 +430,16 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="5">5</option>
       </select>
     </div>
-    
-    
+
+    <button class="btn badd" id="btnagregarmateriales" style="margin-top:10px">+ Agregar Materiales al Presupuesto</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec-hdr" onclick="toggleSec(this)">
+      <div class="ct">➕ Extras</div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body" style="max-height:0">
 
     <div class="ss">Canaleta Decorativa (Opcional)</div>
     <div class="fr"><span class="fl">Bandejas 100×50mm ($6.500 c/u, 2m)</span><input type="number" id="ican100" value="0" min="0" max="10"></div>
@@ -449,7 +456,7 @@ select option{background:#0f2647;color:var(--txt)}
       </select>
     </div></div>
 
-    <button class="btn badd" id="btnagregarmateriales" style="margin-top:10px">+ Agregar Materiales al Presupuesto</button>
+    <button class="btn badd" id="btnagregarextras" style="margin-top:10px">+ Agregar Extras al Presupuesto</button>
     </div>
   </div>
   <div class="card">
@@ -931,20 +938,23 @@ function agregarInstalacionSola(){
   renderCarrito();
 }
 
-function agregarMaterialesExtras(){
-  var agregado=false;
-
+function agregarMaterialesSolo(){
   var mat=vn("imateriales");
-  if(mat>0){
-    if(!vs("cantmat")){alert("Selecciona la cantidad de materiales.");return;}
-    var cantMat=parseInt(vs("cantmat"))||1;
-    var matVal=document.getElementById("imateriales").value;
-    var matNombre=matVal==="46000"?"Kit de cañería":matVal==="150000"?"Materiales Adicionales Experto":"Materiales Básicos";
-    carrito.push({id:"MAT_"+Date.now(),cod:"MAT",
-      desc:matNombre,tipo:"Materiales",
-      neto:mat,total:wIVA(mat),esCyber:false,disc:0,cant:cantMat});
-    agregado=true;
-  }
+  if(!(mat>0)){alert("Selecciona el tipo de materiales.");return;}
+  if(!vs("cantmat")){alert("Selecciona la cantidad de materiales.");return;}
+  var cantMat=parseInt(vs("cantmat"))||1;
+  var matVal=document.getElementById("imateriales").value;
+  var matNombre=matVal==="46000"?"Kit de cañería":matVal==="150000"?"Materiales Adicionales Experto":"Materiales Básicos";
+  carrito.push({id:"MAT_"+Date.now(),cod:"MAT",
+    desc:matNombre,tipo:"Materiales",
+    neto:mat,total:wIVA(mat),esCyber:false,disc:0,cant:cantMat});
+  document.getElementById("imateriales").value="0";
+  document.getElementById("cantmat").value="";
+  renderCarrito();
+}
+
+function agregarExtras(){
+  var agregado=false;
 
   var can100=vn("ican100")*6500;
   var can20=vn("ican20")*1200;
@@ -967,12 +977,10 @@ function agregarMaterialesExtras(){
   }
 
   if(!agregado){
-    alert("Selecciona al menos un ítem: materiales, canaleta o bomba.");
+    alert("Selecciona al menos un ítem: canaleta o bomba.");
     return;
   }
 
-  document.getElementById("imateriales").value="0";
-  document.getElementById("cantmat").value="";
   document.getElementById("ibomba").value="0";
   document.getElementById("rowbomba").style.display="none";
   document.getElementById("ican100").value="0";
@@ -1843,7 +1851,8 @@ document.addEventListener("DOMContentLoaded", function(){
   });
   // Instalacion
   document.getElementById("btnagregarinstalacion").addEventListener("click",agregarInstalacionSola);
-  document.getElementById("btnagregarmateriales").addEventListener("click",agregarMaterialesExtras);
+  document.getElementById("btnagregarmateriales").addEventListener("click",agregarMaterialesSolo);
+  document.getElementById("btnagregarextras").addEventListener("click",agregarExtras);
   document.getElementById("btnagregartraslado").addEventListener("click",agregarTraslado);
   document.getElementById("btnpdf").addEventListener("click",genPDF);
   var _bwa=document.getElementById("btnwa");if(_bwa)_bwa.addEventListener("click",enviarWhatsApp);
