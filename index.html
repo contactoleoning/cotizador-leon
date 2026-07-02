@@ -402,6 +402,16 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="5">5</option>
       </select>
     </div>
+    <button class="btn badd" id="btnagregarinstalacion" style="margin-top:10px">+ Agregar Instalación al Presupuesto</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec-hdr" onclick="toggleSec(this)">
+      <div class="ct">🧱 Materiales y Extras</div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body" style="max-height:0">
+
     <div class="ss">Materiales</div>
     <div class="fr"><span class="fl">Tipo de materiales</span>
       <select id="imateriales" onchange="calcInst()">
@@ -439,8 +449,7 @@ select option{background:#0f2647;color:var(--txt)}
       </select>
     </div></div>
 
-
-  
+    <button class="btn badd" id="btnagregarmateriales" style="margin-top:10px">+ Agregar Materiales al Presupuesto</button>
     </div>
   </div>
   <div class="card">
@@ -456,11 +465,9 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="189000">VI Región — $189.000 neto</option>
       </select>
     </div>
-  
+    <button class="btn badd" id="btnagregartraslado" style="margin-top:10px">+ Agregar Traslado al Presupuesto</button>
     </div>
   </div>
-  <div class="g3" id="instmets"></div>
-  <button class="btn badd" id="btnagregarinst">+ Agregar al Presupuesto</button>
 
 
 
@@ -837,7 +844,6 @@ function calcInst(){
   var mat=vn("imateriales");
   var neto=base+bomba+can100+can20+mat;
   var iva=Math.round(neto*IVA);
-  document.getElementById("instmets").innerHTML="";
 }
 
 
@@ -911,25 +917,23 @@ function agregarMantencion(){
   renderCarrito();
 }
 
-function agregarInst(){
+function agregarInstalacionSola(){
+  if(!vs("itipo")){alert("Selecciona el tipo de trabajo.");return;}
+  if(!vs("cantinst")){alert("Selecciona la cantidad de instalaciones.");return;}
+  var base=getIBASE(vs("itipo"));
+  var cantInst=parseInt(vs("cantinst"))||1;
+  var _instItem=INST_LIST.find(function(i){return i.id===vs("itipo");})||{};
+  carrito.push({id:"INST_"+Date.now(),cod:"IN-"+vs("itipo").toUpperCase(),
+    desc:_instItem.nombre||vs("itipo"),tipo:"Instalacion",
+    neto:base,total:wIVA(base),esCyber:false,disc:0,cant:cantInst});
+  document.getElementById("itipo").value="";
+  document.getElementById("cantinst").value="";
+  renderCarrito();
+}
+
+function agregarMaterialesExtras(){
   var agregado=false;
 
-  // Instalacion
-  if(vs("itipo")){
-    if(!vs("cantinst")){alert("Selecciona la cantidad de instalaciones.");return;}
-    var base=getIBASE(vs("itipo"));
-    var can100=vn("ican100")*6500;
-    var can20=vn("ican20")*1200;
-    var cantInst=parseInt(vs("cantinst"))||1;
-    var netoInst=base+can100+can20;
-    var _instItem=INST_LIST.find(function(i){return i.id===vs("itipo");})||{};
-    carrito.push({id:"INST_"+Date.now(),cod:"IN-"+vs("itipo").toUpperCase(),
-      desc:_instItem.nombre||vs("itipo"),tipo:"Instalacion",
-      neto:netoInst,total:wIVA(netoInst),esCyber:false,disc:0,cant:cantInst});
-    agregado=true;
-  }
-
-  // Materiales
   var mat=vn("imateriales");
   if(mat>0){
     if(!vs("cantmat")){alert("Selecciona la cantidad de materiales.");return;}
@@ -942,7 +946,16 @@ function agregarInst(){
     agregado=true;
   }
 
-  // Bomba de condensado
+  var can100=vn("ican100")*6500;
+  var can20=vn("ican20")*1200;
+  var canaletaTotal=can100+can20;
+  if(canaletaTotal>0){
+    carrito.push({id:"CANAL_"+Date.now(),cod:"CANAL",
+      desc:"Canaleta Decorativa",tipo:"Materiales",
+      neto:canaletaTotal,total:wIVA(canaletaTotal),esCyber:false,disc:0,cant:1});
+    agregado=true;
+  }
+
   var bomba=vn("ibomba");
   if(bomba>0){
     var cantBomba=parseInt(document.getElementById("cantbomba").value)||1;
@@ -953,33 +966,29 @@ function agregarInst(){
     agregado=true;
   }
 
-  // Traslado fuera de Santiago
-  var trasladoSel=document.getElementById("traslado");
-  var trasladoVal=parseInt(trasladoSel.value)||0;
-  if(trasladoVal>0){
-    var trasRegion=trasladoSel.options[trasladoSel.selectedIndex].text.split(" —")[0];
-    carrito.push({id:"TRASL_"+Date.now(),cod:"TRASL",
-      desc:"Traslado Fuera de Santiago — "+trasRegion,tipo:"Traslado",
-      neto:trasladoVal,total:wIVA(trasladoVal),esCyber:false,disc:0,cant:1});
-    agregado=true;
-  }
-
   if(!agregado){
-    alert("Selecciona al menos un ítem: instalación, materiales, bomba o traslado.");
+    alert("Selecciona al menos un ítem: materiales, canaleta o bomba.");
     return;
   }
 
-  // Reset
-  document.getElementById("itipo").value="";
-  document.getElementById("cantinst").value="";
   document.getElementById("imateriales").value="0";
   document.getElementById("cantmat").value="";
   document.getElementById("ibomba").value="0";
   document.getElementById("rowbomba").style.display="none";
-  document.getElementById("traslado").value="";
   document.getElementById("ican100").value="0";
   document.getElementById("ican20").value="0";
-  document.getElementById("instmets").innerHTML="";
+  renderCarrito();
+}
+
+function agregarTraslado(){
+  var trasladoSel=document.getElementById("traslado");
+  var trasladoVal=parseInt(trasladoSel.value)||0;
+  if(!trasladoVal){alert("Selecciona una región de traslado.");return;}
+  var trasRegion=trasladoSel.options[trasladoSel.selectedIndex].text.split(" —")[0];
+  carrito.push({id:"TRASL_"+Date.now(),cod:"TRASL",
+    desc:"Traslado Fuera de Santiago — "+trasRegion,tipo:"Traslado",
+    neto:trasladoVal,total:wIVA(trasladoVal),esCyber:false,disc:0,cant:1});
+  trasladoSel.value="";
   renderCarrito();
 }
 
@@ -1833,7 +1842,9 @@ document.addEventListener("DOMContentLoaded", function(){
     if(btn)removeItem(parseInt(btn.getAttribute("data-idx")));
   });
   // Instalacion
-  document.getElementById("btnagregarinst").addEventListener("click",agregarInst);
+  document.getElementById("btnagregarinstalacion").addEventListener("click",agregarInstalacionSola);
+  document.getElementById("btnagregarmateriales").addEventListener("click",agregarMaterialesExtras);
+  document.getElementById("btnagregartraslado").addEventListener("click",agregarTraslado);
   document.getElementById("btnpdf").addEventListener("click",genPDF);
   var _bwa=document.getElementById("btnwa");if(_bwa)_bwa.addEventListener("click",enviarWhatsApp);
   var _bind=document.getElementById("btnindicador");if(_bind)_bind.addEventListener("click",enviarAIndicador);
