@@ -119,6 +119,9 @@ select option{background:#0f2647;color:var(--txt)}
 .sec-arrow.open{transform:rotate(180deg)}
 .sec-body{overflow:hidden;transition:max-height .3s ease}
 @media(max-width:860px){#cot-wrap{flex-direction:column}#cot-left{width:100%;position:static;max-height:none}#cot-right{width:100%}}
+.admin-row{display:grid;grid-template-columns:1fr 130px 110px auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--brd)}
+.admin-row input{min-width:0}
+@media(max-width:600px){.admin-row{grid-template-columns:1fr;gap:8px}}
 
 #lock-overlay{position:fixed;inset:0;background:var(--bg,#0f1b2d);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
 #lock-overlay .lock-logo{width:72px;height:72px;border-radius:16px;margin-bottom:4px}
@@ -772,11 +775,11 @@ function renderMatAdmin(){
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
-      html+='<div style="display:grid;grid-template-columns:1fr 130px 110px auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--brd)">'
+      html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
         +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.nombre=el.value;saveMatList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.precio=parseFloat(el.value)||0;saveMatList();var civa=el.closest(\'div[style*=grid]\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.precio=parseFloat(el.value)||0;saveMatList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -892,11 +895,11 @@ function renderInstAdmin(){
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
-      html+='<div style="display:grid;grid-template-columns:1fr 130px 110px auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--brd)">'
+      html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
         +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-instid="'+it.id+'" data-instcampo="nombre" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.nombre=el.value;saveInstList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-instid="'+it.id+'" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.precio=parseFloat(el.value)||0;saveInstList();var civa=el.closest(\'div[style*=grid]\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-instid="'+it.id+'" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.precio=parseFloat(el.value)||0;saveInstList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -1137,11 +1140,11 @@ function renderMantAdmin(){
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
-      html+='<div style="display:grid;grid-template-columns:1fr 130px 110px auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--brd)">'
+      html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
         +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.nombre=el.value;saveMantList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.precio=parseFloat(el.value)||0;saveMantList();var civa=el.closest(\'div[style*=grid]\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.precio=parseFloat(el.value)||0;saveMantList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
