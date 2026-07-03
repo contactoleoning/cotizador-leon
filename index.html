@@ -329,13 +329,6 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="36">36.000 BTU — 60 m² o más</option>
       </select>
     </div>
-    <div class="fr"><span class="fl">Mantención A/C</span>
-      <select id="mantencionsel" onchange="onMantencionChange()">
-        <option value="">— Selecciona —</option>
-        <option value="mant1">Mantención Split Muro 9.000 y 12.000 BTU</option>
-        <option value="mant2">Mantención Split Muro 18.000 y 24.000 BTU</option>
-      </select>
-    </div>
     <div class="ss" style="margin-top:14px">Pack Promocional — Equipo Vesta</div>
     <div class="fr"><span class="fl">Pack Equipo Vesta</span>
       <select id="packvestasel" onchange="onPackVestaChange()">
@@ -367,17 +360,6 @@ select option{background:#0f2647;color:var(--txt)}
         <option value="5">5</option>
       </select>
     </div>
-    <div id="rowmant" style="display:none;margin-top:12px;flex-direction:column;gap:8px">
-      <div style="font-size:13px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em">Cantidad de Mantenciones</div>
-      <select id="cantmant" style="width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:11px 13px;font-size:16px;color:var(--txt);font-family:'DM Sans',sans-serif;outline:none;font-weight:500">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
-      </select>
-      <button class="btn badd" onclick="agregarMantencion()" style="width:100%;margin-top:4px">+ Agregar Mantención al Presupuesto</button>
-    </div>
     <button class="btn badd" id="btnag" style="display:none">+ Agregar Equipo al Presupuesto</button>
   
     </div>
@@ -403,6 +385,31 @@ select option{background:#0f2647;color:var(--txt)}
       </select>
     </div>
     <button class="btn badd" id="btnagregarinstalacion" style="margin-top:10px">+ Agregar Instalación al Presupuesto</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec-hdr" onclick="toggleSec(this)">
+      <div class="ct">🛠️ Mantención</div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body" style="max-height:0">
+
+    <div class="fr"><span class="fl">Tipo de Mantención</span>
+      <select id="imantencion">
+        <option value="">— Selecciona —</option>
+      </select>
+    </div>
+    <div class="fr"><span class="fl">Cantidad de mantenciones</span>
+      <select id="cantmant">
+        <option value="">—</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+    <button class="btn badd" id="btnagregarmantencion" style="margin-top:10px">+ Agregar Mantención al Presupuesto</button>
     </div>
   </div>
   <div class="card">
@@ -558,6 +565,15 @@ select option{background:#0f2647;color:var(--txt)}
     </div>
     <div id="adm-inst-body" style="display:none;padding:14px">
       <div id="instlista"></div>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+    <div onclick="toggleAdmSec('mnt')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
+      <div class="ct" style="margin:0;border:none;padding:0">Mantenciones</div>
+      <span id="adm-mnt-arrow" style="font-size:18px;color:var(--acc);transition:transform .2s">▶</span>
+    </div>
+    <div id="adm-mnt-body" style="display:none;padding:14px">
+      <div id="mntlista"></div>
     </div>
   </div>
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
@@ -1028,39 +1044,142 @@ function agregarPackVesta(){
   renderCarrito();
 }
 
-function onMantencionChange(){
-  var val=document.getElementById("mantencionsel").value;
-  var rowmant=document.getElementById("rowmant");
-  if(val){
-    rowmant.style.display="flex";rowmant.style.flexDirection="column";rowmant.style.gap="8px";
-  } else {
-    rowmant.style.display="none";
-    document.getElementById("cantmant").value="1";
-  }
+var MANT_LIST=[];
+var MANT_DEFAULTS=[
+  {id:"mant_split912",nombre:"Mantención Split Muro 9.000 y 12.000 BTU",tipo:"Mantención Split Muro",precio:40000},
+  {id:"mant_split1824",nombre:"Mantención Split Muro 18.000 y 24.000 BTU",tipo:"Mantención Split Muro",precio:55000}
+];
+
+function loadMantList(){
+  try{
+    var s=localStorage.getItem("mant_list");
+    if(s){MANT_LIST=JSON.parse(s);return;}
+  }catch(e){}
+  MANT_LIST=MANT_DEFAULTS.map(function(x){return Object.assign({},x);});
 }
 
-function agregarMantencion(){
-  var sel=document.getElementById("mantencionsel");
-  var val=sel.value;
-  if(!val){alert("Selecciona un tipo de mantención.");return;}
-  var cant=parseInt(document.getElementById("cantmant").value)||1;
-  var desc="";
-  var neto=0;
-  if(val==="mant1"){
-    desc="Mantención Split Muro 9.000 y 12.000 BTU";
-    neto=40000;
-  } else if(val==="mant2"){
-    desc="Mantención Split Muro 18.000 y 24.000 BTU";
-    neto=55000;
-  }
-  if(!neto) return;
+function saveMantList(){
+  try{localStorage.setItem("mant_list",JSON.stringify(MANT_LIST));}catch(e){}
+  updateMantencionSelect();
+  var m=document.getElementById("savedmsg");
+  m.textContent="Guardado";
+  setTimeout(function(){m.textContent="";},2000);
+  saveCloudData();
+}
+
+function updateMantencionSelect(){
+  var sel=document.getElementById("imantencion");
+  if(!sel)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">— Selecciona —</option>';
+  MANT_LIST.forEach(function(it){
+    var o=document.createElement("option");
+    o.value=it.id;o.textContent=it.nombre;
+    sel.appendChild(o);
+  });
+  sel.value=cur;
+}
+
+function eliminarMant(id){
+  if(!confirm("¿Eliminar esta mantención?"))return;
+  MANT_LIST=MANT_LIST.filter(function(i){return i.id!==id;});
+  saveMantList();
+  renderMantAdmin();
+}
+
+function moverMant(id,dir){
+  var item=MANT_LIST.find(function(i){return i.id===id;});
+  if(!item)return;
+  var sameType=MANT_LIST.map(function(i,idx){return i.tipo===item.tipo?idx:-1;}).filter(function(x){return x>=0;});
+  var posInType=sameType.indexOf(MANT_LIST.indexOf(item));
+  var swapPos=dir==="up"?sameType[posInType-1]:sameType[posInType+1];
+  if(swapPos===undefined)return;
+  var globalPos=MANT_LIST.indexOf(item);
+  var tmp=MANT_LIST[globalPos];
+  MANT_LIST[globalPos]=MANT_LIST[swapPos];
+  MANT_LIST[swapPos]=tmp;
+  saveMantList();
+  renderMantAdmin();
+}
+
+function agregarMantNueva(){
+  var nombre=document.getElementById("new-mant-nombre").value.trim();
+  var tipo=document.getElementById("new-mant-tipo").value.trim()||"Mantención Split Muro";
+  var precio=parseFloat(document.getElementById("new-mant-precio").value)||0;
+  if(!nombre||!precio){alert("Completa nombre y precio.");return;}
+  var id="mant_"+Date.now();
+  MANT_LIST.push({id:id,nombre:nombre,tipo:tipo,precio:precio});
+  saveMantList();
+  renderMantAdmin();
+  document.getElementById("new-mant-nombre").value="";
+  document.getElementById("new-mant-tipo").value="";
+  document.getElementById("new-mant-precio").value="";
+}
+
+function renderMantAdmin(){
+  var lbl='font-size:11px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;font-weight:600';
+  var si='width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:8px 10px;font-size:14px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
+  var sa='width:100%;background:var(--bg3);border:2px solid var(--acc);border-radius:var(--rs);padding:8px 10px;font-size:14px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
+  var btnUp='background:#1a3a5c;border:2px solid var(--blu);color:var(--blu);border-radius:var(--rs);padding:6px 12px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap';
+  var btnDel='background:#c0392b;color:#fff;border:none;padding:6px 14px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer';
+
+  var grupos={},orden=[];
+  MANT_LIST.forEach(function(it){
+    if(!grupos[it.tipo]){grupos[it.tipo]=[];orden.push(it.tipo);}
+    grupos[it.tipo].push(it);
+  });
+
+  var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita, agrega, elimina y reordena las mantenciones. Los cambios se aplican al instante.</div>';
+
+  orden.forEach(function(tipo){
+    html+='<div class="gl">'+tipo+'</div>';
+    var items=grupos[tipo];
+    items.forEach(function(it,idxInGroup){
+      var pventa=Math.round(it.precio*(1+IVA));
+      var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
+      html+='<div style="display:grid;grid-template-columns:1fr 130px 110px auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--brd)">'
+        +'<div><div style="'+lbl+'">Nombre</div>'
+        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.nombre=el.value;saveMantList();}})(this)"></div>'
+        +'<div><div style="'+lbl+'">Precio Neto $</div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.precio=parseFloat(el.value)||0;saveMantList();var civa=el.closest(\'div[style*=grid]\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<div><div style="'+lbl+'">Precio c/IVA</div>'
+        +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
+        +'<div style="display:flex;flex-direction:column;gap:4px">'
+        +'<div style="display:flex;gap:4px">'
+        +(isFirst?'<button style="'+btnUp+';opacity:.3" disabled>↑ Subir</button>':'<button style="'+btnUp+'" onclick="moverMant(\''+it.id+'\',\'up\')">↑ Subir</button>')
+        +(isLast?'<button style="'+btnUp+';opacity:.3" disabled>↓ Bajar</button>':'<button style="'+btnUp+'" onclick="moverMant(\''+it.id+'\',\'down\')">↓ Bajar</button>')
+        +'</div>'
+        +'<button style="'+btnDel+';width:100%" onclick="eliminarMant(\''+it.id+'\')">🗑 Eliminar</button>'
+        +'</div>'
+        +'</div>';
+    });
+  });
+
+  html+='<div class="gl" style="margin-top:20px">+ Agregar Nueva Mantención</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px;padding:14px 0">'
+    +'<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px">'
+    +'<div><div style="'+lbl+'">Nombre</div><input type="text" id="new-mant-nombre" placeholder="Ej: Mantención Cassette 18.000 BTU" style="'+sa+'"></div>'
+    +'<div><div style="'+lbl+'">Tipo / Segmento</div><input type="text" id="new-mant-tipo" placeholder="Ej: Mantención Split Muro" style="'+sa+'"></div>'
+    +'</div>'
+    +'<div><div style="'+lbl+'">Precio Neto $</div><input type="number" id="new-mant-precio" placeholder="40000" style="'+sa+'"></div>'
+    +'<button onclick="agregarMantNueva()" style="background:var(--acc);color:#1a1a1a;border:none;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;width:100%">+ Agregar Mantención</button>'
+    +'</div>';
+
+  document.getElementById("mntlista").innerHTML=html;
+}
+
+function agregarMantencionSola(){
+  var mantId=vs("imantencion");
+  if(!mantId){alert("Selecciona el tipo de mantención.");return;}
+  if(!vs("cantmant")){alert("Selecciona la cantidad de mantenciones.");return;}
+  var cant=parseInt(vs("cantmant"))||1;
+  var item=MANT_LIST.find(function(i){return i.id===mantId;});
+  if(!item)return;
   carrito.push({id:"MANT_"+Date.now(),cod:"MANT",
-    desc:desc,tipo:"Mantención",
-    neto:neto,total:wIVA(neto),esCyber:false,disc:0,cant:cant});
-  // Reset
-  sel.value="";
-  document.getElementById("cantmant").value="1";
-  document.getElementById("rowmant").style.display="none";
+    desc:item.nombre,tipo:"Mantención",
+    neto:item.precio,total:wIVA(item.precio),esCyber:false,disc:0,cant:cant});
+  document.getElementById("imantencion").value="";
+  document.getElementById("cantmant").value="";
   renderCarrito();
 }
 
@@ -1811,6 +1930,13 @@ function loadCloudData(){
       updateItipoSelect();
       renderInstAdmin();
     }
+    // lista de mantenciones
+    if(rec.mant_list&&rec.mant_list.length){
+      MANT_LIST=rec.mant_list;
+      try{localStorage.setItem("mant_list",JSON.stringify(MANT_LIST));}catch(e){}
+      updateMantencionSelect();
+      renderMantAdmin();
+    }
     // lista de materiales
     if(rec.mat_list&&rec.mat_list.length){
       MAT_LIST=rec.mat_list;
@@ -1843,7 +1969,7 @@ function saveCloudData(){
   fetch("https://api.jsonbin.io/v3/b/"+JSONBIN_ID,{
     method:"PUT",
     headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},
-    body:JSON.stringify({nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST})
+    body:JSON.stringify({nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST})
   })
   .then(function(){setSyncStatus(true);})
   .catch(function(){setSyncStatus(false);});
@@ -2003,6 +2129,7 @@ document.addEventListener("DOMContentLoaded", function(){
   });
   // Instalacion
   document.getElementById("btnagregarinstalacion").addEventListener("click",agregarInstalacionSola);
+  document.getElementById("btnagregarmantencion").addEventListener("click",agregarMantencionSola);
   document.getElementById("btnagregarmateriales").addEventListener("click",agregarMaterialesSolo);
   document.getElementById("btnagregarextras").addEventListener("click",agregarExtras);
   document.getElementById("btnagregartraslado").addEventListener("click",agregarTraslado);
@@ -2059,6 +2186,9 @@ document.addEventListener("DOMContentLoaded", function(){
   loadInstList();
   updateItipoSelect();
   renderInstAdmin();
+  loadMantList();
+  updateMantencionSelect();
+  renderMantAdmin();
   loadMatList();
   updateImaterialesSelect();
   renderMatAdmin();
