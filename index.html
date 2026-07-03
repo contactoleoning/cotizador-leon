@@ -415,9 +415,6 @@ select option{background:#0f2647;color:var(--txt)}
     <div class="fr"><span class="fl">Tipo de materiales</span>
       <select id="imateriales" onchange="calcInst()">
         <option value="0">— Selecciona —</option>
-        <option value="109235">Básico — $109.235 neto</option>
-        <option value="46000">Kit de cañería — $46.000 neto</option>
-        <option value="150000">Materiales Adicionales Experto — $150.000 neto</option>
       </select>
     </div>
     <div class="fr"><span class="fl">Cantidad materiales</span>
@@ -563,6 +560,15 @@ select option{background:#0f2647;color:var(--txt)}
       <div id="instlista"></div>
     </div>
   </div>
+  <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+    <div onclick="toggleAdmSec('mat')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
+      <div class="ct" style="margin:0;border:none;padding:0">Materiales</div>
+      <span id="adm-mat-arrow" style="font-size:18px;color:var(--acc);transition:transform .2s">▶</span>
+    </div>
+    <div id="adm-mat-body" style="display:none;padding:14px">
+      <div id="matlista"></div>
+    </div>
+  </div>
   <div class="smsg" id="savedmsg"></div>
 </div>
 </main>
@@ -645,6 +651,114 @@ function loadInstList(){
     }
   }catch(e){}
   INST_LIST=INST_DEFAULTS.map(function(x){return Object.assign({},x);});
+}
+
+var MAT_LIST=[];
+var MAT_DEFAULTS=[
+  {id:"mat_basico",nombre:"Básico",precio:109235},
+  {id:"mat_kit",nombre:"Kit de cañería",precio:46000},
+  {id:"mat_experto",nombre:"Materiales Adicionales Experto",precio:150000}
+];
+
+function loadMatList(){
+  try{
+    var s=localStorage.getItem("mat_list");
+    if(s){MAT_LIST=JSON.parse(s);return;}
+  }catch(e){}
+  MAT_LIST=MAT_DEFAULTS.map(function(x){return Object.assign({},x);});
+}
+
+function saveMatList(){
+  try{localStorage.setItem("mat_list",JSON.stringify(MAT_LIST));}catch(e){}
+  updateImaterialesSelect();
+  var m=document.getElementById("savedmsg");
+  m.textContent="Guardado";
+  setTimeout(function(){m.textContent="";},2000);
+  saveCloudData();
+}
+
+function updateImaterialesSelect(){
+  var sel=document.getElementById("imateriales");
+  if(!sel)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="0">— Selecciona —</option>';
+  MAT_LIST.forEach(function(it){
+    var o=document.createElement("option");
+    o.value=it.precio;o.textContent=it.nombre+" — "+fmt(it.precio)+" neto";
+    o.dataset.matid=it.id;
+    sel.appendChild(o);
+  });
+  sel.value=cur;
+}
+
+function eliminarMat(id){
+  if(!confirm("¿Eliminar este material?"))return;
+  MAT_LIST=MAT_LIST.filter(function(i){return i.id!==id;});
+  saveMatList();
+  renderMatAdmin();
+}
+
+function moverMat(id,dir){
+  var pos=MAT_LIST.findIndex(function(i){return i.id===id;});
+  if(pos<0)return;
+  var swapPos=dir==="up"?pos-1:pos+1;
+  if(swapPos<0||swapPos>=MAT_LIST.length)return;
+  var tmp=MAT_LIST[pos];
+  MAT_LIST[pos]=MAT_LIST[swapPos];
+  MAT_LIST[swapPos]=tmp;
+  saveMatList();
+  renderMatAdmin();
+}
+
+function agregarMatNuevo(){
+  var nombre=document.getElementById("new-mat-nombre").value.trim();
+  var precio=parseFloat(document.getElementById("new-mat-precio").value)||0;
+  if(!nombre||!precio){alert("Completa nombre y precio.");return;}
+  var id="mat_"+Date.now();
+  MAT_LIST.push({id:id,nombre:nombre,precio:precio});
+  saveMatList();
+  renderMatAdmin();
+  document.getElementById("new-mat-nombre").value="";
+  document.getElementById("new-mat-precio").value="";
+}
+
+function renderMatAdmin(){
+  var lbl='font-size:11px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;font-weight:600';
+  var si='width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:8px 10px;font-size:14px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
+  var sa='width:100%;background:var(--bg3);border:2px solid var(--acc);border-radius:var(--rs);padding:8px 10px;font-size:14px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
+  var btnUp='background:#1a3a5c;border:2px solid var(--blu);color:var(--blu);border-radius:var(--rs);padding:6px 12px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap';
+  var btnDel='background:#c0392b;color:#fff;border:none;padding:6px 14px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer';
+
+  var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita, agrega, elimina y reordena los materiales. Los cambios se aplican al instante.</div>';
+
+  MAT_LIST.forEach(function(it,idx){
+    var pventa=Math.round(it.precio*(1+IVA));
+    var isFirst=idx===0, isLast=idx===MAT_LIST.length-1;
+    html+='<div style="display:grid;grid-template-columns:1fr 130px 110px auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--brd)">'
+      +'<div><div style="'+lbl+'">Nombre</div>'
+      +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.nombre=el.value;saveMatList();}})(this)"></div>'
+      +'<div><div style="'+lbl+'">Precio Neto $</div>'
+      +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.precio=parseFloat(el.value)||0;saveMatList();var civa=el.closest(\'div[style*=grid]\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+      +'<div><div style="'+lbl+'">Precio c/IVA</div>'
+      +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
+      +'<div style="display:flex;flex-direction:column;gap:4px">'
+      +'<div style="display:flex;gap:4px">'
+      +(isFirst?'<button style="'+btnUp+';opacity:.3" disabled>↑ Subir</button>':'<button style="'+btnUp+'" onclick="moverMat(\''+it.id+'\',\'up\')">↑ Subir</button>')
+      +(isLast?'<button style="'+btnUp+';opacity:.3" disabled>↓ Bajar</button>':'<button style="'+btnUp+'" onclick="moverMat(\''+it.id+'\',\'down\')">↓ Bajar</button>')
+      +'</div>'
+      +'<button style="'+btnDel+';width:100%" onclick="eliminarMat(\''+it.id+'\')">🗑 Eliminar</button>'
+      +'</div>'
+      +'</div>';
+  });
+
+  html+='<div class="gl" style="margin-top:20px">+ Agregar Nuevo Material</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px;padding:14px 0">'
+    +'<div><div style="'+lbl+'">Nombre</div><input type="text" id="new-mat-nombre" placeholder="Ej: Materiales Premium" style="'+sa+'"></div>'
+    +'<div><div style="'+lbl+'">Precio Neto $</div><input type="number" id="new-mat-precio" placeholder="150000" style="'+sa+'"></div>'
+    +'<button onclick="agregarMatNuevo()" style="background:var(--acc);color:#1a1a1a;border:none;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;width:100%">+ Agregar Material</button>'
+    +'</div>';
+
+  document.getElementById("matlista").innerHTML=html;
 }
 
 function saveInstList(){
@@ -943,8 +1057,10 @@ function agregarMaterialesSolo(){
   if(!(mat>0)){alert("Selecciona el tipo de materiales.");return;}
   if(!vs("cantmat")){alert("Selecciona la cantidad de materiales.");return;}
   var cantMat=parseInt(vs("cantmat"))||1;
-  var matVal=document.getElementById("imateriales").value;
-  var matNombre=matVal==="46000"?"Kit de cañería":matVal==="150000"?"Materiales Adicionales Experto":"Materiales Básicos";
+  var selEl=document.getElementById("imateriales");
+  var matId=selEl.options[selEl.selectedIndex].dataset.matid;
+  var matItem=MAT_LIST.find(function(i){return i.id===matId;});
+  var matNombre=matItem?matItem.nombre:"Materiales";
   carrito.push({id:"MAT_"+Date.now(),cod:"MAT",
     desc:matNombre,tipo:"Materiales",
     neto:mat,total:wIVA(mat),esCyber:false,disc:0,cant:cantMat});
@@ -1666,6 +1782,15 @@ function loadCloudData(){
     if(rec.inst_list&&rec.inst_list.length){
       INST_LIST=rec.inst_list;
       try{localStorage.setItem("inst_list",JSON.stringify(INST_LIST));}catch(e){}
+      updateItipoSelect();
+      renderInstAdmin();
+    }
+    // lista de materiales
+    if(rec.mat_list&&rec.mat_list.length){
+      MAT_LIST=rec.mat_list;
+      try{localStorage.setItem("mat_list",JSON.stringify(MAT_LIST));}catch(e){}
+      updateImaterialesSelect();
+      renderMatAdmin();
     }
     setSyncStatus(true);
     filtrar();
@@ -1691,7 +1816,7 @@ function saveCloudData(){
   fetch("https://api.jsonbin.io/v3/b/"+JSONBIN_ID,{
     method:"PUT",
     headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},
-    body:JSON.stringify({nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST})
+    body:JSON.stringify({nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST})
   })
   .then(function(){setSyncStatus(true);})
   .catch(function(){setSyncStatus(false);});
@@ -1907,6 +2032,9 @@ document.addEventListener("DOMContentLoaded", function(){
   loadInstList();
   updateItipoSelect();
   renderInstAdmin();
+  loadMatList();
+  updateImaterialesSelect();
+  renderMatAdmin();
   initInfo();
 });
 
