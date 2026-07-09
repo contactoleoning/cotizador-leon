@@ -1,7 +1,7 @@
 // Service worker — Cotizador León
 // Estrategia: red primero (para recibir siempre la última versión publicada),
 // con caché de respaldo para abrir la app sin conexión.
-var CACHE = "cotizador-leon-v1";
+var CACHE = "cotizador-leon-v2";
 var ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", function (e) {
