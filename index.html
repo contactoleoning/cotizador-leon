@@ -846,7 +846,9 @@ function renderMatAdmin(){
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita, agrega, elimina y reordena los materiales. Los cambios se aplican al instante.</div>';
 
   orden.forEach(function(tipo){
-    html+='<div class="gl">'+tipo+'</div>';
+    var gkey='mat:'+tipo;
+    html+=admGroupHeader(gkey,'renderMatAdmin',tipo,grupos[tipo].length);
+    if(!ADM_GROUP_OPEN[gkey])return;
     var items=grupos[tipo];
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
@@ -966,7 +968,9 @@ function renderInstAdmin(){
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita, agrega, elimina y reordena las instalaciones. Los cambios se aplican al instante.</div>';
 
   orden.forEach(function(tipo){
-    html+='<div class="gl">'+tipo+'</div>';
+    var gkey='inst:'+tipo;
+    html+=admGroupHeader(gkey,'renderInstAdmin',tipo,grupos[tipo].length);
+    if(!ADM_GROUP_OPEN[gkey])return;
     var items=grupos[tipo];
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
@@ -1242,7 +1246,9 @@ function renderCatalogoAdmin(opts){
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">'+opts.intro+'</div>';
 
   orden.forEach(function(tipo){
-    html+='<div class="gl">'+tipo+'</div>';
+    var gkey=opts.groupNS+':'+tipo;
+    html+=admGroupHeader(gkey,opts.renderFnName,tipo,grupos[tipo].length);
+    if(!ADM_GROUP_OPEN[gkey])return;
     var items=grupos[tipo];
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
@@ -1276,7 +1282,7 @@ function renderCatalogoAdmin(opts){
 }
 
 function renderPackAdmin(){
-  renderCatalogoAdmin({lista:PACK_LIST,listaVar:"PACK_LIST",target:"packlista",
+  renderCatalogoAdmin({lista:PACK_LIST,listaVar:"PACK_LIST",target:"packlista",groupNS:"pack",renderFnName:"renderPackAdmin",
     intro:"Edita, agrega, elimina y reordena los packs promocionales. Los cambios se aplican al instante.",
     saveFn:"savePackList",moverFn:"moverPack",delFn:"eliminarPack",addFn:"agregarPackNuevo",
     addTitle:"+ Agregar Nuevo Pack",newNombreId:"new-pack-nombre",newPrecioId:"new-pack-precio",
@@ -1284,7 +1290,7 @@ function renderPackAdmin(){
     addBtnLabel:"+ Agregar Pack"});
 }
 function renderTrasAdmin(){
-  renderCatalogoAdmin({lista:TRAS_LIST,listaVar:"TRAS_LIST",target:"traslista",
+  renderCatalogoAdmin({lista:TRAS_LIST,listaVar:"TRAS_LIST",target:"traslista",groupNS:"tras",renderFnName:"renderTrasAdmin",
     intro:"Edita, agrega, elimina y reordena los traslados por región. Los cambios se aplican al instante.",
     saveFn:"saveTrasList",moverFn:"moverTras",delFn:"eliminarTras",addFn:"agregarTrasNuevo",
     addTitle:"+ Agregar Nueva Región",newNombreId:"new-tras-nombre",newPrecioId:"new-tras-precio",
@@ -1380,7 +1386,9 @@ function renderMantAdmin(){
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita, agrega, elimina y reordena las mantenciones. Los cambios se aplican al instante.</div>';
 
   orden.forEach(function(tipo){
-    html+='<div class="gl">'+tipo+'</div>';
+    var gkey='mant:'+tipo;
+    html+=admGroupHeader(gkey,'renderMantAdmin',tipo,grupos[tipo].length);
+    if(!ADM_GROUP_OPEN[gkey])return;
     var items=grupos[tipo];
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
@@ -1551,7 +1559,9 @@ function renderExtraAdmin(){
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita, agrega, elimina y reordena los extras. Los cambios se aplican al instante.</div>';
 
   orden.forEach(function(tipo){
-    html+='<div class="gl">'+tipo+'</div>';
+    var gkey='extra:'+tipo;
+    html+=admGroupHeader(gkey,'renderExtraAdmin',tipo,grupos[tipo].length);
+    if(!ADM_GROUP_OPEN[gkey])return;
     var items=grupos[tipo];
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
@@ -2572,6 +2582,19 @@ var EQ_OPEN_GROUPS={};
 function toggleEqGroup(key){
   EQ_OPEN_GROUPS[key]=!EQ_OPEN_GROUPS[key];
   renderAdmin();
+}
+var ADM_GROUP_OPEN={};
+function toggleAdmGroup(key,fnName){
+  ADM_GROUP_OPEN[key]=!ADM_GROUP_OPEN[key];
+  window[fnName]();
+}
+function admGroupHeader(key,fnName,tipo,count){
+  var open=!!ADM_GROUP_OPEN[key];
+  var keyEsc=key.replace(/'/g,"\\'");
+  return '<div onclick="toggleAdmGroup(\''+keyEsc+'\',\''+fnName+'\')" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--brd)">'
+    +'<span style="font-size:15px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.08em">'+tipo+' <span style="font-size:12px;color:var(--txt3);font-weight:400;text-transform:none;letter-spacing:normal">('+count+')</span></span>'
+    +'<span style="color:var(--acc);font-size:14px;transition:transform .2s;'+(open?'transform:rotate(180deg)':'')+'">▼</span>'
+    +'</div>';
 }
 function renderAdmin(){
   var grupos={};
