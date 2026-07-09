@@ -2665,14 +2665,20 @@ function procesarPdfPrecios(input){
       for(var i=1;i<=pdf.numPages;i++){
         promesasPaginas.push(pdf.getPage(i).then(function(page){
           return page.getTextContent().then(function(tc){
-            return tc.items.map(function(it){return it.str;}).join(" ");
+            return reconstruirFilasPagina(tc);
           });
         }));
       }
       return Promise.all(promesasPaginas);
-    }).then(function(textosPorPagina){
-      var textoCompleto=textosPorPagina.join("\n");
-      PDFPRECIOS_CANDIDATOS=parsearPreciosPdf(textoCompleto);
+    }).then(function(filasPorPagina){
+      var filas=[].concat.apply([],filasPorPagina);
+      var totalTexto=filas.join("").length;
+      if(totalTexto<40){
+        status.textContent="Este PDF parece ser una imagen o diseño gráfico sin texto que se pueda leer (no tiene texto seleccionable). No se puede procesar automáticamente — puedes seguir editando los precios manualmente en cada sección.";
+        input.value="";
+        return;
+      }
+      PDFPRECIOS_CANDIDATOS=parsearFilasPrecios(filas);
       renderPdfPreciosReview();
       status.textContent=PDFPRECIOS_CANDIDATOS.length
         ?("Se detectaron "+PDFPRECIOS_CANDIDATOS.length+" posibles precios. Revisa y aprueba abajo.")
@@ -2686,44 +2692,83 @@ function procesarPdfPrecios(input){
   reader.readAsArrayBuffer(file);
 }
 
-function parsearPreciosPdf(texto){
+// Reconstruye "filas" visuales de una página agrupando el texto por su posición
+// vertical real (Y), no por el orden en que el PDF entrega el texto — esto es
+// clave porque muchos proveedores usan tablas, y el orden de extracción de
+// pdf.js no siempre respeta el orden visual de las columnas.
+function reconstruirFilasPagina(textContent){
+  var porY={};
+  textContent.items.forEach(function(it){
+    if(!it.str||!it.str.trim())return;
+    var y=Math.round(it.transform[5]/3)*3; // tolerancia de ~3px
+    if(!porY[y])porY[y]=[];
+    porY[y].push({str:it.str,x:it.transform[4]});
+  });
+  var ys=Object.keys(porY).map(Number).sort(function(a,b){return b-a;}); // arriba hacia abajo
+  return ys.map(function(y){
+    return porY[y].sort(function(a,b){return a.x-b.x;}).map(function(t){return t.str;}).join(" ").replace(/\s+/g," ").trim();
+  }).filter(Boolean);
+}
+
+function parsearFilasPrecios(filas){
   var BTU_VALIDOS=[7,9,12,18,22,24,28,32,36,48,60];
   var marcasConocidas=Array.from(new Set(CAT.map(function(p){return p.marca;})));
-  var lineas=texto.split(/\n/).map(function(l){return l.trim();}).filter(Boolean);
   var candidatos=[];
+  var marcaActual=null;
 
-  lineas.forEach(function(linea){
-    if(linea.length>220)return; // línea demasiado larga, poco probable que sea un ítem de precio
+  filas.forEach(function(filaTexto,idx){
+    var limpio=filaTexto.trim();
+    if(!limpio||limpio.length>220)return;
 
-    var btuDetectado=null;
+    // ¿Esta fila es solo el nombre de una marca? (encabezado de sección en la tabla)
+    marcasConocidas.forEach(function(mc){
+      var soloMarca=new RegExp("^"+mc.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\W*$","i");
+      if(soloMarca.test(limpio))marcaActual=mc;
+    });
+
+    // Marca mencionada dentro de la misma fila (más confiable si aparece)
+    var marcaInline=null;
+    marcasConocidas.forEach(function(mc){
+      if(marcaInline)return;
+      var re=new RegExp("\\b"+mc.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i");
+      if(re.test(limpio))marcaInline=mc;
+    });
+
+    var btus=[];
     var btuRe=/(\d{1,2})[.,]?000\s*(btu)?/gi;
     var m;
-    while((m=btuRe.exec(linea))){
+    while((m=btuRe.exec(limpio))){
       var val=parseInt(m[1],10);
-      if(BTU_VALIDOS.indexOf(val)!==-1){btuDetectado=val;break;}
+      if(BTU_VALIDOS.indexOf(val)!==-1)btus.push(val);
     }
-    if(!btuDetectado)return;
+    if(!btus.length)return;
 
+    // El precio puede estar en la misma fila o en alguna de las 2 siguientes
+    // (layouts tipo tarjeta, donde el BTU y el precio quedan apilados verticalmente).
+    var ventana=[limpio,filas[idx+1]||"",filas[idx+2]||""].join(" ");
     var precioRe=/\$?\s?(\d{1,3}(?:[.,]\d{3}){1,3})/g;
     var precios=[];
     var pm;
-    while((pm=precioRe.exec(linea))){
+    while((pm=precioRe.exec(ventana))){
       var raw=pm[1].replace(/[.,]/g,"");
       var num=parseInt(raw,10);
-      if(BTU_VALIDOS.indexOf(num/1000)!==-1 && num%1000===0)continue; // es el BTU, no el precio
+      if(BTU_VALIDOS.indexOf(num/1000)!==-1 && num%1000===0)continue; // es un BTU, no un precio
       if(num>=30000 && num<=5000000)precios.push(num);
     }
     if(!precios.length)return;
-    var precioDetectado=Math.max.apply(null,precios);
 
-    var marcaDetectada=null;
-    marcasConocidas.forEach(function(mc){
-      if(marcaDetectada)return;
-      var re=new RegExp("\\b"+mc.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i");
-      if(re.test(linea))marcaDetectada=mc;
-    });
-
-    candidatos.push({linea:linea,btu:btuDetectado,precio:precioDetectado,marca:marcaDetectada});
+    if(btus.length>1 && precios.length===btus.length){
+      // Varios equipos en la misma fila (layout en columnas, ej. tarjetas lado a lado):
+      // se empareja cada BTU con el precio en la misma posición.
+      btus.forEach(function(btu,i){
+        candidatos.push({linea:limpio,btu:btu,precio:precios[i],marca:marcaInline||marcaActual});
+      });
+    } else {
+      // Caso normal: un solo equipo por fila. Si hay varios precios (ej. "Precio
+      // Lista" y "P.Instalador"), se prioriza el más bajo — normalmente es el
+      // precio neto/instalador, que es el que realmente te interesa como costo.
+      candidatos.push({linea:limpio,btu:btus[0],precio:Math.min.apply(null,precios),marca:marcaInline||marcaActual});
+    }
   });
 
   return candidatos;
