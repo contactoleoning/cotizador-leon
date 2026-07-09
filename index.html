@@ -681,7 +681,13 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
       <span id="adm-pdfprecios-arrow" style="font-size:18px;color:var(--acc);transition:transform .2s">▶</span>
     </div>
     <div id="adm-pdfprecios-body" style="display:none;padding:14px">
-      <div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Sube el PDF de precios que te envía el proveedor. El sistema detecta marca, BTU y precio de cada equipo automáticamente, pero <b>tú decides</b> cuáles aplicar — nada cambia sin tu aprobación.</div>
+      <div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Sube el PDF de precios que te envía el proveedor. El sistema detecta BTU y precio de cada equipo automáticamente, pero <b>tú decides</b> cuáles aplicar — nada cambia sin tu aprobación.</div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;font-weight:600">Este PDF es de (opcional, mejora la precisión)</div>
+        <select id="pdfprecios-proveedor" style="width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:10px;font-size:14px;color:var(--txt);font-family:'DM Sans',sans-serif;box-sizing:border-box">
+          <option value="">— Todos los proveedores —</option>
+        </select>
+      </div>
       <label style="display:block;background:var(--acc);color:#1a1a1a;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;width:100%;text-align:center;box-sizing:border-box;margin-bottom:14px">
         📄 Seleccionar PDF de Precios
         <input type="file" accept="application/pdf" onchange="procesarPdfPrecios(this)" style="display:none">
@@ -2648,6 +2654,20 @@ function renderStatsAdmin(){
 // ===== Actualizar Precios desde PDF de proveedores (con revisión manual) =====
 var PDFPRECIOS_CANDIDATOS=[];
 
+function poblarProveedoresPdfPrecios(){
+  var sel=document.getElementById("pdfprecios-proveedor");
+  if(!sel)return;
+  var cur=sel.value;
+  var provs=Array.from(new Set(CAT.map(function(p){return p.prov;}).filter(Boolean))).sort();
+  sel.innerHTML='<option value="">— Todos los proveedores —</option>';
+  provs.forEach(function(p){
+    var o=document.createElement("option");
+    o.value=p;o.textContent=p;
+    sel.appendChild(o);
+  });
+  sel.value=cur;
+}
+
 function procesarPdfPrecios(input){
   var file=input.files&&input.files[0];
   if(!file)return;
@@ -2715,6 +2735,7 @@ function parsearFilasPrecios(filas){
   var marcasConocidas=Array.from(new Set(CAT.map(function(p){return p.marca;})));
   var candidatos=[];
   var marcaActual=null;
+  var tipoActual=null;
 
   filas.forEach(function(filaTexto,idx){
     var limpio=filaTexto.trim();
@@ -2734,6 +2755,12 @@ function parsearFilasPrecios(filas){
       if(re.test(limpio))marcaInline=mc;
     });
 
+    // Detectar cambio de sección por tipo de equipo (estos títulos sí suelen ser
+    // texto real en el PDF, a diferencia de los logos de marca).
+    if(/piso\s*\/?\s*cielo/i.test(limpio))tipoActual="Piso Cielo";
+    else if(/case?tt?e/i.test(limpio))tipoActual="Cassette";
+    else if(/split\s*muro/i.test(limpio))tipoActual="Split Muro";
+
     var btus=[];
     var btuRe=/(\d{1,2})[.,]?000\s*(btu)?/gi;
     var m;
@@ -2743,31 +2770,37 @@ function parsearFilasPrecios(filas){
     }
     if(!btus.length)return;
 
-    // El precio puede estar en la misma fila o en alguna de las 2 siguientes
-    // (layouts tipo tarjeta, donde el BTU y el precio quedan apilados verticalmente).
-    var ventana=[limpio,filas[idx+1]||"",filas[idx+2]||""].join(" ");
-    var precioRe=/\$?\s?(\d{1,3}(?:[.,]\d{3}){1,3})/g;
-    var precios=[];
-    var pm;
-    while((pm=precioRe.exec(ventana))){
-      var raw=pm[1].replace(/[.,]/g,"");
-      var num=parseInt(raw,10);
-      if(BTU_VALIDOS.indexOf(num/1000)!==-1 && num%1000===0)continue; // es un BTU, no un precio
-      if(num>=30000 && num<=5000000)precios.push(num);
+    // Buscar precio: primero solo en la fila actual. Si no hay ninguno ahí, recién
+    // se amplía a las 2 filas siguientes (layouts tipo tarjeta, donde el BTU y el
+    // precio quedan apilados verticalmente) — así no "roba" el precio del ítem
+    // siguiente cuando la fila actual ya tiene el suyo propio.
+    function extraerPrecios(txt){
+      var precioRe=/\$?\s?(\d{1,3}(?:[.,]\d{3}){1,3})/g;
+      var out=[];
+      var pm;
+      while((pm=precioRe.exec(txt))){
+        var raw=pm[1].replace(/[.,]/g,"");
+        var num=parseInt(raw,10);
+        if(BTU_VALIDOS.indexOf(num/1000)!==-1 && num%1000===0)continue; // es un BTU, no un precio
+        if(num>=30000 && num<=5000000)out.push(num);
+      }
+      return out;
     }
+    var precios=extraerPrecios(limpio);
+    if(!precios.length)precios=extraerPrecios([filas[idx+1]||"",filas[idx+2]||""].join(" "));
     if(!precios.length)return;
 
     if(btus.length>1 && precios.length===btus.length){
       // Varios equipos en la misma fila (layout en columnas, ej. tarjetas lado a lado):
       // se empareja cada BTU con el precio en la misma posición.
       btus.forEach(function(btu,i){
-        candidatos.push({linea:limpio,btu:btu,precio:precios[i],marca:marcaInline||marcaActual});
+        candidatos.push({linea:limpio,btu:btu,precio:precios[i],marca:marcaInline||marcaActual,tipo:tipoActual});
       });
     } else {
       // Caso normal: un solo equipo por fila. Si hay varios precios (ej. "Precio
       // Lista" y "P.Instalador"), se prioriza el más bajo — normalmente es el
       // precio neto/instalador, que es el que realmente te interesa como costo.
-      candidatos.push({linea:limpio,btu:btus[0],precio:Math.min.apply(null,precios),marca:marcaInline||marcaActual});
+      candidatos.push({linea:limpio,btu:btus[0],precio:Math.min.apply(null,precios),marca:marcaInline||marcaActual,tipo:tipoActual});
     }
   });
 
@@ -2781,10 +2814,18 @@ function renderPdfPreciosReview(){
   var lbl='font-size:11px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;font-weight:600';
   var si='width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:8px 10px;font-size:13px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
 
+  var proveedorSel=document.getElementById("pdfprecios-proveedor");
+  var proveedorFiltro=proveedorSel?proveedorSel.value:"";
+
   var html='<div class="gl" style="margin-top:16px">Revisar y aplicar</div>';
+  if(proveedorFiltro){
+    html+='<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--rs)">Filtrando solo equipos de <b>'+proveedorFiltro+'</b>.</div>';
+  }
 
   PDFPRECIOS_CANDIDATOS.forEach(function(cand,idx){
-    var pool=CAT.filter(function(p){return cand.marca?p.marca===cand.marca:true;});
+    var pool=CAT.filter(function(p){return proveedorFiltro?p.prov===proveedorFiltro:true;});
+    if(cand.marca)pool=pool.filter(function(p){return p.marca===cand.marca;});
+    if(cand.tipo)pool=pool.filter(function(p){return p.tipo===cand.tipo;});
     var exactos=pool.filter(function(p){return p.btu===cand.btu;});
     var opciones=exactos.length?exactos:pool;
     var seleccionId=exactos.length===1?exactos[0].id:"";
@@ -3157,6 +3198,7 @@ document.addEventListener("DOMContentLoaded", function(){
   renderTrasAdmin();
   loadRegList();
   renderStatsAdmin();
+  poblarProveedoresPdfPrecios();
   initInfo();
 });
 
