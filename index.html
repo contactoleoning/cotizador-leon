@@ -2741,11 +2741,16 @@ function parsearFilasPrecios(filas){
     var limpio=filaTexto.trim();
     if(!limpio||limpio.length>220)return;
 
-    // ¿Esta fila es solo el nombre de una marca? (encabezado de sección en la tabla)
-    marcasConocidas.forEach(function(mc){
-      var soloMarca=new RegExp("^"+mc.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\W*$","i");
-      if(soloMarca.test(limpio))marcaActual=mc;
-    });
+    // ¿Esta fila es (casi) solo el nombre de una marca? (encabezado/logo de marca
+    // en la tabla). Se normaliza quitando espacios porque en logos con tipografías
+    // especiales el PDF a veces extrae cada letra por separado ("V e s t a").
+    var normLinea=limpio.replace(/\s+/g,"").toLowerCase();
+    if(normLinea.length<=25){
+      marcasConocidas.forEach(function(mc){
+        var normMarca=mc.replace(/\s+/g,"").toLowerCase();
+        if(normLinea===normMarca||normLinea.indexOf(normMarca)===0)marcaActual=mc;
+      });
+    }
 
     // Marca mencionada dentro de la misma fila (más confiable si aparece)
     var marcaInline=null;
