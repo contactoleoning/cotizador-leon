@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Leon Ingenieria - Cotizador</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0d1b30">
+<meta name="theme-color" content="#0b0b0d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="color-scheme" content="dark">
@@ -15,9 +15,9 @@
 <style>
 :root{
   color-scheme:dark;
-  --bg:#0d1b30;--bg2:#16304f;--bg3:#1f4270;--brd:#2e5580;--brd2:#3f6da3;
-  --txt:#f5f9ff;--txt2:#c9dbf3;--txt3:#93b3d9;
-  --acc:#f5d04e;--acc2:#d4af2f;--grn:#5ee88f;--cy:#ff9f43;--blu:#6db4ff;--red:#ff6b6b;
+  --bg:#0b0b0d;--bg2:#161619;--bg3:#212126;--brd:#2a2a30;--brd2:#3a3a42;
+  --txt:#f6f6f8;--txt2:#bdbdc7;--txt3:#82828d;
+  --acc:#e8b84b;--acc2:#c99a35;--grn:#4fd884;--cy:#ff9f43;--blu:#5b9fd9;--red:#ff6b6b;
   --r:12px;--rs:8px
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -42,7 +42,7 @@ body{background:var(--bg);color:var(--txt);font-family:"DM Sans",sans-serif;min-
 input,select{width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:11px 13px;font-size:16px;color:var(--txt);font-family:"DM Sans",sans-serif;outline:none;transition:border-color .15s;font-weight:500}
 input:focus,select:focus{border-color:var(--acc)}
 input::placeholder{color:var(--txt3)}
-select option{background:#16304f;color:var(--txt)}
+select option{background:#161619;color:var(--txt)}
 .ib{font-size:16px;padding:11px 15px;background:var(--bg3);border-radius:var(--rs);color:var(--txt2);margin-bottom:12px;line-height:1.5}
 .pg{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .pc{background:var(--bg3);border:2px solid var(--brd);border-radius:var(--rs);padding:15px 16px;cursor:pointer;transition:all .15s}
@@ -59,8 +59,8 @@ select option{background:#16304f;color:var(--txt)}
 .piv{font-size:15px;color:var(--txt3);font-weight:500}
 .btn{width:100%;padding:16px;border-radius:var(--rs);font-size:18px;font-weight:700;cursor:pointer;border:none;margin-top:10px;font-family:"DM Sans",sans-serif;letter-spacing:.01em;transition:all .15s}
 .btn:active{transform:scale(.98)}
-.badd{background:var(--acc);color:#0d1b30}.badd:hover{background:var(--acc2)}
-.bcy{background:var(--cy);color:#0d1b30}.bcy:hover{filter:brightness(1.1)}
+.badd{background:var(--acc);color:#0b0b0d}.badd:hover{background:var(--acc2)}
+.bcy{background:var(--cy);color:#0b0b0d}.bcy:hover{filter:brightness(1.1)}
 .bwa{background:#1eb858;color:#fff}.bwa:hover{background:#19a34d}
 .bpdf{background:#2d6fc4;color:#fff}.bpdf:hover{background:#2860ad}
 .bdel{background:#3a1a1a;border:2px solid var(--red);color:var(--red);font-size:15px;font-weight:700;padding:6px 12px;width:auto;border-radius:6px;margin-top:0;cursor:pointer}
@@ -101,7 +101,7 @@ select option{background:#16304f;color:var(--txt)}
 .tipoinm-opt{display:flex;align-items:center;gap:11px;padding:14px 16px;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);cursor:pointer;font-size:17px;font-weight:600;color:var(--txt2);transition:all .15s}
 .tipoinm-opt:hover{border-color:var(--acc)}
 .tipoinm-opt.sel{border-color:var(--acc);background:#26315a;color:var(--txt)}
-.tipoinm-box{width:24px;height:24px;border:2px solid var(--brd2);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-weight:800;color:#0d1b30}
+.tipoinm-box{width:24px;height:24px;border:2px solid var(--brd2);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-weight:800;color:#0b0b0d}
 .tipoinm-opt.sel .tipoinm-box{background:var(--acc);border-color:var(--acc)}
 .empty{font-size:19px;font-weight:800;color:#ff6b6b;padding:22px;text-align:center;background:#3a1015;border:2px solid #ff6b6b;border-radius:var(--rs);letter-spacing:.04em}
 .btnrow{display:flex;gap:10px;margin-top:10px}
@@ -132,7 +132,7 @@ select option{background:#16304f;color:var(--txt)}
 .admin-row input{min-width:0}
 @media(max-width:600px){.admin-row{grid-template-columns:1fr;gap:8px}}
 
-#lock-overlay{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,#1a3459 0%,#0d1b30 55%,#081426 100%);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:lockFadeIn .5s ease}
+#lock-overlay{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,#1c1c20 0%,#0b0b0d 55%,#050506 100%);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:lockFadeIn .5s ease}
 @keyframes lockFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes lockRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 #lock-overlay>*{animation:lockRise .55s ease both}
@@ -141,11 +141,11 @@ select option{background:#16304f;color:var(--txt)}
 #lock-overlay>*:nth-child(4){animation-delay:.2s}
 #lock-overlay>*:nth-child(5){animation-delay:.26s}
 #lock-overlay .lock-logo{width:96px;height:96px;border-radius:22px;margin-bottom:2px;box-shadow:0 0 0 1px rgba(245,208,78,.35),0 0 45px rgba(245,208,78,.22),0 18px 40px rgba(0,0,0,.5)}
-#lock-overlay h2{color:var(--acc,#f5d04e);font-size:22px;font-weight:800;letter-spacing:.1em;margin:0}
+#lock-overlay h2{color:var(--acc,#e8b84b);font-size:22px;font-weight:800;letter-spacing:.1em;margin:0}
 #lock-overlay .lock-sub{color:#8badd4;font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;margin-top:-10px}
-#lock-overlay input{background:rgba(15,38,71,.85);border:2px solid var(--brd,#2e5580);border-radius:12px;color:#fff;font-size:28px;font-weight:700;letter-spacing:.3em;text-align:center;padding:13px 24px;width:190px;outline:none;transition:border-color .2s,box-shadow .2s}
-#lock-overlay input:focus{border-color:var(--acc,#f5d04e);box-shadow:0 0 0 4px rgba(245,208,78,.15)}
-#lock-overlay .lock-btn{background:linear-gradient(180deg,#f8dc74,#f5d04e);color:#1a1a1a;border:none;border-radius:12px;font-size:16px;font-weight:800;padding:13px 40px;cursor:pointer;width:190px;transition:transform .15s,box-shadow .2s;box-shadow:0 6px 18px rgba(245,208,78,.25)}
+#lock-overlay input{background:rgba(15,38,71,.85);border:2px solid var(--brd,#2a2a30);border-radius:12px;color:#fff;font-size:28px;font-weight:700;letter-spacing:.3em;text-align:center;padding:13px 24px;width:190px;outline:none;transition:border-color .2s,box-shadow .2s}
+#lock-overlay input:focus{border-color:var(--acc,#e8b84b);box-shadow:0 0 0 4px rgba(245,208,78,.15)}
+#lock-overlay .lock-btn{background:linear-gradient(180deg,#f8dc74,#e8b84b);color:#1a1a1a;border:none;border-radius:12px;font-size:16px;font-weight:800;padding:13px 40px;cursor:pointer;width:190px;transition:transform .15s,box-shadow .2s;box-shadow:0 6px 18px rgba(245,208,78,.25)}
 #lock-overlay .lock-btn:hover{transform:translateY(-1px);box-shadow:0 9px 24px rgba(245,208,78,.35)}
 #lock-overlay .lock-btn:active{transform:translateY(0)}
 #lock-overlay .lock-err{color:#e74c3c;font-size:13px;font-weight:600;min-height:18px}
@@ -2109,7 +2109,7 @@ function enviarWhatsApp(){
   // Más tarde le asignamos la URL real de WhatsApp.
   var waWin=window.open("","_blank");
   if(waWin&&waWin.document){
-    waWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Preparando…</title></head><body style='font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0d1b30;color:#fff'><div>Generando cotización y subiendo a Drive…</div></body></html>");
+    waWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Preparando…</title></head><body style='font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0b0b0d;color:#fff'><div>Generando cotización y subiendo a Drive…</div></body></html>");
     waWin.document.close();
   }
 
@@ -2861,7 +2861,7 @@ function renderChecklist() {
     var checked = !!obligState[i];
     if (checked) done++;
     return '<div onclick="toggleOblig('+i+')" style="display:flex;align-items:center;gap:14px;padding:12px 14px;background:'+(checked?"#0e3020":"var(--bg3)")+';border:2px solid '+(checked?"var(--grn)":"var(--brd2)")+';border-radius:var(--rs);cursor:pointer;transition:all .15s">'
-      + '<div style="width:26px;height:26px;border:2px solid '+(checked?"var(--grn)":"var(--brd2)")+';border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:'+(checked?"var(--grn)":"transparent")+';font-size:17px;font-weight:800;color:#0d1b30">'+(checked?"✓":"")+"</div>"
+      + '<div style="width:26px;height:26px;border:2px solid '+(checked?"var(--grn)":"var(--brd2)")+';border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:'+(checked?"var(--grn)":"transparent")+';font-size:17px;font-weight:800;color:#0b0b0d">'+(checked?"✓":"")+"</div>"
       + '<span style="font-size:17px;font-weight:'+(checked?"700":"500")+';color:'+(checked?"var(--grn)":"var(--txt2)")+'">'+(checked?"<s style=\"opacity:.5\">"+item+"</s>":item)+"</span>"
       + "</div>";
   }).join("");
@@ -2908,7 +2908,7 @@ function renderGuion() {
     return '<div style="margin-bottom:16px;border:2px solid '+(checked?"var(--grn)":"var(--brd)")+';border-radius:var(--r);overflow:hidden;transition:border-color .2s">'
       // Header del paso
       + '<div onclick="toggleGuion('+i+')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:'+(checked?"#0e3020":"var(--bg3)")+';cursor:pointer">'
-      + '<div style="width:34px;height:34px;border:2px solid '+(checked?"var(--grn)":"var(--brd2)")+';border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:'+(checked?"var(--grn)":"var(--bg2)")+';font-size:16px;font-weight:800;color:'+(checked?"#0d1b30":"var(--txt3)")+'">'+( checked?"✓":paso.num)+"</div>"
+      + '<div style="width:34px;height:34px;border:2px solid '+(checked?"var(--grn)":"var(--brd2)")+';border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:'+(checked?"var(--grn)":"var(--bg2)")+';font-size:16px;font-weight:800;color:'+(checked?"#0b0b0d":"var(--txt3)")+'">'+( checked?"✓":paso.num)+"</div>"
       + '<div style="flex:1">'
       + '<div style="font-size:16px;font-weight:700;color:'+(checked?"var(--grn)":"var(--acc)")+'">'+paso.titulo+'</div>'
       + '<div style="font-size:13px;color:var(--txt3);margin-top:2px">'+(checked?"Completado — toca para desmarcar":"Toca para marcar como preguntado")+"</div>"
