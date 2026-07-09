@@ -157,6 +157,8 @@ select option{background:#161619;color:var(--txt)}
 input,select,textarea{transition:border-color .18s,box-shadow .18s}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";}</script>
 </head>
 <body>
 <div id="lock-overlay">
@@ -525,6 +527,15 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
     <a href="https://docs.google.com/spreadsheets/d/1H9Lz00IfASszdgnBkC9leetto7fl3SZbI97kgzb721A/edit" target="_blank" style="background:var(--acc);color:#1a1a1a;font-weight:700;font-size:14px;padding:10px 20px;border-radius:var(--rs);text-decoration:none;white-space:nowrap">Ver en Sheets →</a>
   </div>
 
+  <!-- CATÁLOGO DE EQUIPOS -->
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;gap:12px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:var(--txt)">📋 Catálogo de Equipos</div>
+      <div style="font-size:13px;color:var(--txt2);margin-top:3px">PDF con todos los equipos y precios, listo para enviar a un cliente</div>
+    </div>
+    <button onclick="enviarCatalogoWhatsApp()" id="btncatalogo" style="background:#25d366;color:#073b22;font-weight:700;font-size:14px;padding:10px 20px;border-radius:var(--rs);border:none;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif">📲 Enviar Catálogo por WhatsApp</button>
+  </div>
+
   <!-- BUSCAR COTIZACIÓN -->
   <div class="card">
     <div class="ct">🔍 Reabrir Cotización</div>
@@ -662,6 +673,21 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
         ⬆️ Restaurar desde Respaldo
         <input type="file" accept=".json,application/json" onchange="restaurarRespaldo(this)" style="display:none">
       </label>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+    <div onclick="toggleAdmSec('pdfprecios')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
+      <div class="ct" style="margin:0;border:none;padding:0">📄 Actualizar Precios desde PDF</div>
+      <span id="adm-pdfprecios-arrow" style="font-size:18px;color:var(--acc);transition:transform .2s">▶</span>
+    </div>
+    <div id="adm-pdfprecios-body" style="display:none;padding:14px">
+      <div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Sube el PDF de precios que te envía el proveedor. El sistema detecta marca, BTU y precio de cada equipo automáticamente, pero <b>tú decides</b> cuáles aplicar — nada cambia sin tu aprobación.</div>
+      <label style="display:block;background:var(--acc);color:#1a1a1a;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;width:100%;text-align:center;box-sizing:border-box;margin-bottom:14px">
+        📄 Seleccionar PDF de Precios
+        <input type="file" accept="application/pdf" onchange="procesarPdfPrecios(this)" style="display:none">
+      </label>
+      <div id="pdfprecios-status" style="font-size:13px;color:var(--txt3)"></div>
+      <div id="pdfprecios-resultados"></div>
     </div>
   </div>
   <div class="smsg" id="savedmsg"></div>
@@ -2109,6 +2135,117 @@ function showLoader(txt){
 }
 function hideLoader(){var o=document.getElementById("pdf-loader");if(o)o.style.display="none";}
 
+// ===== Catálogo de Equipos (PDF compartible directo por WhatsApp, sin pasar por Drive) =====
+function armarCatalogoPDF(){
+  var grupos={},orden=[];
+  CAT.slice().sort(function(a,b){
+    if(a.tipo!==b.tipo)return a.tipo<b.tipo?-1:1;
+    if(a.marca!==b.marca)return a.marca<b.marca?-1:1;
+    if(a.modelo!==b.modelo)return a.modelo<b.modelo?-1:1;
+    return a.btu-b.btu;
+  }).forEach(function(p){
+    if(!grupos[p.tipo]){grupos[p.tipo]=[];orden.push(p.tipo);}
+    grupos[p.tipo].push(p);
+  });
+
+  var TC="padding:6px 8px;font-size:10px;color:#1a1a1a;text-align:center;border:1px solid #ddd;";
+  var TL="padding:6px 8px;font-size:10px;color:#1a1a1a;text-align:left;border:1px solid #ddd;";
+
+  var rowsHtml="";
+  orden.forEach(function(tipo){
+    rowsHtml+="<tr><td colspan='4' style='padding:10px 8px 4px;font-size:12px;font-weight:800;color:#e8291c;border:none'>"+tipo+"</td></tr>";
+    grupos[tipo].forEach(function(p){
+      var precio=wIVA(pvN(p));
+      rowsHtml+="<tr>"
+        +"<td style='"+TL+"'>"+p.marca+"</td>"
+        +"<td style='"+TL+"'>"+p.modelo+"</td>"
+        +"<td style='"+TC+"'>"+p.btu+".000 BTU</td>"
+        +"<td style='"+TC+";font-weight:700'>$ "+precio.toLocaleString("es-CL")+"</td>"
+        +"</tr>";
+    });
+  });
+
+  var css="*{box-sizing:border-box;margin:0;padding:0}"
+    +"html,body{width:100%;font-family:Arial,sans-serif;font-size:10px;color:#1a1a1a;background:#fff}"
+    +"@page{size:Letter portrait;margin:10mm 12mm}"
+    +".wrap{padding:10px 14px}"
+    +"table{width:100%;border-collapse:collapse}"
+    +".th{font-weight:700;font-size:10px;text-align:center;padding:6px 8px;border:1px solid #aaa;background:#f2f2f2;color:#1a1a1a}"
+    +".th-l{text-align:left}";
+
+  var hoy=new Date().toLocaleDateString("es-CL");
+  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Catálogo León Ingeniería</title><style>"+css+"</style></head><body><div class='wrap'>";
+  h+="<table style='width:100%;margin-bottom:10px'><tr>"
+    +"<td style='vertical-align:top;padding:0'>"
+    +"<div style='font-size:24px;font-weight:800;color:#e8291c;letter-spacing:.02em'>CATÁLOGO DE EQUIPOS</div>"
+    +"<div style='font-size:15px;font-weight:700;color:#1a1a1a;margin-top:5px'>LEÓN INGENIERÍA Y PROYECTOS SPA</div>"
+    +"<div style='font-size:11px;color:#555;margin-top:4px'>Precios de venta con IVA incluido &middot; Vigente al "+hoy+"</div>"
+    +"</td>"
+    +"<td style='vertical-align:top;text-align:right;padding:0;width:120px'>"
+    +"<img src='"+LOGO_B64+"' style='width:110px;height:110px'>"
+    +"</td>"
+    +"</tr></table>";
+  h+="<table>"
+    +"<tr><td class='th th-l'>Marca</td><td class='th th-l'>Modelo</td><td class='th'>BTU</td><td class='th'>Precio c/IVA</td></tr>"
+    +rowsHtml
+    +"</table>";
+  h+="<div style='margin-top:14px;font-size:9px;color:#777'>Precios sujetos a cambio sin previo aviso. Instalación cotizada por separado según tipo de trabajo. León Ingeniería y Proyectos SpA &middot; +569 6371 0820 &middot; contactoleoning@gmail.com</div>";
+  h+="</div></body></html>";
+  return h;
+}
+
+function enviarCatalogoWhatsApp(){
+  if(typeof html2pdf==="undefined"){alert("La librería de PDF aún no carga. Espera unos segundos y reintenta.");return;}
+  var btn=document.getElementById("btncatalogo");
+  var textoOrig=btn?btn.textContent:"";
+  if(btn){btn.disabled=true;btn.textContent="Generando...";}
+  showLoader("Generando catálogo...");
+
+  var htmlDoc=armarCatalogoPDF();
+  var iframe=document.createElement("iframe");
+  iframe.style.cssText="position:fixed;left:0;top:0;width:816px;height:1400px;border:0;z-index:1;background:#fff";
+  document.body.appendChild(iframe);
+  var doc=iframe.contentWindow.document;
+  doc.open();doc.write(htmlDoc);doc.close();
+
+  function limpiar(){
+    iframe.remove();
+    hideLoader();
+    if(btn){btn.disabled=false;btn.textContent=textoOrig;}
+  }
+
+  function capturar(){
+    var el=doc.querySelector(".wrap")||doc.body;
+    html2pdf().set({
+      jsPDF:{unit:"pt",format:"letter",orientation:"portrait"},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
+      pagebreak:{mode:["css","legacy"]}
+    }).from(el).toPdf().get("pdf").then(function(pdf){
+      var blob=pdf.output("blob");
+      var file=new File([blob],"catalogo-leon-ingenieria.pdf",{type:"application/pdf"});
+      var msg="Hola, aquí está nuestro catálogo de equipos con precios de León Ingeniería. 💧❄️";
+
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        limpiar();
+        navigator.share({files:[file],title:"Catálogo León Ingeniería",text:msg}).catch(function(){});
+      } else {
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement("a");
+        a.href=url;a.download="catalogo-leon-ingenieria.pdf";a.click();
+        setTimeout(function(){URL.revokeObjectURL(url);},2000);
+        limpiar();
+        alert("Se descargó el catálogo en PDF. Ábrelo desde tus Descargas y adjúntalo manualmente en el chat de WhatsApp del cliente.");
+        window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+      }
+    }).catch(function(){
+      limpiar();
+      alert("No se pudo generar el catálogo. Intenta de nuevo.");
+    });
+  }
+
+  setTimeout(capturar,350);
+}
+
 // Botón "Enviar PDF por WhatsApp" — genera PDF, sube a Drive, abre WhatsApp con el link
 function enviarWhatsApp(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
@@ -2508,6 +2645,155 @@ function renderStatsAdmin(){
 }
 
 // ===== Respaldo de datos =====
+// ===== Actualizar Precios desde PDF de proveedores (con revisión manual) =====
+var PDFPRECIOS_CANDIDATOS=[];
+
+function procesarPdfPrecios(input){
+  var file=input.files&&input.files[0];
+  if(!file)return;
+  var status=document.getElementById("pdfprecios-status");
+  var resultados=document.getElementById("pdfprecios-resultados");
+  resultados.innerHTML="";
+  if(typeof pdfjsLib==="undefined"){status.textContent="La librería de lectura de PDF aún no carga. Espera unos segundos e intenta de nuevo.";input.value="";return;}
+  status.textContent="Leyendo PDF...";
+
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var typedarray=new Uint8Array(e.target.result);
+    pdfjsLib.getDocument({data:typedarray}).promise.then(function(pdf){
+      var promesasPaginas=[];
+      for(var i=1;i<=pdf.numPages;i++){
+        promesasPaginas.push(pdf.getPage(i).then(function(page){
+          return page.getTextContent().then(function(tc){
+            return tc.items.map(function(it){return it.str;}).join(" ");
+          });
+        }));
+      }
+      return Promise.all(promesasPaginas);
+    }).then(function(textosPorPagina){
+      var textoCompleto=textosPorPagina.join("\n");
+      PDFPRECIOS_CANDIDATOS=parsearPreciosPdf(textoCompleto);
+      renderPdfPreciosReview();
+      status.textContent=PDFPRECIOS_CANDIDATOS.length
+        ?("Se detectaron "+PDFPRECIOS_CANDIDATOS.length+" posibles precios. Revisa y aprueba abajo.")
+        :"No se detectó ningún precio reconocible en este PDF. Puede que el formato sea muy distinto — puedes seguir editando los precios manualmente en cada sección.";
+      input.value="";
+    }).catch(function(err){
+      status.textContent="No se pudo leer el PDF. Verifica que sea un archivo PDF válido.";
+      input.value="";
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parsearPreciosPdf(texto){
+  var BTU_VALIDOS=[7,9,12,18,22,24,28,32,36,48,60];
+  var marcasConocidas=Array.from(new Set(CAT.map(function(p){return p.marca;})));
+  var lineas=texto.split(/\n/).map(function(l){return l.trim();}).filter(Boolean);
+  var candidatos=[];
+
+  lineas.forEach(function(linea){
+    if(linea.length>220)return; // línea demasiado larga, poco probable que sea un ítem de precio
+
+    var btuDetectado=null;
+    var btuRe=/(\d{1,2})[.,]?000\s*(btu)?/gi;
+    var m;
+    while((m=btuRe.exec(linea))){
+      var val=parseInt(m[1],10);
+      if(BTU_VALIDOS.indexOf(val)!==-1){btuDetectado=val;break;}
+    }
+    if(!btuDetectado)return;
+
+    var precioRe=/\$?\s?(\d{1,3}(?:[.,]\d{3}){1,3})/g;
+    var precios=[];
+    var pm;
+    while((pm=precioRe.exec(linea))){
+      var raw=pm[1].replace(/[.,]/g,"");
+      var num=parseInt(raw,10);
+      if(BTU_VALIDOS.indexOf(num/1000)!==-1 && num%1000===0)continue; // es el BTU, no el precio
+      if(num>=30000 && num<=5000000)precios.push(num);
+    }
+    if(!precios.length)return;
+    var precioDetectado=Math.max.apply(null,precios);
+
+    var marcaDetectada=null;
+    marcasConocidas.forEach(function(mc){
+      if(marcaDetectada)return;
+      var re=new RegExp("\\b"+mc.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i");
+      if(re.test(linea))marcaDetectada=mc;
+    });
+
+    candidatos.push({linea:linea,btu:btuDetectado,precio:precioDetectado,marca:marcaDetectada});
+  });
+
+  return candidatos;
+}
+
+function renderPdfPreciosReview(){
+  var cont=document.getElementById("pdfprecios-resultados");
+  if(!PDFPRECIOS_CANDIDATOS.length){cont.innerHTML="";return;}
+
+  var lbl='font-size:11px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;font-weight:600';
+  var si='width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:8px 10px;font-size:13px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
+
+  var html='<div class="gl" style="margin-top:16px">Revisar y aplicar</div>';
+
+  PDFPRECIOS_CANDIDATOS.forEach(function(cand,idx){
+    var pool=CAT.filter(function(p){return cand.marca?p.marca===cand.marca:true;});
+    var exactos=pool.filter(function(p){return p.btu===cand.btu;});
+    var opciones=exactos.length?exactos:pool;
+    var seleccionId=exactos.length===1?exactos[0].id:"";
+    var checked=exactos.length===1;
+
+    html+='<div style="padding:12px 0;border-bottom:1px solid var(--brd)" data-candidato="'+idx+'">'
+      +'<div style="font-size:11px;color:var(--txt3);margin-bottom:8px;font-style:italic">Detectado en PDF: "'+cand.linea.substring(0,90).replace(/</g,"&lt;")+(cand.linea.length>90?'…':'')+'"</div>'
+      +'<div style="display:flex;gap:8px;align-items:flex-start">'
+      +'<input type="checkbox" class="pdfprecio-check" data-idx="'+idx+'" '+(checked?"checked":"")+' style="width:20px;height:20px;margin-top:8px;flex-shrink:0;accent-color:var(--acc)">'
+      +'<div style="flex:1;display:flex;flex-direction:column;gap:8px">'
+      +'<div><div style="'+lbl+'">Aplicar a</div>'
+      +'<select class="pdfprecio-target" data-idx="'+idx+'" style="'+si+'">'
+      +'<option value="">— Selecciona el equipo —</option>'
+      +opciones.map(function(p){
+        var sel=p.id===seleccionId?" selected":"";
+        return '<option value="'+p.id+'"'+sel+'>'+p.marca+' — '+p.modelo+' — '+p.btu+'.000 BTU (actual: $'+getCosto(p).toLocaleString("es-CL")+')</option>';
+      }).join("")
+      +'</select></div>'
+      +'<div><div style="'+lbl+'">Precio Neto Detectado $</div>'
+      +'<input type="number" class="pdfprecio-valor" data-idx="'+idx+'" value="'+cand.precio+'" style="'+si+'"></div>'
+      +'</div>'
+      +'</div>'
+      +'</div>';
+  });
+
+  html+='<button onclick="aplicarPreciosPdf()" style="background:var(--acc);color:#1a1a1a;border:none;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:14px">✓ Aplicar Precios Seleccionados</button>';
+
+  cont.innerHTML=html;
+}
+
+function aplicarPreciosPdf(){
+  var checks=document.querySelectorAll(".pdfprecio-check:checked");
+  var aplicados=0,sinSeleccion=0;
+  checks.forEach(function(chk){
+    var idx=chk.dataset.idx;
+    var sel=document.querySelector('.pdfprecio-target[data-idx="'+idx+'"]');
+    var valInput=document.querySelector('.pdfprecio-valor[data-idx="'+idx+'"]');
+    var equipoId=sel.value;
+    var precio=parseFloat(valInput.value)||0;
+    if(!equipoId||!precio){sinSeleccion++;return;}
+    if(!ov[equipoId])ov[equipoId]={};
+    ov[equipoId].costo=precio;
+    saveOv(equipoId);
+    aplicados++;
+  });
+  renderAdmin();
+  var status=document.getElementById("pdfprecios-status");
+  status.textContent=aplicados
+    ?("✓ Se actualizaron "+aplicados+" precio(s)."+(sinSeleccion?(" "+sinSeleccion+" fila(s) sin equipo seleccionado, no se aplicaron."):""))
+    :"No se aplicó ningún precio — marca al menos una fila y selecciona el equipo.";
+  document.getElementById("pdfprecios-resultados").innerHTML="";
+  PDFPRECIOS_CANDIDATOS=[];
+}
+
 function descargarRespaldo(){
   var data={
     _respaldo:"cotizador-leon",
