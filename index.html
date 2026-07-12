@@ -158,6 +158,11 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- Firebase App Check: certifica ante Firebase que las peticiones vienen de
+     esta app real, no de un script/curl con el apiKey copiado (mismo fix
+     aplicado al Indicador, que comparte este mismo proyecto Firebase). -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
 <script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";}</script>
 </head>
 <body>
@@ -737,6 +742,14 @@ function gPct(p){return (ov[p.id]&&ov[p.id].pct!==undefined)?ov[p.id].pct:p.pct;
 // pvN and pvC defined below using getCosto
 function wIVA(n){return Math.round(n*(1+IVA));}
 function fmt(n){return "$"+Math.round(n).toLocaleString("es-CL");}
+// Escapar antes de insertar en HTML (texto o atributos entre comillas
+// dobles). Usar SOLO al momento de construir el HTML a mostrar/imprimir,
+// nunca al leer el dato ni al guardarlo -- si no, quedaria guardado con
+// entidades HTML (ej: "O&#39;Brien" en vez de "O'Brien").
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+// Como esc(), pero ademas segura dentro de un literal JS de comillas
+// simples embebido en un atributo onclick="...('...')" inline.
+function escAttr(s){return String(s==null?"":s).replace(/\\/g,"\\\\").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/'/g,"\\'");}
 function vn(id){return parseFloat(document.getElementById(id).value)||0;}
 function vs(id){return document.getElementById(id).value;}
 
@@ -1664,24 +1677,58 @@ var FIREBASE_DB_URL="https://leon-clientes-default-rtdb.firebaseio.com";
 var FIREBASE_API_KEY="AIzaSyAxAMLU39W9DyCZtUY4L-v_IqPR3KG--3Q";
 var _fbIdToken=null;
 
+// App Check: misma clave de sitio reCAPTCHA v3 usada en el Indicador --
+// vale para el mismo dominio (contactoleoning.github.io) sin importar la
+// ruta, y ambas apps comparten el mismo proyecto Firebase.
+var APP_CHECK_SITE_KEY="6LcU5U4tAAAAAJG4eNx-5jw37hdqwwAWrRvpv6YY";
+var _appCheckReady=false;
+try{
+  firebase.initializeApp({
+    apiKey:FIREBASE_API_KEY,
+    appId:"1:71319016366:web:bc35b243f0ff991b432e3f",
+    projectId:"leon-clientes"
+  });
+  firebase.appCheck().activate(new firebase.appCheck.ReCaptchaV3Provider(APP_CHECK_SITE_KEY),true);
+  _appCheckReady=true;
+}catch(e){console.error("App Check no se pudo activar:",e);}
+
+function getAppCheckToken(){
+  if(!_appCheckReady||!window.firebase||!firebase.appCheck)return Promise.resolve(null);
+  return firebase.appCheck().getToken(false).then(function(r){return r.token;}).catch(function(){return null;});
+}
+
+// Ejecuta una peticion XHR a Firebase adjuntando el token de App Check
+// (si esta disponible) antes de enviarla. 'configure' recibe el xhr ya
+// creado: debe llamar a xhr.open(...), setRequestHeader, onreadystatechange
+// y onerror, y devolver el body a enviar (o nada/undefined para un GET).
+function withAppCheckHeader(configure){
+  var xhr=new XMLHttpRequest();
+  getAppCheckToken().then(function(token){
+    var body=configure(xhr);
+    if(token){try{xhr.setRequestHeader("X-Firebase-AppCheck",token);}catch(e){}}
+    xhr.send(body);
+  });
+}
+
 function getFirebaseIdToken(cb){
   if(_fbIdToken){cb(_fbIdToken);return;}
-  var xhr=new XMLHttpRequest();
-  xhr.open("POST","https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FIREBASE_API_KEY,true);
-  xhr.setRequestHeader("Content-Type","application/json");
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4){
-      if(xhr.status>=200&&xhr.status<300){
-        try{
-          var res=JSON.parse(xhr.responseText);
-          _fbIdToken=res.idToken;
-          cb(_fbIdToken);
-        }catch(e){cb(null);}
-      }else{cb(null);}
-    }
-  };
-  xhr.onerror=function(){cb(null);};
-  xhr.send(JSON.stringify({returnSecureToken:true}));
+  withAppCheckHeader(function(xhr){
+    xhr.open("POST","https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FIREBASE_API_KEY,true);
+    xhr.setRequestHeader("Content-Type","application/json");
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status>=200&&xhr.status<300){
+          try{
+            var res=JSON.parse(xhr.responseText);
+            _fbIdToken=res.idToken;
+            cb(_fbIdToken);
+          }catch(e){cb(null);}
+        }else{cb(null);}
+      }
+    };
+    xhr.onerror=function(){cb(null);};
+    return JSON.stringify({returnSecureToken:true});
+  });
 }
 
 function buscarCotizacion(){
@@ -1699,26 +1746,26 @@ function buscarCotizacion(){
         var data;
         try{data=JSON.parse(xhr.responseText);}catch(e){data=null;}
         if(!data||data.error){
-          res.innerHTML="<div style=\'color:#e74c3c;font-size:14px\'>No se encontró la cotización N°"+nro+".</div>";
+          res.innerHTML="<div style=\'color:#e74c3c;font-size:14px\'>No se encontró la cotización N°"+esc(nro)+".</div>";
           return;
         }
         var linkBtn=data.link?
-          "<a href='"+data.link+"' target='_blank' style='display:inline-block;background:var(--acc);color:#1a1a1a;font-weight:700;padding:9px 18px;border-radius:6px;text-decoration:none;font-size:14px;margin-right:8px'>📄 Ver PDF</a>":"";
+          "<a href='"+esc(data.link)+"' target='_blank' style='display:inline-block;background:var(--acc);color:#1a1a1a;font-weight:700;padding:9px 18px;border-radius:6px;text-decoration:none;font-size:14px;margin-right:8px'>📄 Ver PDF</a>":"";
         var waBtn="";
         if(data.link){
           var msg="Hola"+(data.nombre?" "+data.nombre:"")+", aquí está tu cotización N° "+data.nro+" de León Ingeniería. 💧❄️\n\nPuedes verla y descargarla aquí:\n"+data.link;
           waBtn="<a href='https://wa.me/?text="+encodeURIComponent(msg)+"' target='_blank' style='display:inline-block;background:#25d366;color:#073b22;font-weight:700;padding:9px 18px;border-radius:6px;text-decoration:none;font-size:14px'>📲 Reenviar por WhatsApp</a>";
         }
         res.innerHTML="<div style='background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:14px 16px'>"
-          +"<div style='font-size:16px;font-weight:700;color:var(--txt);margin-bottom:8px'>Cotización N° "+data.nro+"</div>"
+          +"<div style='font-size:16px;font-weight:700;color:var(--txt);margin-bottom:8px'>Cotización N° "+esc(data.nro)+"</div>"
           +"<div style='font-size:14px;color:var(--txt2);line-height:1.7'>"
-          +"<b>Cliente:</b> "+(data.nombre||"—")+"<br>"
-          +"<b>Fecha:</b> "+(data.fecha||"—")+"<br>"
-          +"<b>Comuna:</b> "+(data.comuna||"—")+"<br>"
-          +"<b>Ítems:</b> "+(data.items||"—")+"<br>"
+          +"<b>Cliente:</b> "+esc(data.nombre||"—")+"<br>"
+          +"<b>Fecha:</b> "+esc(data.fecha||"—")+"<br>"
+          +"<b>Comuna:</b> "+esc(data.comuna||"—")+"<br>"
+          +"<b>Ítems:</b> "+esc(data.items||"—")+"<br>"
           +"<b>Total:</b> "+fmt(parseFloat(data.total)||0)+"<br>"
-          +"<b>Estado:</b> "+(data.estado||"Pendiente")
-          +(data.vendedor?"<br><b>Vendedor:</b> "+data.vendedor:"")
+          +"<b>Estado:</b> "+esc(data.estado||"Pendiente")
+          +(data.vendedor?"<br><b>Vendedor:</b> "+esc(data.vendedor):"")
           +"</div>"
           +(data.link?"<div style='margin-top:12px'>"+linkBtn+waBtn+"</div>":"<div style='margin-top:10px;font-size:13px;color:var(--txt3)'>Esta cotización no tiene PDF guardado (se generó solo para imprimir).</div>")
           +"</div>";
@@ -1750,43 +1797,28 @@ function enviarAIndicador(){
       alert("No se pudo autenticar con el Indicador. Intenta de nuevo.");
       return;
     }
-    var xhr=new XMLHttpRequest();
-    xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?shallow=true&auth="+token, true);
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState===4){
-        if(xhr.status>=200&&xhr.status<300){
-          var keys={};
-          try{keys=JSON.parse(xhr.responseText||"{}")||{};}catch(e){}
-          var maxId=0;
-          Object.keys(keys).forEach(function(k){
-            var n=parseInt(k.replace("c",""),10);
-            if(!isNaN(n)&&n>maxId)maxId=n;
-          });
-          var newId=maxId+1;
-          var row={id:newId,cliente:nombre,lugar:"",comuna:comuna,servicio:servicio,inicia:inicia,duracion:6,aviso:false,obs:"Generado desde cotización N°"+nro};
-          var xhr2=new XMLHttpRequest();
-          xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+newId+".json?auth="+token, true);
-          xhr2.setRequestHeader("Content-Type","application/json");
-          xhr2.onreadystatechange=function(){
-            if(xhr2.readyState===4){
-              btn.disabled=false; btn.textContent=textoOrig;
-              if(xhr2.status>=200&&xhr2.status<300){
-                alert("✓ "+nombre+" agregado al Indicador de Vencimiento (6 meses por defecto, editable allá).");
-              }else{
-                alert("No se pudo agregar al Indicador. Intenta de nuevo.");
-              }
-            }
-          };
-          xhr2.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo agregar al Indicador. Revisa tu conexión.");};
-          xhr2.send(JSON.stringify(row));
-        }else{
+    // Id por timestamp en vez de leer el maximo actual y sumar 1: ese
+    // patron (leer todos los ids, calcular max+1, escribir) puede pisarse
+    // si el Indicador u otra cotizacion crea un cliente casi al mismo
+    // tiempo -- mismo problema que ya se corrigio del lado del Indicador.
+    var newId=Date.now();
+    var row={id:newId,cliente:nombre,lugar:"",comuna:comuna,servicio:servicio,inicia:inicia,duracion:6,aviso:false,obs:"Generado desde cotización N°"+nro};
+    withAppCheckHeader(function(xhr2){
+      xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+newId+".json?auth="+token, true);
+      xhr2.setRequestHeader("Content-Type","application/json");
+      xhr2.onreadystatechange=function(){
+        if(xhr2.readyState===4){
           btn.disabled=false; btn.textContent=textoOrig;
-          alert("No se pudo conectar al Indicador. Intenta de nuevo.");
+          if(xhr2.status>=200&&xhr2.status<300){
+            alert("✓ "+nombre+" agregado al Indicador de Vencimiento (6 meses por defecto, editable allá).");
+          }else{
+            alert("No se pudo agregar al Indicador. Intenta de nuevo.");
+          }
         }
-      }
-    };
-    xhr.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo conectar al Indicador. Revisa tu conexión.");};
-    xhr.send();
+      };
+      xhr2.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo agregar al Indicador. Revisa tu conexión.");};
+      return JSON.stringify(row);
+    });
   });
 }
 
@@ -2023,17 +2055,17 @@ function armarPDF(){
     +"<div style='display:flex;font-size:10.5px;color:#1a1a1a'>"
     +"<div style='flex:0 0 55%'>"
     +"<table style='border-collapse:collapse;width:100%;color:#1a1a1a'>"
-    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top;width:90px'>SEÑOR(ES):</td><td style='padding:2px 0;vertical-align:top'>"+nombre+"</td></tr>"
-    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>RUT:</td><td style='padding:2px 0;vertical-align:top'>"+rut+"</td></tr>"
-    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>DIRECCIÓN:</td><td style='padding:2px 0;vertical-align:top'>"+dir+"</td></tr>"
-    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>COMUNA:</td><td style='padding:2px 0;vertical-align:top'>"+comuna+"</td></tr>"
+    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top;width:90px'>SEÑOR(ES):</td><td style='padding:2px 0;vertical-align:top'>"+esc(nombre)+"</td></tr>"
+    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>RUT:</td><td style='padding:2px 0;vertical-align:top'>"+esc(rut)+"</td></tr>"
+    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>DIRECCIÓN:</td><td style='padding:2px 0;vertical-align:top'>"+esc(dir)+"</td></tr>"
+    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>COMUNA:</td><td style='padding:2px 0;vertical-align:top'>"+esc(comuna)+"</td></tr>"
     +"</table>"
     +"</div>"
     +"<div style='flex:0 0 45%'>"
     +"<table style='border-collapse:collapse;width:100%;color:#1a1a1a'>"
-    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top;width:110px'>FECHA EMISIÓN:</td><td style='padding:2px 0;vertical-align:top'>"+fecha+"</td></tr>"
-    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>TELÉFONO:</td><td style='padding:2px 0;vertical-align:top'>"+tel+"</td></tr>"
-    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>CORREO:</td><td style='padding:2px 0;vertical-align:top'>"+email+"</td></tr>"
+    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top;width:110px'>FECHA EMISIÓN:</td><td style='padding:2px 0;vertical-align:top'>"+esc(fecha)+"</td></tr>"
+    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>TELÉFONO:</td><td style='padding:2px 0;vertical-align:top'>"+esc(tel)+"</td></tr>"
+    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>CORREO:</td><td style='padding:2px 0;vertical-align:top'>"+esc(email)+"</td></tr>"
     +"</table>"
     +"</div>"
     +"</div>"
@@ -2630,13 +2662,13 @@ function renderStatsAdmin(){
     var colorE=r.estado==="Aceptada"?"var(--grn)":r.estado==="Rechazada"?"#e74c3c":"#f39c12";
     var btn=function(est,label,color){
       var activo=r.estado===est;
-      return '<button onclick="setEstadoReg(\''+r.nro+'\',\''+est+'\')" style="flex:1;padding:7px 4px;border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;border:2px solid '+color+';background:'+(activo?color:'transparent')+';color:'+(activo?'#10141f':color)+'">'+label+'</button>';
+      return '<button onclick="setEstadoReg(\''+escAttr(r.nro)+'\',\''+est+'\')" style="flex:1;padding:7px 4px;border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;border:2px solid '+color+';background:'+(activo?color:'transparent')+';color:'+(activo?'#10141f':color)+'">'+label+'</button>';
     };
     html+='<div style="padding:12px 0;border-bottom:1px solid var(--brd)">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
-      +'<div style="min-width:0"><span style="font-weight:800;color:var(--txt)">N° '+r.nro+'</span>'
-      +' <span style="color:var(--txt2);font-size:14px">'+(r.nombre||"")+'</span>'
-      +'<div style="font-size:13px;color:var(--txt3)">'+(r.fecha||"")+' · '+(r.serv||"")+'</div></div>'
+      +'<div style="min-width:0"><span style="font-weight:800;color:var(--txt)">N° '+esc(r.nro)+'</span>'
+      +' <span style="color:var(--txt2);font-size:14px">'+esc(r.nombre||"")+'</span>'
+      +'<div style="font-size:13px;color:var(--txt3)">'+esc(r.fecha||"")+' · '+esc(r.serv||"")+'</div></div>'
       +'<div style="font-weight:800;color:'+colorE+';white-space:nowrap">'+fmt(r.total||0)+'</div>'
       +'</div>'
       +'<div style="display:flex;gap:6px;margin-top:8px">'
