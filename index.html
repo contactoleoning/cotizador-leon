@@ -2518,7 +2518,7 @@ function loadCloudData(){
     }
     // lista de instalaciones
     if(rec.inst_list&&rec.inst_list.length){
-      INST_LIST=rec.inst_list;
+      INST_LIST=mergeById(INST_LIST,rec.inst_list);
       try{localStorage.setItem("inst_list",JSON.stringify(INST_LIST));}catch(e){}
       updateItipoGrupoSelect();
       updateItipoSelect();
@@ -2526,14 +2526,14 @@ function loadCloudData(){
     }
     // lista de mantenciones
     if(rec.mant_list&&rec.mant_list.length){
-      MANT_LIST=rec.mant_list;
+      MANT_LIST=mergeById(MANT_LIST,rec.mant_list);
       try{localStorage.setItem("mant_list",JSON.stringify(MANT_LIST));}catch(e){}
       updateMantencionSelect();
       renderMantAdmin();
     }
     // lista de materiales
     if(rec.mat_list&&rec.mat_list.length){
-      MAT_LIST=rec.mat_list;
+      MAT_LIST=mergeById(MAT_LIST,rec.mat_list);
       MAT_LIST.forEach(function(it){if(!it.tipo)it.tipo="Materiales Estándar";});
       try{localStorage.setItem("mat_list",JSON.stringify(MAT_LIST));}catch(e){}
       updateImaterialesSelect();
@@ -2541,21 +2541,21 @@ function loadCloudData(){
     }
     // lista de extras
     if(rec.extra_list&&rec.extra_list.length){
-      EXTRA_LIST=rec.extra_list;
+      EXTRA_LIST=mergeById(EXTRA_LIST,rec.extra_list);
       try{localStorage.setItem("extra_list",JSON.stringify(EXTRA_LIST));}catch(e){}
       updateIExtraSelect();
       renderExtraAdmin();
     }
     // packs promocionales
     if(rec.pack_list&&rec.pack_list.length){
-      PACK_LIST=rec.pack_list;
+      PACK_LIST=mergeById(PACK_LIST,rec.pack_list);
       try{localStorage.setItem("pack_list",JSON.stringify(PACK_LIST));}catch(e){}
       updatePackSelect();
       renderPackAdmin();
     }
     // traslados
     if(rec.tras_list&&rec.tras_list.length){
-      TRAS_LIST=rec.tras_list;
+      TRAS_LIST=mergeById(TRAS_LIST,rec.tras_list);
       try{localStorage.setItem("tras_list",JSON.stringify(TRAS_LIST));}catch(e){}
       updateTrasSelect();
       renderTrasAdmin();
