@@ -403,7 +403,10 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
     </div>
     <div class="sec-body" style="max-height:0">
 
-<div class="fr"><span class="fl">Tipo de Trabajo</span>
+<div class="fr"><span class="fl">Tipo de Instalación</span>
+      <select id="itipogrupo"><option value="">— Selecciona —</option></select>
+    </div>
+    <div class="fr"><span class="fl">Capacidad</span>
       <select id="itipo"><option value="">— Selecciona —</option></select>
     </div>
     <div class="fr"><span class="fl">Cantidad instalaciones</span>
@@ -931,6 +934,7 @@ function renderMatAdmin(){
 
 function saveInstList(){
   try{localStorage.setItem("inst_list",JSON.stringify(INST_LIST));}catch(e){}
+  updateItipoGrupoSelect();
   updateItipoSelect();
   calcInst();
   var m=document.getElementById("savedmsg");
@@ -938,16 +942,33 @@ function saveInstList(){
   setTimeout(function(){m.textContent="";},2000);
 }
 
+function updateItipoGrupoSelect(){
+  var sel=document.getElementById("itipogrupo");
+  if(!sel)return;
+  var cur=sel.value;
+  var grupos=[];
+  INST_LIST.forEach(function(it){if(grupos.indexOf(it.tipo)===-1)grupos.push(it.tipo);});
+  grupos.sort();
+  var html='<option value="">— Selecciona —</option>';
+  grupos.forEach(function(g){html+='<option value="'+g+'">'+g+'</option>';});
+  sel.innerHTML=html;
+  if(grupos.indexOf(cur)!==-1)sel.value=cur;
+}
+
 function updateItipoSelect(){
   var sel=document.getElementById("itipo");
+  if(!sel)return;
   var cur=sel.value;
+  var grupoSel=document.getElementById("itipogrupo");
+  var grupo=grupoSel?grupoSel.value:"";
   sel.innerHTML='<option value="">— Selecciona —</option>';
   INST_LIST.forEach(function(it){
+    if(grupo&&it.tipo!==grupo)return;
     var o=document.createElement("option");
     o.value=it.id;o.textContent=it.nombre;
     sel.appendChild(o);
   });
-  sel.value=cur;
+  if(Array.prototype.some.call(sel.options,function(o){return o.value===cur;}))sel.value=cur;
 }
 
 function updateTiposelOptions(){
@@ -2499,6 +2520,7 @@ function loadCloudData(){
     if(rec.inst_list&&rec.inst_list.length){
       INST_LIST=rec.inst_list;
       try{localStorage.setItem("inst_list",JSON.stringify(INST_LIST));}catch(e){}
+      updateItipoGrupoSelect();
       updateItipoSelect();
       renderInstAdmin();
     }
@@ -3000,7 +3022,7 @@ function restaurarRespaldo(input){
       data.cat_extra.forEach(function(p){if(!CAT.find(function(x){return x.id===p.id;}))CAT.push(p);});
       try{localStorage.setItem("cat_extra",JSON.stringify(data.cat_extra));}catch(err){}
     }
-    updateItipoSelect();renderInstAdmin();
+    updateItipoGrupoSelect();updateItipoSelect();renderInstAdmin();
     updateMantencionSelect();renderMantAdmin();
     updateImaterialesSelect();renderMatAdmin();
     updateIExtraSelect();renderExtraAdmin();
@@ -3198,6 +3220,7 @@ document.addEventListener("DOMContentLoaded", function(){
     if(btn)removeItem(parseInt(btn.getAttribute("data-idx")));
   });
   // Instalacion
+  document.getElementById("itipogrupo").addEventListener("change",function(){document.getElementById("itipo").value="";updateItipoSelect();calcInst();});
   document.getElementById("btnagregarinstalacion").addEventListener("click",agregarInstalacionSola);
   document.getElementById("btnagregarmantencion").addEventListener("click",agregarMantencionSola);
   document.getElementById("btnagregarmateriales").addEventListener("click",agregarMaterialesSolo);
@@ -3247,6 +3270,7 @@ document.addEventListener("DOMContentLoaded", function(){
   calcInst();
   loadOv();
   loadInstList();
+  updateItipoGrupoSelect();
   updateItipoSelect();
   updateTiposelOptions();updateBtuselOptions();
   renderInstAdmin();
