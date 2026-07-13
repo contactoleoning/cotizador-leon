@@ -248,6 +248,7 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
     <button class="btn bwa" id="btnwa" style="background:#25d366;color:#073b22">📲 Enviar PDF por WhatsApp</button>
     <button class="btn bpdf" id="btnpdf">📄 Generar PDF Formal</button>
     <button class="btn" id="btnindicador" style="background:#3b6ea5;color:#fff">📅 Agregar a Indicador de Vencimiento</button>
+    <button class="btn" id="btnnuevacot" style="background:transparent;border:2px solid var(--brd2);color:var(--txt2)">🆕 Iniciar Cotización Nueva (siguiente N°)</button>
   </div>
 </div><!-- /cot-left -->
 
@@ -2193,7 +2194,9 @@ function pdfRecord(P){
 function genPDF(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
   var P=armarPDF();
-  incrementNro();
+  // No se avanza el número aquí: así, reimprimir/reintentar la misma cotización
+  // (por ejemplo si falló el envío) no genera un número nuevo. El número solo
+  // avanza al iniciar explícitamente una cotización nueva (botón correspondiente).
   saveQuoteRecord(pdfRecord(P));
   registrarCotizacion(P);
   var w=window.open("","_blank","width=820,height=900");
@@ -2428,7 +2431,6 @@ function enviarWhatsApp(){
           var msg="Hola"+(P.nombre?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
           if(link)msg+="\n\nPuedes verla y descargarla aquí:\n"+link;
           var wa=digits?("https://wa.me/"+digits+"?text="+encodeURIComponent(msg)):("https://wa.me/?text="+encodeURIComponent(msg));
-          incrementNro();
           registrarCotizacion(P);
           iframe.remove();
           hideLoader();
@@ -2563,7 +2565,7 @@ function loadCloudData(){
     // registro de cotizaciones (estadísticas)
     if(rec.reg_list&&rec.reg_list.length){
       var locales=REG_LIST.filter(function(l){return !rec.reg_list.find(function(r){return String(r.nro)===String(l.nro);});});
-      REG_LIST=rec.reg_list.concat(locales);
+      REG_LIST=rec.reg_list.concat(locales).filter(function(r){return REG_DELETED.indexOf(String(r.nro))===-1;});
       try{localStorage.setItem("reg_list",JSON.stringify(REG_LIST));}catch(e){}
       renderStatsAdmin();
     }
@@ -2584,11 +2586,29 @@ function incrementNro(){
   saveCloudData();
 }
 
+// Botón "Iniciar Cotización Nueva" — recién acá avanza el número de cotización.
+// Generar/reenviar el PDF sin pasar por este botón reimprime la misma cotización.
+function nuevaCotizacion(){
+  if(carrito.length&&!confirm("¿Iniciar una cotización nueva? Se vaciará el presupuesto actual (los datos del cliente no se borran).")) return;
+  carrito=[];
+  renderCarrito();
+  incrementNro();
+}
+
 function mergeById(local,remote){
   var byId={};
   (remote||[]).forEach(function(it){byId[it.id]=it;});
   (local||[]).forEach(function(it){byId[it.id]=it;});
   return Object.keys(byId).map(function(k){return byId[k];});
+}
+
+function mergeReg(local,remote){
+  var byNro={};
+  (remote||[]).forEach(function(r){byNro[String(r.nro)]=r;});
+  (local||[]).forEach(function(r){byNro[String(r.nro)]=r;});
+  return Object.keys(byNro)
+    .filter(function(k){return REG_DELETED.indexOf(k)===-1;})
+    .map(function(k){return byNro[k];});
 }
 
 function saveCloudData(){
@@ -2612,7 +2632,7 @@ function saveCloudData(){
           extra_list:mergeById(EXTRA_LIST,rec.extra_list),
           pack_list:mergeById(PACK_LIST,rec.pack_list),
           tras_list:mergeById(TRAS_LIST,rec.tras_list),
-          reg_list:REG_LIST},
+          reg_list:mergeReg(REG_LIST,rec.reg_list)},
         function(){setSyncStatus(true);},
         function(){setSyncStatus(false);}
       );
@@ -2647,13 +2667,25 @@ function saveQuoteRecord(data){
 
 // ===== Registro local de cotizaciones (estadísticas) =====
 var REG_LIST=[];
+// Nros eliminados explícitamente por el usuario: se excluyen de la fusión con la
+// nube para que un guardado desde otra pestaña no los "resucite".
+var REG_DELETED=[];
 function loadRegList(){
   try{var s=localStorage.getItem("reg_list");if(s){REG_LIST=JSON.parse(s);}}catch(e){REG_LIST=[];}
+  try{var d=localStorage.getItem("reg_deleted");if(d){REG_DELETED=JSON.parse(d);}}catch(e){REG_DELETED=[];}
 }
 function saveRegList(){
   if(REG_LIST.length>500)REG_LIST=REG_LIST.slice(-500);
   try{localStorage.setItem("reg_list",JSON.stringify(REG_LIST));}catch(e){}
   saveCloudData();
+}
+function eliminarCotizacionReg(nro){
+  if(!confirm("¿Eliminar la cotización N° "+nro+" del historial? Esto no se puede deshacer."))return;
+  REG_LIST=REG_LIST.filter(function(r){return String(r.nro)!==String(nro);});
+  if(REG_DELETED.indexOf(String(nro))===-1)REG_DELETED.push(String(nro));
+  try{localStorage.setItem("reg_deleted",JSON.stringify(REG_DELETED));}catch(e){}
+  saveRegList();
+  renderStatsAdmin();
 }
 function registrarCotizacion(P){
   var servicios=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"—";
@@ -2757,6 +2789,7 @@ function renderStatsAdmin(){
       +btn("Pendiente","Pendiente","#f39c12")
       +btn("Aceptada","Aceptada","#27ae60")
       +btn("Rechazada","Rechazada","#e74c3c")
+      +'<button onclick="eliminarCotizacionReg(\''+escAttr(r.nro)+'\')" title="Eliminar del historial" style="flex:0 0 auto;padding:7px 12px;border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;border:2px solid #c0392b;background:transparent;color:#c0392b">🗑</button>'
       +'</div>'
       +'</div>';
   });
@@ -3260,6 +3293,7 @@ document.addEventListener("DOMContentLoaded", function(){
   document.getElementById("btnpdf").addEventListener("click",genPDF);
   var _bwa=document.getElementById("btnwa");if(_bwa)_bwa.addEventListener("click",enviarWhatsApp);
   var _bind=document.getElementById("btnindicador");if(_bind)_bind.addEventListener("click",enviarAIndicador);
+  var _bnuevacot=document.getElementById("btnnuevacot");if(_bnuevacot)_bnuevacot.addEventListener("click",nuevaCotizacion);
   // Install form changes
   ["itipo","imateriales"].forEach(function(id){
     document.getElementById(id).addEventListener("change",calcInst);
@@ -3294,6 +3328,7 @@ document.addEventListener("DOMContentLoaded", function(){
     filtrar();
   });
   // Init
+  loadRegList();
   loadNro();
   (function(){var h=new Date();document.getElementById("fecha").value=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");})();
   try{document.getElementById("cvendedor").value=localStorage.getItem("vendedor_nombre")||"";}catch(e){}
@@ -3320,7 +3355,6 @@ document.addEventListener("DOMContentLoaded", function(){
   loadTrasList();
   updateTrasSelect();
   renderTrasAdmin();
-  loadRegList();
   renderStatsAdmin();
   poblarProveedoresPdfPrecios();
   initInfo();
