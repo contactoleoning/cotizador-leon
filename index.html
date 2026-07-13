@@ -950,6 +950,19 @@ function updateItipoSelect(){
   sel.value=cur;
 }
 
+function updateTiposelOptions(){
+  var sel=document.getElementById("tiposel");
+  if(!sel)return;
+  var cur=sel.value;
+  var tipos=[];
+  CAT.forEach(function(p){if(tipos.indexOf(p.tipo)===-1)tipos.push(p.tipo);});
+  tipos.sort();
+  var html='<option value="">Todos</option>';
+  tipos.forEach(function(t){html+='<option value="'+t+'">'+t+'</option>';});
+  sel.innerHTML=html;
+  if(tipos.indexOf(cur)!==-1)sel.value=cur;
+}
+
 function toggleAdmSec(sec){
   var body=document.getElementById("adm-"+sec+"-body");
   var arrow=document.getElementById("adm-"+sec+"-arrow");
@@ -2465,6 +2478,7 @@ function loadCloudData(){
     if(rec.cat_extra&&rec.cat_extra.length){
       rec.cat_extra.forEach(function(e){if(!CAT.find(function(x){return x.id===e.id;}))CAT.push(e);});
       try{localStorage.setItem("cat_extra",JSON.stringify(rec.cat_extra));}catch(e){}
+      updateTiposelOptions();
     }
     // lista de instalaciones
     if(rec.inst_list&&rec.inst_list.length){
@@ -2977,6 +2991,7 @@ function restaurarRespaldo(input){
     updateIExtraSelect();renderExtraAdmin();
     updatePackSelect();renderPackAdmin();
     updateTrasSelect();renderTrasAdmin();
+    updateTiposelOptions();
     renderStatsAdmin();
     renderAdmin();filtrar();
     setNroUI(data.nro||1);
@@ -3114,6 +3129,7 @@ function eliminarEquipo(id){
   CAT=CAT.filter(function(p){return p.id!==id;});
   try{localStorage.removeItem("ov_"+id);}catch(e){}
   try{localStorage.setItem("cat_extra",JSON.stringify(CAT.filter(function(p){return p._nuevo;})));}catch(e){}
+  updateTiposelOptions();
   renderAdmin();filtrar();saveCloudData();
 }
 
@@ -3130,6 +3146,7 @@ function agregarEquipoNuevo(){
   var nuevo={id:id,tipo:tipo,btu:btu,marca:marca,modelo:modelo,prov:prov,costo:costo,pct:pct,cyber:0,_nuevo:true};
   CAT.push(nuevo);
   try{var ex=JSON.parse(localStorage.getItem("cat_extra")||"[]");ex.push(nuevo);localStorage.setItem("cat_extra",JSON.stringify(ex));}catch(e){}
+  updateTiposelOptions();
   renderAdmin();filtrar();saveCloudData();
 }
 
@@ -3140,6 +3157,7 @@ function setOv(id,campo,val){
   var p=CAT.find(function(x){return x.id===id;});
   if(p)p[campo]=val;
   saveOv(id);
+  updateTiposelOptions();
   renderAdmin();
   filtrar();
 }
@@ -3215,6 +3233,7 @@ document.addEventListener("DOMContentLoaded", function(){
   loadOv();
   loadInstList();
   updateItipoSelect();
+  updateTiposelOptions();
   renderInstAdmin();
   loadMantList();
   updateMantencionSelect();
