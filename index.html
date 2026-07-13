@@ -2412,14 +2412,14 @@ function pvN(p){return Math.round(getCosto(p)*(1+gPct(p)/100));}
 
 
 // EVENT LISTENERS - no inline onclick
-// === CONTADOR COMPARTIDO EN LA NUBE (JSONBin.io) ===
-var JSONBIN_ID="6a442bcff5f4af5e2949b2e6";
+// === CONTADOR COMPARTIDO EN LA NUBE (via Apps Script, que a su vez habla con JSONBin.io) ===
 var GAS_URL="https://script.google.com/macros/s/AKfycbz9SbmsjWXY1Bh6375DfslTdPdOx9e2_q9X4PvvBu_9kxlOkNtGM0OtM7r7-xvH2ik-NA/exec";
 // Clave compartida que exige el script de Apps Script (doGet/doPost) --
 // sin esto, cualquiera con la URL podia leer o insertar cotizaciones sin
-// ninguna autenticacion.
+// ninguna autenticacion. La clave de JSONBin.io en si ya NO vive aca --
+// quedo solo del lado del servidor (Propiedades del script en Apps
+// Script), porque antes estaba expuesta en este mismo archivo publico.
 var GAS_KEY="931ae6fd8b05dcadb18b09244161efa5b2723997bca3097d";
-var JSONBIN_KEY="CLAVE_ROTADA_POR_EXPOSICION_PUBLICA";
 
 function setNroUI(n){
   var s=String(n).padStart(3,"0");
@@ -2439,14 +2439,12 @@ function loadNro(){loadCloudData();}
 function loadCloudData(){
   var local=parseInt(localStorage.getItem("cot_nro")||"1")||1;
   setNroUI(local);
-  if(JSONBIN_ID==="REEMPLAZAR_BIN_ID"){
+  if(!GAS_URL){
     document.getElementById("sync-dot").style.background="#e67e22";
     document.getElementById("sync-lbl").textContent="sin configurar";
     return;
   }
-  fetch("https://api.jsonbin.io/v3/b/"+JSONBIN_ID+"/latest",{
-    headers:{"X-Master-Key":JSONBIN_KEY}
-  })
+  fetch(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY))
   .then(function(r){return r.json();})
   .then(function(data){
     var rec=data.record;
@@ -2536,16 +2534,14 @@ function incrementNro(){
 }
 
 function saveCloudData(){
-  if(JSONBIN_ID==="REEMPLAZAR_BIN_ID"){return;}
+  if(!GAS_URL){return;}
   var nro=parseInt(localStorage.getItem("cot_nro")||"1")||1;
   var catExtra=CAT.filter(function(p){return p._nuevo;});
-  fetch("https://api.jsonbin.io/v3/b/"+JSONBIN_ID,{
-    method:"PUT",
-    headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},
-    body:JSON.stringify({nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST,extra_list:EXTRA_LIST,pack_list:PACK_LIST,tras_list:TRAS_LIST,reg_list:REG_LIST})
-  })
-  .then(function(){setSyncStatus(true);})
-  .catch(function(){setSyncStatus(false);});
+  postToGAS(
+    {action:"saveCloud",nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST,extra_list:EXTRA_LIST,pack_list:PACK_LIST,tras_list:TRAS_LIST,reg_list:REG_LIST},
+    function(){setSyncStatus(true);},
+    function(){setSyncStatus(false);}
+  );
 }
 
 function postToGAS(payload, onDone, onError){
