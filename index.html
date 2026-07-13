@@ -3090,12 +3090,10 @@ function renderAdmin(){
     +'<div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:8px">'
     +'<div><div style="'+lbl+'">BTU</div><input type="number" id="new-btu" placeholder="12" style="'+sa+'"></div>'
     +'<div><div style="'+lbl+'">Tipo</div>'
-    +'<select id="new-tipo" style="'+sa+'">'
-    +'<option value="Split Muro">Split Muro</option>'
-    +'<option value="Cassette">Cassette</option>'
-    +'<option value="Piso Cielo">Piso Cielo</option>'
-    +'<option value="Multisplit">Multisplit</option>'
-    +'</select></div>'
+    +'<input type="text" id="new-tipo" list="new-tipo-list" placeholder="Ej: Consola" style="'+sa+'">'
+    +'<datalist id="new-tipo-list">'
+    +Object.keys(grupos).map(function(t){return '<option value="'+t+'">';}).join('')
+    +'</datalist></div>'
     +'<div><div style="'+lbl+'">Proveedor</div><input type="text" id="new-prov" placeholder="Ej: Mar del Sur" style="'+sa+'"></div>'
     +'</div>'
 
@@ -3123,11 +3121,11 @@ function agregarEquipoNuevo(){
   var marca=(document.getElementById("new-marca").value||"").trim();
   var modelo=(document.getElementById("new-modelo").value||"").trim();
   var btu=parseFloat(document.getElementById("new-btu").value)||0;
-  var tipo=document.getElementById("new-tipo").value;
+  var tipo=(document.getElementById("new-tipo").value||"").trim();
   var prov=(document.getElementById("new-prov").value||"").trim()||"-";
   var costo=parseInt(document.getElementById("new-costo").value)||0;
   var pct=parseInt(document.getElementById("new-pct").value)||0;
-  if(!marca||!modelo||!btu||!costo){alert("Completa Marca, Modelo, BTU y Costo.");return;}
+  if(!marca||!modelo||!btu||!costo||!tipo){alert("Completa Marca, Modelo, BTU, Tipo y Costo.");return;}
   var id="CUSTOM_"+Date.now();
   var nuevo={id:id,tipo:tipo,btu:btu,marca:marca,modelo:modelo,prov:prov,costo:costo,pct:pct,cyber:0,_nuevo:true};
   CAT.push(nuevo);
