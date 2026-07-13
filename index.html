@@ -2584,15 +2584,46 @@ function incrementNro(){
   saveCloudData();
 }
 
+function mergeById(local,remote){
+  var byId={};
+  (remote||[]).forEach(function(it){byId[it.id]=it;});
+  (local||[]).forEach(function(it){byId[it.id]=it;});
+  return Object.keys(byId).map(function(k){return byId[k];});
+}
+
 function saveCloudData(){
   if(!GAS_URL){return;}
   var nro=parseInt(localStorage.getItem("cot_nro")||"1")||1;
   var catExtra=CAT.filter(function(p){return p._nuevo;});
-  postToGAS(
-    {action:"saveCloud",nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST,extra_list:EXTRA_LIST,pack_list:PACK_LIST,tras_list:TRAS_LIST,reg_list:REG_LIST},
-    function(){setSyncStatus(true);},
-    function(){setSyncStatus(false);}
-  );
+  // Antes de guardar, se trae la última versión de la nube y se fusiona por id.
+  // Así, si otra pestaña/sesión agregó algo a un catálogo mientras esta pestaña
+  // tenía una copia más vieja en memoria, esta escritura no la borra.
+  fetch(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY))
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var rec=(data&&data.record)||{};
+      postToGAS(
+        {action:"saveCloud",nro:nro,
+          ov:Object.assign({},rec.ov||{},ov),
+          cat_extra:mergeById(catExtra,rec.cat_extra),
+          inst_list:mergeById(INST_LIST,rec.inst_list),
+          mat_list:mergeById(MAT_LIST,rec.mat_list),
+          mant_list:mergeById(MANT_LIST,rec.mant_list),
+          extra_list:mergeById(EXTRA_LIST,rec.extra_list),
+          pack_list:mergeById(PACK_LIST,rec.pack_list),
+          tras_list:mergeById(TRAS_LIST,rec.tras_list),
+          reg_list:REG_LIST},
+        function(){setSyncStatus(true);},
+        function(){setSyncStatus(false);}
+      );
+    })
+    .catch(function(){
+      postToGAS(
+        {action:"saveCloud",nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST,extra_list:EXTRA_LIST,pack_list:PACK_LIST,tras_list:TRAS_LIST,reg_list:REG_LIST},
+        function(){setSyncStatus(true);},
+        function(){setSyncStatus(false);}
+      );
+    });
 }
 
 function postToGAS(payload, onDone, onError){
