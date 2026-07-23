@@ -891,19 +891,16 @@ function renderMatAdmin(){
   var btnUp='background:#1a3a5c;border:2px solid var(--blu);color:var(--blu);border-radius:var(--rs);padding:6px 12px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap';
   var btnDel='background:#c0392b;color:#fff;border:none;padding:6px 14px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer';
 
-  var grupos={},orden=[];
-  MAT_LIST.forEach(function(it){
-    if(!grupos[it.tipo]){grupos[it.tipo]=[];orden.push(it.tipo);}
-    grupos[it.tipo].push(it);
-  });
+  var agr=agruparPorTipo(MAT_LIST),grupos=agr.grupos,orden=agr.orden;
 
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita, agrega, elimina y reordena los materiales. Los cambios se aplican al instante.</div>';
 
-  orden.forEach(function(tipo){
-    var gkey='mat:'+tipo;
-    html+=admGroupHeader(gkey,'renderMatAdmin',tipo,grupos[tipo].length);
+  orden.forEach(function(clave){
+    var tipo=agr.display[clave];
+    var gkey='mat:'+clave;
+    html+=admGroupHeader(gkey,'renderMatAdmin',tipo,grupos[clave].length);
     if(!ADM_GROUP_OPEN[gkey])return;
-    var items=grupos[tipo];
+    var items=grupos[clave];
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
@@ -952,9 +949,8 @@ function updateItipoGrupoSelect(){
   var sel=document.getElementById("itipogrupo");
   if(!sel)return;
   var cur=sel.value;
-  var grupos=[];
-  INST_LIST.forEach(function(it){if(grupos.indexOf(it.tipo)===-1)grupos.push(it.tipo);});
-  grupos.sort();
+  var agr=agruparPorTipo(INST_LIST);
+  var grupos=agr.orden.map(function(clave){return agr.display[clave];}).sort();
   var html='<option value="">— Selecciona —</option>';
   grupos.forEach(function(g){html+='<option value="'+g+'">'+g+'</option>';});
   sel.innerHTML=html;
@@ -966,10 +962,10 @@ function updateItipoSelect(){
   if(!sel)return;
   var cur=sel.value;
   var grupoSel=document.getElementById("itipogrupo");
-  var grupo=grupoSel?grupoSel.value:"";
+  var grupo=(grupoSel?grupoSel.value:"").trim().toLowerCase();
   sel.innerHTML='<option value="">— Selecciona —</option>';
   INST_LIST.forEach(function(it){
-    if(grupo&&it.tipo!==grupo)return;
+    if(grupo&&(it.tipo||"").trim().toLowerCase()!==grupo)return;
     var o=document.createElement("option");
     o.value=it.id;o.textContent=it.nombre;
     sel.appendChild(o);
@@ -981,9 +977,8 @@ function updateTiposelOptions(){
   var sel=document.getElementById("tiposel");
   if(!sel)return;
   var cur=sel.value;
-  var tipos=[];
-  CAT.forEach(function(p){if(tipos.indexOf(p.tipo)===-1)tipos.push(p.tipo);});
-  tipos.sort();
+  var agr=agruparPorTipo(CAT);
+  var tipos=agr.orden.map(function(clave){return agr.display[clave];}).sort();
   var html='<option value="">Todos</option>';
   tipos.forEach(function(t){html+='<option value="'+t+'">'+t+'</option>';});
   sel.innerHTML=html;
@@ -995,9 +990,9 @@ function updateBtuselOptions(){
   var sel=document.getElementById("btusel");
   if(!sel)return;
   var cur=sel.value;
-  var tipo=document.getElementById("tiposel")?document.getElementById("tiposel").value:"";
+  var tipo=(document.getElementById("tiposel")?document.getElementById("tiposel").value:"").trim().toLowerCase();
   var btus=[];
-  CAT.forEach(function(p){if((!tipo||p.tipo===tipo)&&btus.indexOf(p.btu)===-1)btus.push(p.btu);});
+  CAT.forEach(function(p){if((!tipo||(p.tipo||"").trim().toLowerCase()===tipo)&&btus.indexOf(p.btu)===-1)btus.push(p.btu);});
   btus.sort(function(a,b){return a-b;});
   var html='<option value="">— Selecciona —</option>';
   btus.forEach(function(b){html+='<option value="'+b+'">'+(BTU_LABELS[b]||(b+".000 BTU"))+'</option>';});
@@ -1058,20 +1053,17 @@ function renderInstAdmin(){
   var btnUp='background:#1a3a5c;border:2px solid var(--blu);color:var(--blu);border-radius:var(--rs);padding:6px 12px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap';
   var btnDel='background:#c0392b;color:#fff;border:none;padding:6px 14px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer';
 
-  // Agrupar por tipo manteniendo orden del array
-  var grupos={},orden=[];
-  INST_LIST.forEach(function(it){
-    if(!grupos[it.tipo]){grupos[it.tipo]=[];orden.push(it.tipo);}
-    grupos[it.tipo].push(it);
-  });
+  // Agrupar por tipo manteniendo orden del array (ignorando mayus/minus y espacios)
+  var agr=agruparPorTipo(INST_LIST),grupos=agr.grupos,orden=agr.orden;
 
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita, agrega, elimina y reordena las instalaciones. Los cambios se aplican al instante.</div>';
 
-  orden.forEach(function(tipo){
-    var gkey='inst:'+tipo;
-    html+=admGroupHeader(gkey,'renderInstAdmin',tipo,grupos[tipo].length);
+  orden.forEach(function(clave){
+    var tipo=agr.display[clave];
+    var gkey='inst:'+clave;
+    html+=admGroupHeader(gkey,'renderInstAdmin',tipo,grupos[clave].length);
     if(!ADM_GROUP_OPEN[gkey])return;
-    var items=grupos[tipo];
+    var items=grupos[clave];
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
@@ -1129,12 +1121,12 @@ function syncMovil(){}
 function chkMovil(){}
 
 function filtrar(){
-  var btu=parseInt(vs("btusel")),tipo=vs("tiposel");
+  var btu=parseInt(vs("btusel")),tipo=vs("tiposel"),tipoClave=tipo.trim().toLowerCase();
   var lista=document.getElementById("prodlista");
   selProd=null;
   document.getElementById("btnag").style.display="none";
   if(!btu){lista.innerHTML="";return;}
-  var res=CAT.filter(function(p){return p.btu===btu&&(!tipo||p.tipo===tipo);});
+  var res=CAT.filter(function(p){return p.btu===btu&&(!tipo||(p.tipo||"").trim().toLowerCase()===tipoClave);});
   if(!res.length){lista.innerHTML='<div class="empty">NO EXISTE EQUIPO PARA ESA SELECCIÓN</div>';return;}
   lista.innerHTML=res.map(function(p){
     var n=pvN(p);
@@ -1337,19 +1329,16 @@ function renderCatalogoAdmin(opts){
   var btnUp='background:#1a3a5c;border:2px solid var(--blu);color:var(--blu);border-radius:var(--rs);padding:6px 12px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap';
   var btnDel='background:#c0392b;color:#fff;border:none;padding:6px 14px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer';
 
-  var grupos={},orden=[];
-  lista.forEach(function(it){
-    if(!grupos[it.tipo]){grupos[it.tipo]=[];orden.push(it.tipo);}
-    grupos[it.tipo].push(it);
-  });
+  var agr=agruparPorTipo(lista),grupos=agr.grupos,orden=agr.orden;
 
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">'+opts.intro+'</div>';
 
-  orden.forEach(function(tipo){
-    var gkey=opts.groupNS+':'+tipo;
-    html+=admGroupHeader(gkey,opts.renderFnName,tipo,grupos[tipo].length);
+  orden.forEach(function(clave){
+    var tipo=agr.display[clave];
+    var gkey=opts.groupNS+':'+clave;
+    html+=admGroupHeader(gkey,opts.renderFnName,tipo,grupos[clave].length);
     if(!ADM_GROUP_OPEN[gkey])return;
-    var items=grupos[tipo];
+    var items=grupos[clave];
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
@@ -1477,19 +1466,16 @@ function renderMantAdmin(){
   var btnUp='background:#1a3a5c;border:2px solid var(--blu);color:var(--blu);border-radius:var(--rs);padding:6px 12px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap';
   var btnDel='background:#c0392b;color:#fff;border:none;padding:6px 14px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer';
 
-  var grupos={},orden=[];
-  MANT_LIST.forEach(function(it){
-    if(!grupos[it.tipo]){grupos[it.tipo]=[];orden.push(it.tipo);}
-    grupos[it.tipo].push(it);
-  });
+  var agr=agruparPorTipo(MANT_LIST),grupos=agr.grupos,orden=agr.orden;
 
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita, agrega, elimina y reordena las mantenciones. Los cambios se aplican al instante.</div>';
 
-  orden.forEach(function(tipo){
-    var gkey='mant:'+tipo;
-    html+=admGroupHeader(gkey,'renderMantAdmin',tipo,grupos[tipo].length);
+  orden.forEach(function(clave){
+    var tipo=agr.display[clave];
+    var gkey='mant:'+clave;
+    html+=admGroupHeader(gkey,'renderMantAdmin',tipo,grupos[clave].length);
     if(!ADM_GROUP_OPEN[gkey])return;
-    var items=grupos[tipo];
+    var items=grupos[clave];
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
@@ -1650,19 +1636,16 @@ function renderExtraAdmin(){
   var btnUp='background:#1a3a5c;border:2px solid var(--blu);color:var(--blu);border-radius:var(--rs);padding:6px 12px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap';
   var btnDel='background:#c0392b;color:#fff;border:none;padding:6px 14px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer';
 
-  var grupos={},orden=[];
-  EXTRA_LIST.forEach(function(it){
-    if(!grupos[it.tipo]){grupos[it.tipo]=[];orden.push(it.tipo);}
-    grupos[it.tipo].push(it);
-  });
+  var agr=agruparPorTipo(EXTRA_LIST),grupos=agr.grupos,orden=agr.orden;
 
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita, agrega, elimina y reordena los extras. Los cambios se aplican al instante.</div>';
 
-  orden.forEach(function(tipo){
-    var gkey='extra:'+tipo;
-    html+=admGroupHeader(gkey,'renderExtraAdmin',tipo,grupos[tipo].length);
+  orden.forEach(function(clave){
+    var tipo=agr.display[clave];
+    var gkey='extra:'+clave;
+    html+=admGroupHeader(gkey,'renderExtraAdmin',tipo,grupos[clave].length);
     if(!ADM_GROUP_OPEN[gkey])return;
-    var items=grupos[tipo];
+    var items=grupos[clave];
     items.forEach(function(it,idxInGroup){
       var pventa=Math.round(it.precio*(1+IVA));
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
@@ -2232,24 +2215,22 @@ function hideLoader(){var o=document.getElementById("pdf-loader");if(o)o.style.d
 
 // ===== Catálogo de Equipos (PDF compartible directo por WhatsApp, sin pasar por Drive) =====
 function armarCatalogoPDF(){
-  var grupos={},orden=[];
-  CAT.slice().sort(function(a,b){
+  var agr=agruparPorTipo(CAT.slice().sort(function(a,b){
     if(a.tipo!==b.tipo)return a.tipo<b.tipo?-1:1;
     if(a.marca!==b.marca)return a.marca<b.marca?-1:1;
     if(a.modelo!==b.modelo)return a.modelo<b.modelo?-1:1;
     return a.btu-b.btu;
-  }).forEach(function(p){
-    if(!grupos[p.tipo]){grupos[p.tipo]=[];orden.push(p.tipo);}
-    grupos[p.tipo].push(p);
-  });
+  }));
+  var grupos=agr.grupos,orden=agr.orden;
 
   var TC="padding:6px 8px;font-size:10px;color:#1a1a1a;text-align:center;border:1px solid #ddd;";
   var TL="padding:6px 8px;font-size:10px;color:#1a1a1a;text-align:left;border:1px solid #ddd;";
 
   var rowsHtml="";
-  orden.forEach(function(tipo){
+  orden.forEach(function(clave){
+    var tipo=agr.display[clave];
     rowsHtml+="<tr><td colspan='4' style='padding:10px 8px 4px;font-size:12px;font-weight:800;color:#e8291c;border:none'>"+tipo+"</td></tr>";
-    grupos[tipo].forEach(function(p){
+    grupos[clave].forEach(function(p){
       var precio=wIVA(pvN(p));
       rowsHtml+="<tr>"
         +"<td style='"+TL+"'>"+p.marca+"</td>"
@@ -3118,6 +3099,21 @@ function toggleAdmGroup(key,fnName){
   ADM_GROUP_OPEN[key]=!ADM_GROUP_OPEN[key];
   window[fnName]();
 }
+// Agrupa por tipo ignorando mayusculas/minusculas y espacios de sobra --
+// sin esto, escribir "Mantencion Cassette" y despues "MANTENCION CASSETTE"
+// crea dos grupos separados en el admin aunque el encabezado los muestre
+// identicos (el texto se ve en mayusculas por CSS, pero la comparacion es
+// exacta). El grupo se muestra con el texto tal cual vino el primer item.
+function agruparPorTipo(lista){
+  var grupos={},orden=[],display={};
+  lista.forEach(function(it){
+    var t=(it.tipo||'').trim();
+    var clave=t.toLowerCase();
+    if(!grupos[clave]){grupos[clave]=[];orden.push(clave);display[clave]=t;}
+    grupos[clave].push(it);
+  });
+  return {grupos:grupos,orden:orden,display:display};
+}
 function admGroupHeader(key,fnName,tipo,count){
   var open=!!ADM_GROUP_OPEN[key];
   var keyEsc=key.replace(/'/g,"\\'");
@@ -3127,21 +3123,21 @@ function admGroupHeader(key,fnName,tipo,count){
     +'</div>';
 }
 function renderAdmin(){
-  var grupos={};
-  CAT.forEach(function(p){if(!grupos[p.tipo])grupos[p.tipo]=[];grupos[p.tipo].push(p);});
+  var agrEq=agruparPorTipo(CAT),grupos=agrEq.grupos;
 
   var si='width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:8px 10px;font-size:14px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
   var sa='width:100%;background:var(--bg3);border:2px solid var(--acc);border-radius:var(--rs);padding:8px 10px;font-size:14px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
   var lbl='font-size:11px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;font-weight:600';
   var html='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Edita todos los campos. Los cambios se aplican al instante.</div>';
 
-  Object.keys(grupos).forEach(function(tipo){
+  agrEq.orden.forEach(function(clave){
+    var tipo=agrEq.display[clave];
     html+='<div class="gl">'+tipo+'</div>';
 
     // Sub-agrupar por marca + modelo dentro de cada tipo
     var sub={},subOrder=[];
-    grupos[tipo].forEach(function(p){
-      var key=tipo+'||'+p.marca+'||'+p.modelo;
+    grupos[clave].forEach(function(p){
+      var key=clave+'||'+p.marca+'||'+p.modelo;
       if(!sub[key]){sub[key]=[];subOrder.push(key);}
       sub[key].push(p);
     });
@@ -3213,7 +3209,7 @@ function renderAdmin(){
     +'<div><div style="'+lbl+'">Tipo</div>'
     +'<input type="text" id="new-tipo" list="new-tipo-list" placeholder="Ej: Consola" style="'+sa+'">'
     +'<datalist id="new-tipo-list">'
-    +Object.keys(grupos).map(function(t){return '<option value="'+t+'">';}).join('')
+    +agrEq.orden.map(function(clave){return '<option value="'+agrEq.display[clave]+'">';}).join('')
     +'</datalist></div>'
     +'<div><div style="'+lbl+'">Proveedor</div><input type="text" id="new-prov" placeholder="Ej: Mar del Sur" style="'+sa+'"></div>'
     +'</div>'
