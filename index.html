@@ -2181,6 +2181,7 @@ function pdfRecord(P){
 // Botón "Generar PDF Formal" — abre ventana imprimible como siempre
 function genPDF(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
+  asegurarNroLibre();
   var P=armarPDF();
   // No se avanza el número aquí: así, reimprimir/reintentar la misma cotización
   // (por ejemplo si falló el envío) no genera un número nuevo. El número solo
@@ -2336,6 +2337,7 @@ function enviarWhatsApp(){
     waWin.document.close();
   }
 
+  asegurarNroLibre();
   var P=armarPDF();
   showLoader("Generando PDF...");
 
@@ -2570,6 +2572,21 @@ function incrementNro(){
   localStorage.setItem("cot_nro",String(siguiente));
   setNroUI(siguiente);
   saveCloudData();
+}
+
+// Si el número actual ya quedó registrado con OTRO cliente (se pasó a
+// cotizar a alguien distinto sin apretar "Iniciar Cotización Nueva"),
+// avanza el número solo, sin que haga falta acordarse del botón. Si es el
+// mismo cliente (o el número todavía no se ha usado), no toca nada -- eso
+// sigue permitiendo reimprimir/reintentar sin duplicar número.
+function asegurarNroLibre(){
+  var nroActual=document.getElementById("nro").value.trim();
+  var nombreActual=(document.getElementById("cnombre").value||"").trim().toLowerCase();
+  if(!nombreActual) return;
+  var yaRegistrado=REG_LIST.find(function(r){return String(r.nro)===String(nroActual);});
+  if(yaRegistrado && (yaRegistrado.nombre||"").trim().toLowerCase()!==nombreActual){
+    incrementNro();
+  }
 }
 
 // Botón "Iniciar Cotización Nueva" — recién acá avanza el número de cotización.
