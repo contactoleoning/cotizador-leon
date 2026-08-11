@@ -552,23 +552,15 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
 
   <!-- BUSCAR COTIZACIÓN -->
   <div class="card">
-    <div class="ct">🔍 Reabrir Cotización</div>
+    <div class="ct" style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--brd)">
+      <span>🔍 Reabrir Cotización</span>
+      <span id="ultima-cot" style="font-size:12.5px;font-weight:600;color:var(--txt2);text-transform:none;letter-spacing:0"></span>
+    </div>
     <div style="display:flex;gap:10px">
       <input type="text" id="buscar-nro" placeholder="N° de cotización (ej: 105)" inputmode="numeric" style="flex:1" onkeydown="if(event.key==='Enter')buscarCotizacion()">
       <button onclick="buscarCotizacion()" style="background:var(--acc);color:#1a1a1a;font-weight:700;padding:0 24px;border:none;border-radius:var(--rs);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:15px">Buscar</button>
     </div>
     <div id="buscar-resultado" style="margin-top:14px"></div>
-  </div>
-
-  <!-- HISTORIAL DE COTIZACIONES -->
-  <div class="card">
-    <div class="ct" style="display:flex;align-items:center;justify-content:space-between;border:none;margin:0;padding:0">
-      <span>🗂️ Historial de Cotizaciones</span>
-      <button onclick="cargarHistorial()" style="background:none;border:none;color:var(--acc);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">↻ Actualizar</button>
-    </div>
-    <div id="historial-lista" style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-      <div style="color:var(--txt2);font-size:14px">Cargando...</div>
-    </div>
   </div>
 
   <!-- BLOQUE 1: INFO OBLIGATORIA -->
@@ -1123,7 +1115,7 @@ function showTab(t){
     document.getElementById("view-"+x).style.display=(x===t)?"":"none";
     document.getElementById("tab-"+x).className="tab"+(x===t?" act":"");
   });
-  if(t==="info")cargarHistorial();
+  if(t==="info")cargarUltimaCotizacion();
 }
 
 function toggleKit(){}
@@ -1828,35 +1820,21 @@ function buscarCotizacion(){
   xhr.send();
 }
 
-function cargarHistorial(){
-  var cont=document.getElementById("historial-lista");
-  if(!cont)return;
-  if(!GAS_URL){cont.innerHTML="<div style='color:#e67e22;font-size:14px'>Servidor no configurado.</div>";return;}
-  cont.innerHTML="<div style='color:var(--txt2);font-size:14px'>Cargando...</div>";
+function cargarUltimaCotizacion(){
+  var el=document.getElementById("ultima-cot");
+  if(!el||!GAS_URL)return;
   var xhr=new XMLHttpRequest();
-  xhr.open("GET", GAS_URL+"?action=historial&limit=25&key="+encodeURIComponent(GAS_KEY), true);
+  xhr.open("GET", GAS_URL+"?action=historial&limit=1&key="+encodeURIComponent(GAS_KEY), true);
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
       if(xhr.status>=200&&xhr.status<300){
         var data;
         try{data=JSON.parse(xhr.responseText);}catch(e){data=null;}
-        var lista=data&&data.cotizaciones;
-        if(!lista||!lista.length){
-          cont.innerHTML="<div style='color:var(--txt2);font-size:14px'>Aún no hay cotizaciones registradas.</div>";
-          return;
-        }
-        cont.innerHTML=lista.map(function(c){
-          return "<div onclick=\"document.getElementById('buscar-nro').value='"+esc(String(c.nro))+"';buscarCotizacion();window.scrollTo({top:document.getElementById('buscar-nro').getBoundingClientRect().top+window.scrollY-80,behavior:'smooth'});\" style='background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap'>"
-            +"<div style='font-size:14px;color:var(--txt)'><b>N° "+esc(String(c.nro))+"</b> — "+esc(c.nombre||"—")+"<br><span style='color:var(--txt2);font-size:12.5px'>"+esc(c.fecha||"—")+" · "+esc(c.comuna||"—")+"</span></div>"
-            +"<div style='text-align:right'><div style='font-weight:700;color:var(--acc);font-size:14px'>"+fmt(parseFloat(c.total)||0)+"</div><div style='font-size:12px;color:var(--txt2)'>"+esc(c.estado||"Pendiente")+"</div></div>"
-            +"</div>";
-        }).join("");
-      }else{
-        cont.innerHTML="<div style='color:#e74c3c;font-size:14px'>Error al cargar el historial.</div>";
+        var c=data&&data.cotizaciones&&data.cotizaciones[0];
+        el.textContent=c?("Última: N° "+c.nro):"";
       }
     }
   };
-  xhr.onerror=function(){cont.innerHTML="<div style='color:#e74c3c;font-size:14px'>Sin conexión.</div>";};
   xhr.send();
 }
 
@@ -2230,8 +2208,6 @@ function genPDF(){
   // No se avanza el número aquí: así, reimprimir/reintentar la misma cotización
   // (por ejemplo si falló el envío) no genera un número nuevo. El número solo
   // avanza al iniciar explícitamente una cotización nueva (botón correspondiente).
-  saveQuoteRecord(pdfRecord(P));
-  registrarCotizacion(P);
   var w=window.open("","_blank","width=820,height=900");
   if(w){w.document.write(P.h);w.document.close();}
   else{
@@ -2240,6 +2216,19 @@ function genPDF(){
     var a=document.createElement("a");
     a.href=url;a.download="cotizacion-"+P.nro+".html";a.click();
     URL.revokeObjectURL(url);
+  }
+  // Además de la ventana imprimible, generamos el PDF real y lo subimos a Drive
+  // en segundo plano, para que esta cotización quede con PDF guardado y
+  // reabrible desde "Reabrir Cotización". Si la subida falla, igual queda
+  // registrada localmente (sin link), como antes.
+  if(typeof html2pdf!=="undefined"&&GAS_URL){
+    generarYSubirPDF(P, function(){}, function(){
+      saveQuoteRecord(pdfRecord(P));
+      registrarCotizacion(P);
+    });
+  }else{
+    saveQuoteRecord(pdfRecord(P));
+    registrarCotizacion(P);
   }
 }
 
@@ -2368,23 +2357,11 @@ function enviarCatalogoWhatsApp(){
 }
 
 // Botón "Enviar PDF por WhatsApp" — genera PDF, sube a Drive, abre WhatsApp con el link
-function enviarWhatsApp(){
-  if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
-  if(!GAS_URL){alert("Falta configurar el servidor de Google. Avísale a Isaac.");return;}
-  if(typeof html2pdf==="undefined"){alert("La librería de PDF aún no carga. Espera unos segundos y reintenta.");return;}
-
-  // Abrir la pestaña YA (sincrónico, dentro del clic) para que el navegador no la bloquee.
-  // Más tarde le asignamos la URL real de WhatsApp.
-  var waWin=window.open("","_blank");
-  if(waWin&&waWin.document){
-    waWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Preparando…</title></head><body style='font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0b0b0d;color:#fff'><div>Generando cotización y subiendo a Drive…</div></body></html>");
-    waWin.document.close();
-  }
-
-  asegurarNroLibre();
-  var P=armarPDF();
-  showLoader("Generando PDF...");
-
+// Genera el PDF real de una cotización (a partir de P.h) y lo sube a Drive vía
+// Apps Script. onDone(link) se llama al terminar OK; onError() si algo falla.
+// Compartida por enviarWhatsApp() y genPDF(), para que cualquier cotización
+// generada quede con su PDF guardado y reabrible desde "Reabrir Cotización".
+function generarYSubirPDF(P, onDone, onError){
   // Renderizamos el documento en un iframe DENTRO de la pantalla (no fuera con
   // left:-9999px, porque algunas versiones de Chrome/Safari capturan mal los
   // elementos fuera de pantalla y agregan espacio en blanco que recorta el
@@ -2455,36 +2432,58 @@ function enviarWhatsApp(){
         payload.accion="pdf";
         postToGAS(payload, function(link){
           link=(link||"").trim();
-          var pre=document.getElementById("ctel-pre"),num=document.getElementById("ctel-num");
-          var digits="";
-          if(pre&&num&&num.value.trim()){
-            digits=(pre.value.replace(/[^0-9]/g,"")+num.value.replace(/[^0-9]/g,""));
-          }
-          var msg="Hola"+(P.nombre?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
-          if(link)msg+="\n\nPuedes verla y descargarla aquí:\n"+link;
-          var wa=digits?("https://wa.me/"+digits+"?text="+encodeURIComponent(msg)):("https://wa.me/?text="+encodeURIComponent(msg));
           registrarCotizacion(P);
           iframe.remove();
-          hideLoader();
-          if(waWin&&!waWin.closed){ waWin.location.href=wa; }
-          else{ window.open(wa,"_blank"); }
+          if(onDone)onDone(link);
         }, function(){
           iframe.remove();
-          hideLoader();
-          if(waWin&&!waWin.closed)waWin.close();
-          alert("No se pudo subir el PDF a Drive. Revisa tu conexión e intenta de nuevo.");
+          if(onError)onError();
         });
       });
     }).catch(function(err){
       iframe.remove();
-      hideLoader();
-      if(waWin&&!waWin.closed)waWin.close();
-      alert("No se pudo generar el PDF. Intenta de nuevo.");
+      if(onError)onError();
     });
   }
 
   // Con el logo liviano (300px), el render es casi instantáneo; un margen basta.
   setTimeout(capturar,350);
+}
+
+function enviarWhatsApp(){
+  if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
+  if(!GAS_URL){alert("Falta configurar el servidor de Google. Avísale a Isaac.");return;}
+  if(typeof html2pdf==="undefined"){alert("La librería de PDF aún no carga. Espera unos segundos y reintenta.");return;}
+
+  // Abrir la pestaña YA (sincrónico, dentro del clic) para que el navegador no la bloquee.
+  // Más tarde le asignamos la URL real de WhatsApp.
+  var waWin=window.open("","_blank");
+  if(waWin&&waWin.document){
+    waWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Preparando…</title></head><body style='font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0b0b0d;color:#fff'><div>Generando cotización y subiendo a Drive…</div></body></html>");
+    waWin.document.close();
+  }
+
+  asegurarNroLibre();
+  var P=armarPDF();
+  showLoader("Generando PDF...");
+
+  generarYSubirPDF(P, function(link){
+    var pre=document.getElementById("ctel-pre"),num=document.getElementById("ctel-num");
+    var digits="";
+    if(pre&&num&&num.value.trim()){
+      digits=(pre.value.replace(/[^0-9]/g,"")+num.value.replace(/[^0-9]/g,""));
+    }
+    var msg="Hola"+(P.nombre?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
+    if(link)msg+="\n\nPuedes verla y descargarla aquí:\n"+link;
+    var wa=digits?("https://wa.me/"+digits+"?text="+encodeURIComponent(msg)):("https://wa.me/?text="+encodeURIComponent(msg));
+    hideLoader();
+    if(waWin&&!waWin.closed){ waWin.location.href=wa; }
+    else{ window.open(wa,"_blank"); }
+  }, function(){
+    hideLoader();
+    if(waWin&&!waWin.closed)waWin.close();
+    alert("No se pudo subir el PDF a Drive. Revisa tu conexión e intenta de nuevo.");
+  });
 }
 
 function getCosto(p){
