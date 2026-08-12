@@ -554,7 +554,7 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
   <div class="card">
     <div class="ct" style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--brd)">
       <span>🔍 Reabrir Cotización</span>
-      <span id="ultima-cot" style="font-size:12.5px;font-weight:600;color:var(--txt2);text-transform:none;letter-spacing:0"></span>
+      <span id="extremos-cot" style="font-size:12.5px;font-weight:600;color:var(--txt2);text-transform:none;letter-spacing:0"></span>
     </div>
     <div style="display:flex;gap:10px">
       <input type="text" id="buscar-nro" placeholder="N° de cotización (ej: 105)" inputmode="numeric" style="flex:1" onkeydown="if(event.key==='Enter')buscarCotizacion()">
@@ -1115,7 +1115,7 @@ function showTab(t){
     document.getElementById("view-"+x).style.display=(x===t)?"":"none";
     document.getElementById("tab-"+x).className="tab"+(x===t?" act":"");
   });
-  if(t==="info")cargarUltimaCotizacion();
+  if(t==="info")cargarExtremosCotizaciones();
 }
 
 function toggleKit(){}
@@ -1820,18 +1820,21 @@ function buscarCotizacion(){
   xhr.send();
 }
 
-function cargarUltimaCotizacion(){
-  var el=document.getElementById("ultima-cot");
+function cargarExtremosCotizaciones(){
+  var el=document.getElementById("extremos-cot");
   if(!el||!GAS_URL)return;
   var xhr=new XMLHttpRequest();
-  xhr.open("GET", GAS_URL+"?action=historial&limit=1&key="+encodeURIComponent(GAS_KEY), true);
+  xhr.open("GET", GAS_URL+"?action=extremos&key="+encodeURIComponent(GAS_KEY), true);
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
       if(xhr.status>=200&&xhr.status<300){
         var data;
         try{data=JSON.parse(xhr.responseText);}catch(e){data=null;}
-        var c=data&&data.cotizaciones&&data.cotizaciones[0];
-        el.textContent=c?("Última: N° "+c.nro):"";
+        if(data&&(data.primera||data.ultima)){
+          el.textContent="Primera: N° "+(data.primera||"—")+"  ·  Última: N° "+(data.ultima||"—");
+        }else{
+          el.textContent="";
+        }
       }
     }
   };
