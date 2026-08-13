@@ -3366,6 +3366,73 @@ function setEstadoReg(nro,estado){
   saveRegList();
   renderStatsAdmin();
 }
+// Las cotizaciones anteriores a este cambio no tienen telefono: ese campo
+// empezo a guardarse ahora. Pero el telefono existe -- esta en la ficha del
+// cliente en el Indicador. Esto lo va a buscar, para que el seguimiento sirva
+// desde el primer dia en vez de partir de cero.
+//
+// Se completa SOLO cuando hay una coincidencia unica por nombre. Si dos
+// clientes se llaman parecido, se deja en blanco: rellenar el telefono
+// equivocado es peor que no tener ninguno, porque terminas escribiendole a
+// otra persona sobre una cotizacion que no es suya.
+function nombreClave(n){
+  return String(n||"").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+}
+
+function completarTelefonos(){
+  var faltan=REG_LIST.filter(function(r){return !r.tel;});
+  if(!faltan.length){alert("Todas las cotizaciones ya tienen teléfono.");return;}
+
+  getFirebaseIdToken(function(token){
+    if(!token){alert("Necesitas sesión iniciada para leer el Indicador.");return;}
+    withAppCheckHeader(function(xhr){
+      xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4)return;
+        if(!(xhr.status>=200&&xhr.status<300)){alert("No se pudo leer el Indicador.");return;}
+        var clientes=null;
+        try{clientes=JSON.parse(xhr.responseText);}catch(e){clientes=null;}
+        if(!clientes){alert("El Indicador no devolvió clientes.");return;}
+
+        // Se indexa por nombre; los nombres repetidos se marcan como ambiguos.
+        var porNombre={}, ambiguos={};
+        Object.keys(clientes).forEach(function(k){
+          var c=clientes[k];
+          if(!c||!c.telefono)return;
+          var nk=nombreClave(c.cliente);
+          if(!nk)return;
+          if(porNombre[nk]&&porNombre[nk].telefono!==c.telefono)ambiguos[nk]=true;
+          else porNombre[nk]=c;
+        });
+
+        var completados=0, ambiguosN=0, sinMatch=0;
+        faltan.forEach(function(r){
+          var nk=nombreClave(r.nombre);
+          if(!nk){sinMatch++;return;}
+          if(ambiguos[nk]){ambiguosN++;return;}
+          var c=porNombre[nk];
+          if(!c){sinMatch++;return;}
+          r.tel=c.telefono;
+          if(!r.comuna&&c.comuna)r.comuna=c.comuna;
+          if(!r.rut&&c.rut)r.rut=c.rut;
+          completados++;
+        });
+
+        if(completados)saveRegList();
+        renderSeguimiento();
+        alert("Teléfonos completados desde el Indicador:\n\n"
+          +"✓ "+completados+(completados===1?" cotización quedó":" cotizaciones quedaron")+" con teléfono\n"
+          +(ambiguosN?("• "+ambiguosN+" con nombre repetido en el Indicador — se dejaron en blanco a propósito\n"):"")
+          +(sinMatch?("• "+sinMatch+" sin cliente equivalente\n"):"")
+          +"\nLas que quedaron sin teléfono se pueden completar reabriendo la cotización.");
+      };
+      return null;
+    });
+  });
+}
+
 function renderSeguimiento(){
   var cont=document.getElementById("seg-lista");
   if(!cont)return;
@@ -3402,11 +3469,16 @@ function renderSeguimiento(){
     return;
   }
 
+  var sinTel=pendientes.filter(function(x){return !x.r.tel;}).length;
   var resumen='<div class="seg-resumen">'
     +'<span><b>'+tocan+'</b> por contactar hoy</span>'
     +'<span><b>'+pendientes.length+'</b> esperando respuesta</span>'
     +'<span><b>'+fmt(montoEnJuego)+'</b> en juego</span>'
-    +'</div>';
+    +'</div>'
+    +(sinTel?('<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+      +'<span>'+sinTel+' sin teléfono guardado.</span>'
+      +'<button class="seg-btn" onclick="completarTelefonos()">Buscarlos en el Indicador</button>'
+      +'</div>'):'');
 
   cont.innerHTML=resumen+pendientes.map(function(x){
     var r=x.r, s=x.s;
