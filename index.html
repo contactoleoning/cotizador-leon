@@ -3673,9 +3673,12 @@ function cargarRolUsuario(user,listo){
       if(xhr.readyState!==4)return;
       if(xhr.status>=200&&xhr.status<300){
         try{
+          // Las fichas se escriben a mano en la consola de Firebase, donde
+          // es facil que salga 'Nombre' con mayuscula. Se aceptan ambas.
           var v=JSON.parse(xhr.responseText);
-          if(v&&v.nombre)perfil.nombre=v.nombre;
-          if(v&&v.rol==='admin')perfil.rol='admin';
+          var n=v&&(v.nombre||v.Nombre);
+          if(n)perfil.nombre=n;
+          if(v&&(v.rol||v.Rol)==='admin')perfil.rol='admin';
         }catch(e){}
       }
       LEON_USUARIO=perfil;aplicarRolEnUI();listo();
