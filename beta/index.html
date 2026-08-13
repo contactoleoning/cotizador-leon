@@ -154,6 +154,30 @@ select option{background:#161619;color:var(--txt)}
 #lock-overlay .lock-btn:hover{transform:translateY(-1px);box-shadow:0 9px 24px rgba(245,208,78,.35)}
 #lock-overlay .lock-btn:active{transform:translateY(0)}
 #lock-overlay .lock-err{color:#e74c3c;font-size:13px;font-weight:600;min-height:18px}
+/* ── Seguimiento de cotizaciones ── */
+.seg-card{border:1px solid var(--brd);border-radius:var(--rs);background:var(--bg3);padding:12px 14px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.seg-card+.seg-card{margin-top:8px}
+.seg-card.urge{border-left:3px solid #e07a5f}
+.seg-card.hoy{border-left:3px solid var(--acc)}
+.seg-card.espera{opacity:.62}
+.seg-main{flex:1;min-width:200px}
+.seg-nom{font-size:15px;font-weight:700;color:var(--txt);line-height:1.25}
+.seg-meta{font-size:12.5px;color:var(--txt2);margin-top:2px}
+.seg-monto{font-size:15px;font-weight:700;color:var(--grn);white-space:nowrap}
+.seg-chip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:20px;border:1px solid;white-space:nowrap}
+.seg-chip.c-urge{color:#e07a5f;border-color:#e07a5f}
+.seg-chip.c-hoy{color:var(--acc);border-color:var(--acc)}
+.seg-chip.c-espera{color:var(--txt2);border-color:var(--brd2)}
+.seg-acc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.seg-btn{font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:6px;border:1px solid var(--brd2);background:var(--inp);color:var(--txt);cursor:pointer;font-family:'DM Sans',sans-serif}
+.seg-btn:hover{border-color:var(--acc);color:var(--acc)}
+.seg-btn.wa{background:#25d366;color:#073b22;border-color:#25d366}
+.seg-btn.wa:hover{filter:brightness(1.06);color:#073b22}
+.seg-btn.ok{border-color:var(--grn);color:var(--grn)}
+.seg-btn.no{border-color:var(--brd2);color:var(--txt2)}
+.seg-vacio{font-size:14px;color:var(--txt2);padding:14px;background:var(--bg3);border-radius:var(--rs);text-align:center}
+.seg-resumen{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--txt2);margin-bottom:10px}
+.seg-resumen b{color:var(--txt);font-size:15px}
 .card{transition:box-shadow .2s,border-color .2s}
 .card:hover{box-shadow:0 6px 22px rgba(0,0,0,.28)}
 .btn{transition:transform .12s,filter .15s,box-shadow .2s}
@@ -179,11 +203,9 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
   text-transform:uppercase;text-align:center;padding:6px 8px 8px;
   box-shadow:0 -2px 12px rgba(0,0,0,.45)}
 @media print{#beta-flag{display:none}}
-/* En pantalla angosta el texto se partia en dos lineas: se aprieta el
-   espaciado en vez de acortar el aviso. */
+/* En pantalla angosta el texto se partia en dos lineas. */
 @media (max-width:430px){#beta-flag{letter-spacing:.04em;font-size:10px;padding:5px 6px 7px}}
-/* La franja es fija sobre el contenido: sin este hueco tapaba la ultima
-   fila de la lista de clientes en el celular. */
+/* La franja es fija sobre el contenido: sin este hueco tapaba la ultima fila. */
 body{padding-bottom:30px}
 </style>
 </head>
@@ -271,6 +293,15 @@ body{padding-bottom:30px}
   <div class="btnrow" id="actbtns" style="display:none;flex-direction:column">
     <button class="btn bwa" id="btnwa" style="background:#25d366;color:#073b22">📲 Enviar PDF por WhatsApp</button>
     <button class="btn bpdf" id="btnpdf">📄 Generar PDF Formal</button>
+    <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:2px">
+      <span style="font-size:14px;color:var(--txt2)">Próxima mantención en</span>
+      <select id="ind-duracion" onchange="duracionTocadaAMano=true;refrescarDuracionSugerida()" style="background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:7px 8px;font-size:14px">
+        <option value="4">4 meses</option>
+        <option value="6" selected>6 meses</option>
+        <option value="12">12 meses</option>
+      </select>
+    </div>
+    <div id="ind-duracion-nota" style="font-size:12px;color:var(--txt2);text-align:center;margin-top:-4px"></div>
     <button class="btn" id="btnindicador" style="background:#3b6ea5;color:#fff">📅 Agregar a Indicador de Vencimiento</button>
     <button class="btn" id="btnnuevacot" style="background:transparent;border:2px solid var(--brd2);color:var(--txt2)">🆕 Iniciar Cotización Nueva (siguiente N°)</button>
   </div>
@@ -555,6 +586,15 @@ body{padding-bottom:30px}
 </div><!-- /cot-wrap -->
 </div><!-- /view-cot -->
 <div id="view-info" style="display:none">
+
+  <!-- SEGUIMIENTO DE COTIZACIONES -->
+  <div class="card">
+    <div class="ct" style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--brd)">
+      <span>📞 Seguimiento de Cotizaciones</span>
+      <span id="seg-contador" style="font-size:12.5px;font-weight:600;color:var(--txt2);text-transform:none;letter-spacing:0"></span>
+    </div>
+    <div id="seg-lista"></div>
+  </div>
 
   <!-- HISTORIAL COTIZACIONES -->
   <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px">
@@ -1139,7 +1179,7 @@ function showTab(t){
     document.getElementById("view-"+x).style.display=(x===t)?"":"none";
     document.getElementById("tab-"+x).className="tab"+(x===t?" act":"");
   });
-  if(t==="info")cargarExtremosCotizaciones();
+  if(t==="info"){cargarExtremosCotizaciones();renderSeguimiento();}
 }
 
 function toggleKit(){}
@@ -1187,8 +1227,13 @@ function agregar(){
   if(!selProd)return;
   var cant=parseInt(document.getElementById("cantequipo").value)||1;
   var neto=pvN(selProd);
+  // Se guardan marca, modelo y btu por separado ademas de armados dentro de
+  // desc: el Indicador los necesita en campos distintos para la ficha de
+  // equipos del cliente, y sacarlos de vuelta partiendo el texto de desc es
+  // fragil (hay modelos con espacios).
   carrito.push({id:selProd.id+"_"+Date.now(),cod:selProd.id,
     desc:selProd.marca+" "+selProd.modelo+" "+selProd.btu+".000 BTU",
+    marca:selProd.marca,modelo:selProd.modelo,btu:selProd.btu,esEquipo:true,
     tipo:selProd.tipo,neto:neto,total:wIVA(neto),esCyber:false,disc:0,cant:cant});
   selProd=null;
   document.querySelectorAll(".pc").forEach(function(c){c.classList.remove("sel");});
@@ -1857,46 +1902,362 @@ function cargarExtremosCotizaciones(){
   xhr.send();
 }
 
-function enviarAIndicador(){
-  if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
+// Cada cuanto tocaria la proxima mantencion, segun lo que ya sabemos de la
+// cotizacion. El criterio es de Isaac:
+//   - Local comercial, uso diario intenso  -> 4 meses
+//   - Casa                                  -> 6 meses
+//   - Equipo nuevo recien instalado         -> 12 meses (la primera al año)
+// El uso intenso manda sobre lo demas: un equipo nuevo en un local que trabaja
+// todos los dias no aguanta un año sin mantencion.
+//
+// Es una sugerencia, no una regla: en la practica el cliente posterga, pide
+// una vez al año, o cambia de opinion. Por eso el selector queda editable y
+// deja de auto-ajustarse apenas alguien lo toca a mano.
+function duracionSugerida(){
+  var tipo=(document.getElementById("cnombre").dataset.tipo)||"Particular";
+  var hayEquipoNuevo=carrito.some(function(p){return p.esEquipo;});
+  if(tipo==="Empresa")  return {meses:4, motivo:"local comercial, uso intenso"};
+  if(hayEquipoNuevo)    return {meses:12,motivo:"equipo nuevo, primera mantención al año"};
+  return {meses:6, motivo:"casa, uso normal"};
+}
+
+// Se apaga en cuanto el vendedor elige un valor distinto: a partir de ahi
+// manda el criterio de quien esta hablando con el cliente, no el nuestro.
+var duracionTocadaAMano=false;
+
+function refrescarDuracionSugerida(){
+  var sel=document.getElementById("ind-duracion");
+  var nota=document.getElementById("ind-duracion-nota");
+  if(!sel)return;
+  var sug=duracionSugerida();
+  if(!duracionTocadaAMano){
+    sel.value=String(sug.meses);
+    if(nota)nota.textContent="sugerido: "+sug.motivo;
+  }else{
+    if(nota)nota.textContent="elegido a mano";
+  }
+}
+
+// Arma el registro que se manda al Indicador. Esta separado del envio a
+// proposito: asi se puede revisar exactamente que se va a escribir --
+// construirRowIndicador() en la consola -- sin tocar la base de clientes.
+function construirRowIndicador(){
   var nombre=document.getElementById("cnombre").value.trim();
-  if(!nombre){alert("Ingresa el nombre del cliente (campo Contacto o Nombre/Empresa) antes de enviarlo al Indicador.");return;}
   var comuna=document.getElementById("ccom").value.trim();
   var servicio=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"Instalación";
+
+  // El telefono se guarda como lo guarda el Indicador: solo digitos, y para
+  // los moviles solo los 8 ultimos, porque alla el enlace se arma como
+  // "tel:+569" + telefono. Si mandaramos 56912345678 quedaria +56956912345678.
+  var telPre=(document.getElementById("ctel-pre")||{value:"+569"}).value;
+  var telDigitos=(document.getElementById("ctel-num").value||"").replace(/\D/g,"");
+  var esFijo=telPre.indexOf("+569")!==0;
+  var telefono=telDigitos ? (esFijo ? (telPre+telDigitos).replace(/\D/g,"") : telDigitos.slice(-8)) : "";
+
+  var rut=(document.getElementById("crut").value||"").trim();
+  var direccion=(document.getElementById("cdir").value||"").trim();
+  var duracion=parseInt((document.getElementById("ind-duracion")||{value:"6"}).value,10)||6;
+  var totales=totalesCarrito();
+
+  // Los equipos cotizados pasan a la ficha del cliente. Una cotizacion de 3
+  // equipos genera 3 filas, no una: en terreno hay que saber cual equipo esta
+  // en que pieza. La ubicacion se deja vacia para que se complete en la visita.
+  var equipos=[];
+  carrito.forEach(function(p){
+    if(!p.esEquipo)return;
+    for(var i=0;i<(p.cant||1);i++){
+      equipos.push({marca:p.marca||"",modelo:p.modelo||"",btu:String(p.btu||""),ubicacion:""});
+    }
+  });
+
   var hoy=new Date();
   var inicia=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
   var nro=document.getElementById("nro").value.trim();
+
+  // Id por timestamp en vez de leer el maximo actual y sumar 1: ese patron
+  // (leer todos los ids, calcular max+1, escribir) puede pisarse si el
+  // Indicador u otra cotizacion crea un cliente casi al mismo tiempo.
+  //
+  // Antes aqui solo viajaban nombre, comuna, servicio y una duracion fija de
+  // 6 meses. El resultado era un cliente sin telefono -- o sea, sin boton de
+  // WhatsApp en el Indicador, imposible de contactar sin ir a buscar la
+  // cotizacion a mano -- y sin RUT, monto ni equipos. Justo los datos que
+  // acabamos de pedirle al cliente por telefono.
+  return {
+      id:Date.now(),
+      cliente:nombre,
+      lugar:((document.getElementById("cnombre").dataset.tipo)==="Empresa")?"Oficina":"",
+      comuna:comuna,
+      direccion:direccion,
+      telefono:telefono,
+      telefonoFijo:esFijo && !!telefono,
+      rut:rut,
+      servicio:servicio,
+      inicia:inicia,
+      duracion:duracion,
+      equipos:equipos,
+      aviso:false,
+      nroCotizacion:nro,
+      montoCotizado:totales.tot,
+      obs:"Generado desde cotización N°"+nro+" — total "+fmt(totales.tot)
+  };
+}
+
+// ═══════════════════════════════════════
+// CLIENTE UNICO
+// ═══════════════════════════════════════
+// Hasta ahora cada cotizacion creaba un cliente nuevo con id de timestamp. El
+// mismo señor que compro en 2024 y vuelve en 2026 quedaba dos veces en el
+// Indicador, con dos vencimientos distintos, y nadie sabia que era recompra.
+//
+// La identidad es el RUT si lo hay, y si no el telefono. Son los dos unicos
+// datos que no cambian y que efectivamente pedimos. El nombre no sirve: se
+// escribe distinto cada vez ("Juan Perez", "juan perez", "Sr. Perez").
+
+function rutNormalizado(rut){
+  return String(rut||"").replace(/[^0-9kK]/g,"").toUpperCase();
+}
+
+// Mismo criterio que usa el Indicador para marcar por WhatsApp: los ultimos
+// 8 digitos. Asi dos formas de escribir el mismo movil se reconocen igual.
+function telNormalizado(tel){
+  var d=String(tel||"").replace(/\D/g,"");
+  return d.length>=8 ? d.slice(-8) : "";
+}
+
+// La identidad NO es la persona: es la persona en una direccion.
+//
+// Eduardo tiene dos fichas y no son un duplicado -- una es su casa en Lo
+// Barnechea y la otra su oficina en Vitacura, cada una con sus equipos y su
+// propio ciclo de mantencion. Fusionarlas por tener el mismo RUT habria
+// borrado uno de los dos vencimientos. Una empresa con sucursales es el mismo
+// caso multiplicado.
+//
+// Entonces: primero se busca a la persona (RUT, y si no hay, telefono), y
+// despues, entre sus fichas, la que corresponde a esta direccion.
+
+function direccionNormalizada(dir){
+  return String(dir||"")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")   // sin tildes
+    .replace(/[^a-z0-9 ]/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+// Dos direcciones se consideran la misma si una contiene a la otra: en terreno
+// la misma casa se escribe "Irarrazaval 1234" o "Irarrazaval 1234 depto 52
+// (porton verde)". Exigir igualdad exacta crearia fichas nuevas por una coma.
+function mismaDireccion(a,b){
+  var x=direccionNormalizada(a), y=direccionNormalizada(b);
+  if(!x || !y) return false;
+  return x===y || x.indexOf(y)===0 || y.indexOf(x)===0;
+}
+
+// Todas las fichas que son de esta misma persona.
+function fichasDeLaPersona(clientes, row){
+  var res=[];
+  if(!clientes)return res;
+  var rutBuscado=rutNormalizado(row.rut);
+  var telBuscado=telNormalizado(row.telefono);
+  if(!rutBuscado && !telBuscado)return res;
+  Object.keys(clientes).forEach(function(k){
+    var c=clientes[k];
+    if(!c)return;
+    // El RUT manda: es unico de verdad. El telefono solo se usa si no hay RUT,
+    // porque puede repetirse entre marido y mujer o quedar reasignado.
+    var coincide = rutBuscado
+      ? (rutNormalizado(c.rut)===rutBuscado)
+      : (telBuscado && telNormalizado(c.telefono)===telBuscado);
+    if(coincide)res.push({clave:k, ficha:c});
+  });
+  return res;
+}
+
+// Entre las fichas de la persona, la que corresponde a esta direccion.
+// Si la cotizacion vino sin direccion, se cae a la comuna: es poco, pero es
+// mejor que crear una ficha nueva cada vez que alguien no escribio la calle.
+function fichaDeEstaDireccion(fichas, row){
+  var conDireccion=fichas.filter(function(f){return mismaDireccion(f.ficha.direccion,row.direccion);});
+  if(conDireccion.length)return conDireccion[0];
+  if(!direccionNormalizada(row.direccion)){
+    var mismaComuna=fichas.filter(function(f){
+      return (f.ficha.comuna||"").trim().toLowerCase()===(row.comuna||"").trim().toLowerCase();
+    });
+    if(mismaComuna.length===1)return mismaComuna[0];
+  }
+  return null;
+}
+
+// Que se actualiza cuando el cliente ya existia.
+//
+// Regla: los datos que ya estan en el Indicador ganan. Alguien los reviso,
+// los corrigio en terreno o los completo a mano; la cotizacion de hoy solo
+// rellena lo que falta. Las excepciones son las tres cosas que la venta de
+// hoy si cambia de verdad: cuando parte el nuevo ciclo, cada cuanto toca, y
+// que servicio se vendio.
+function fusionarConExistente(existente, row){
+  var patch={
+    inicia:row.inicia,
+    duracion:row.duracion,
+    servicio:row.servicio,
+    aviso:false
+  };
+
+  ["telefono","rut","direccion","comuna","lugar"].forEach(function(campo){
+    var actual=(existente[campo]||"").toString().trim();
+    if(!actual && row[campo])patch[campo]=row[campo];
+  });
+  if(!(existente.telefono||"").toString().trim() && row.telefono){
+    patch.telefonoFijo=row.telefonoFijo;
+  }
+
+  // Los equipos se suman, no se reemplazan: el cliente puede haber comprado
+  // un split en 2024 y otro ahora, y los dos siguen en la casa. Se evita
+  // repetir el mismo marca+modelo+btu que ya estaba anotado.
+  var yaTiene=(existente.equipos||[]).slice();
+  var firma=function(e){return [(e.marca||""),(e.modelo||""),String(e.btu||"")].join("|").toLowerCase();};
+  var firmas={};
+  yaTiene.forEach(function(e){firmas[firma(e)]=true;});
+  (row.equipos||[]).forEach(function(e){
+    if(!firmas[firma(e)]){yaTiene.push(e);firmas[firma(e)]=true;}
+  });
+  patch.equipos=yaTiene;
+
+  // Historial de cotizaciones: lo que permite ver que este cliente ya compro
+  // antes y por cuanto. Es la base de poder hablar de recompra.
+  var cots=(existente.cotizaciones||[]).slice();
+  cots.push({nro:row.nroCotizacion,monto:row.montoCotizado,fecha:row.inicia,servicio:row.servicio});
+  patch.cotizaciones=cots;
+  patch.nroCotizacion=row.nroCotizacion;
+  patch.montoCotizado=row.montoCotizado;
+
+  return patch;
+}
+
+function enviarAIndicador(){
+  if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
+  if(!document.getElementById("cnombre").value.trim()){
+    alert("Ingresa el nombre del cliente (campo Contacto o Nombre/Empresa) antes de enviarlo al Indicador.");
+    return;
+  }
+  var row=construirRowIndicador();
   var btn=document.getElementById("btnindicador");
   var textoOrig=btn.textContent;
   btn.disabled=true; btn.textContent="Enviando...";
 
+  function terminar(msg){
+    btn.disabled=false; btn.textContent=textoOrig;
+    if(msg)alert(msg);
+  }
+  function avisoDatosFaltantes(){
+    var faltan=[];
+    if(!row.telefono)faltan.push("teléfono");
+    if(!row.rut)faltan.push("RUT");
+    if(!row.direccion)faltan.push("dirección");
+    return faltan.length?("\n\nQuedó sin "+faltan.join(", ")+". Se puede completar en el Indicador."):"";
+  }
+
   getFirebaseIdToken(function(token){
     if(!token){
-      btn.disabled=false; btn.textContent=textoOrig;
-      alert("No se pudo autenticar con el Indicador. Intenta de nuevo.");
+      terminar("No se pudo autenticar con el Indicador. Intenta de nuevo.");
       return;
     }
-    // Id por timestamp en vez de leer el maximo actual y sumar 1: ese
-    // patron (leer todos los ids, calcular max+1, escribir) puede pisarse
-    // si el Indicador u otra cotizacion crea un cliente casi al mismo
-    // tiempo -- mismo problema que ya se corrigio del lado del Indicador.
-    var newId=Date.now();
-    var row={id:newId,cliente:nombre,lugar:"",comuna:comuna,servicio:servicio,inicia:inicia,duracion:6,aviso:false,obs:"Generado desde cotización N°"+nro};
-    withAppCheckHeader(function(xhr2){
-      xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+newId+".json?auth="+token, true);
-      xhr2.setRequestHeader("Content-Type","application/json");
-      xhr2.onreadystatechange=function(){
-        if(xhr2.readyState===4){
-          btn.disabled=false; btn.textContent=textoOrig;
-          if(xhr2.status>=200&&xhr2.status<300){
-            alert("✓ "+nombre+" agregado al Indicador de Vencimiento (6 meses por defecto, editable allá).");
-          }else{
-            alert("No se pudo agregar al Indicador. Intenta de nuevo.");
+
+    // Primero se mira si el cliente ya existe. La base completa pesa unos
+    // 27 KB, asi que traerla entera sale mas barato que inventar un indice.
+    withAppCheckHeader(function(xhrGet){
+      xhrGet.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
+      xhrGet.onreadystatechange=function(){
+        if(xhrGet.readyState!==4)return;
+        if(xhrGet.status<200||xhrGet.status>=300){
+          terminar("No se pudo consultar el Indicador. Revisa tu conexión e intenta de nuevo.");
+          return;
+        }
+        var clientes=null;
+        try{clientes=JSON.parse(xhrGet.responseText);}catch(e){clientes=null;}
+
+        var fichas=fichasDeLaPersona(clientes,row);
+        var match=fichas.length?fichaDeEstaDireccion(fichas,row):null;
+
+        // La persona ya existe, pero en otra direccion: es una instalacion
+        // nueva (la oficina ademas de la casa, otra sucursal), no un
+        // duplicado. Se avisa y se crea ficha aparte, que es lo correcto.
+        if(fichas.length && !match){
+          var donde=fichas.map(function(f){
+            return "  • "+(f.ficha.lugar||"sin tipo")+" en "+(f.ficha.comuna||"sin comuna")
+                   +(f.ficha.direccion?(" — "+f.ficha.direccion):"");
+          }).join("\n");
+          if(!confirm((fichas[0].ficha.cliente||row.cliente)+" ya tiene "
+              +(fichas.length===1?"una ficha":fichas.length+" fichas")+" en el Indicador:\n\n"+donde
+              +"\n\nEsta cotización es para "+(row.direccion||row.comuna||"otra dirección")+"."
+              +"\n\nSe va a crear una ficha aparte, con su propio ciclo de mantención."
+              +"\n\nAceptar = crear ficha aparte.\nCancelar = no hacer nada (si en realidad es la misma dirección, corrígela y vuelve a intentar).")){
+            terminar(null);
+            return;
           }
         }
+
+        if(match){
+          var clave=match.clave;
+          var existente=match.ficha;
+          var patch=fusionarConExistente(existente,row);
+          // Se confirma antes de tocar una ficha que ya existe: si la deteccion
+          // se equivoco, es mejor enterarse aqui que despues.
+          var comoLoReconoci=rutNormalizado(row.rut)&&rutNormalizado(existente.rut)===rutNormalizado(row.rut)
+            ? "mismo RUT" : "mismo teléfono";
+          if(!confirm("Esta es la misma instalación que ya está en el Indicador:\n\n"
+              +(existente.cliente||"(sin nombre)")+" — "+(existente.lugar||"sin tipo")+" en "+(existente.comuna||"sin comuna")
+              +(existente.direccion?("\n"+existente.direccion):"")
+              +"\n(reconocido por "+comoLoReconoci+" y misma dirección)\n\n"
+              +"¿Actualizo su ficha en vez de crear una nueva?\n\n"
+              +"Se le suman los equipos cotizados y la próxima mantención pasa a "
+              +row.duracion+" meses desde hoy.")){
+            terminar(null);
+            return;
+          }
+          withAppCheckHeader(function(xhrPatch){
+            xhrPatch.open("PATCH", FIREBASE_DB_URL+"/leon_clientes/"+clave+".json?auth="+token, true);
+            xhrPatch.setRequestHeader("Content-Type","application/json");
+            xhrPatch.onreadystatechange=function(){
+              if(xhrPatch.readyState!==4)return;
+              if(xhrPatch.status>=200&&xhrPatch.status<300){
+                terminar("✓ Ficha de "+(existente.cliente||row.cliente)+" actualizada."
+                  +"\n\nCotización N°"+row.nroCotizacion+" agregada a su historial"
+                  +" ("+((patch.cotizaciones||[]).length)+" en total)"
+                  +"\nPróxima mantención a "+row.duracion+" meses"
+                  +"\n"+(patch.equipos||[]).length+" equipo(s) en su ficha");
+              }else{
+                terminar("No se pudo actualizar la ficha. Intenta de nuevo.");
+              }
+            };
+            xhrPatch.onerror=function(){terminar("No se pudo actualizar la ficha. Revisa tu conexión.");};
+            return JSON.stringify(patch);
+          });
+          return;
+        }
+
+        // Cliente nuevo: se crea como siempre.
+        row.cotizaciones=[{nro:row.nroCotizacion,monto:row.montoCotizado,fecha:row.inicia,servicio:row.servicio}];
+        withAppCheckHeader(function(xhr2){
+          xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+row.id+".json?auth="+token, true);
+          xhr2.setRequestHeader("Content-Type","application/json");
+          xhr2.onreadystatechange=function(){
+            if(xhr2.readyState!==4)return;
+            if(xhr2.status>=200&&xhr2.status<300){
+              terminar("✓ "+row.cliente+" agregado al Indicador de Vencimiento."
+                +"\n\nMantención a "+row.duracion+" meses"
+                +(row.equipos.length?("\n"+row.equipos.length+" equipo"+(row.equipos.length>1?"s":"")+" en su ficha"):"")
+                +avisoDatosFaltantes());
+            }else{
+              terminar("No se pudo agregar al Indicador. Intenta de nuevo.");
+            }
+          };
+          xhr2.onerror=function(){terminar("No se pudo agregar al Indicador. Revisa tu conexión.");};
+          return JSON.stringify(row);
+        });
       };
-      xhr2.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo agregar al Indicador. Revisa tu conexión.");};
-      return JSON.stringify(row);
+      xhrGet.onerror=function(){terminar("No se pudo consultar el Indicador. Revisa tu conexión.");};
     });
   });
 }
@@ -1929,6 +2290,7 @@ function setTipoCliente(tipo){
     inp.placeholder="Nombre del cliente";
   }
   inp.dataset.tipo=tipo;
+  if(typeof refrescarDuracionSugerida==="function")refrescarDuracionSugerida();
 }
 
 function formatRut(cuerpo,dv){
@@ -1977,14 +2339,24 @@ function checkRut(input){
 }
 function changeItemDisc(i,val){carrito[i].disc=Math.min(100,Math.max(0,parseInt(val)||0));renderCarrito();}
 
+// Los totales se calculaban aqui adentro, asi que solo existian mientras se
+// dibujaba el carrito. Ahora viven aparte para que otras partes -- el envio
+// al Indicador, por ejemplo -- puedan preguntar cuanto vale la cotizacion sin
+// tener que volver a dibujar nada ni repetir la formula.
+function totalesCarrito(){
+  var cyberPct=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
+  var sN=carrito.reduce(function(a,b){var d=b.disc||0;return a+(b.neto*(b.cant||1)*(1-d/100));},0);
+  var dM=cyberPct>0?Math.round(sN*cyberPct/100):0;
+  var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva;
+  return {cyberPct:cyberPct,sN:sN,dM:dM,nD:nD,iva:iva,tot:tot,totTC:Math.round(tot*1.035)};
+}
+
 function renderCarrito(){
   var cc=document.getElementById("cartcard"),ab=document.getElementById("actbtns");
   if(!carrito.length){cc.style.display="none";ab.style.display="none";return;}
   cc.style.display="block";ab.style.display="flex";
-  var cyberPct=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
-  var sN=carrito.reduce(function(a,b){var d=b.disc||0;return a+(b.neto*(b.cant||1)*(1-d/100));},0);
-  var dM=cyberPct>0?Math.round(sN*cyberPct/100):0;
-  var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
+  var t=totalesCarrito();
+  var cyberPct=t.cyberPct,sN=t.sN,dM=t.dM,nD=t.nD,iva=t.iva,tot=t.tot,totTC=t.totTC;
   document.getElementById("cartlista").innerHTML=carrito.map(function(p,i){
     var cant=p.cant||1;
     var disc=p.disc||0;
@@ -2010,6 +2382,7 @@ function renderCarrito(){
     +'<div class="tr tc"><span>Total tarjeta crédito +3,5%</span><span>'+fmt(totTC)+'</span></div>';
   document.getElementById("totales").innerHTML=th;
   updWA(sN,dM,nD,iva,tot);
+  refrescarDuracionSugerida();
 }
 
 function updWA(sN,dM,nD,iva,tot){
@@ -2656,7 +3029,11 @@ function asegurarNroLibre(){
 function nuevaCotizacion(){
   if(carrito.length&&!confirm("¿Iniciar una cotización nueva? Se vaciará el presupuesto actual (los datos del cliente no se borran).")) return;
   carrito=[];
+  // Cotizacion nueva, criterio nuevo: se vuelve a sugerir el intervalo en vez
+  // de arrastrar el que se eligio a mano para el cliente anterior.
+  duracionTocadaAMano=false;
   renderCarrito();
+  refrescarDuracionSugerida();
   incrementNro();
 }
 
@@ -2756,9 +3133,138 @@ function registrarCotizacion(P){
   var servicios=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"—";
   var ya=REG_LIST.find(function(r){return String(r.nro)===String(P.nro);});
   if(ya)return;
-  REG_LIST.push({nro:P.nro,fecha:P.fecha,nombre:P.nombre||"",total:P.tot,serv:servicios,estado:"Pendiente"});
+  // Se guarda el telefono y la comuna ademas del nombre: sin telefono no hay
+  // forma de hacerle seguimiento a la cotizacion sin ir a buscar el dato a
+  // otro lado, que es exactamente lo que hace que el seguimiento no se haga.
+  REG_LIST.push({
+    nro:P.nro, fecha:P.fecha, nombre:P.nombre||"", total:P.tot, serv:servicios,
+    estado:"Pendiente",
+    tel:P.tel||"", comuna:P.comuna||"", rut:P.rut||"",
+    contactos:[]
+  });
   saveRegList();
   renderStatsAdmin();
+  renderSeguimiento();
+}
+
+// ═══════════════════════════════════════
+// SEGUIMIENTO DE COTIZACIONES
+// ═══════════════════════════════════════
+// Una cotizacion enviada y no respondida no se pierde por precio: se pierde
+// por silencio. Nadie se acuerda de volver a llamar al quinto dia con 20
+// cotizaciones dando vueltas. Esto lo convierte en una lista de tareas.
+//
+// La cadencia es la misma que ya usa el Indicador para los vencimientos:
+// tres contactos, espaciados. Dia 2 mientras esta fresco, dia 7 cuando ya lo
+// penso, dia 15 el ultimo antes de darla por perdida.
+var SEG_DIAS=[2,7,15];
+
+function diasEntre(desdeISO, hastaISO){
+  if(!desdeISO)return null;
+  var a=new Date(desdeISO+"T00:00:00"), b=new Date((hastaISO||hoyISO())+"T00:00:00");
+  if(isNaN(a)||isNaN(b))return null;
+  return Math.round((b-a)/86400000);
+}
+function hoyISO(){
+  var d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+// Estado de seguimiento de una cotizacion pendiente.
+function seguimientoDe(r){
+  var contactos=r.contactos||[];
+  var paso=contactos.length;                 // cuantos contactos ya se hicieron
+  var desde=contactos.length?contactos[contactos.length-1].fecha:r.fecha;
+  var dias=diasEntre(desde, hoyISO());
+  var diasTotal=diasEntre(r.fecha, hoyISO());
+  if(paso>=SEG_DIAS.length){
+    return {agotado:true, paso:paso, dias:dias, diasTotal:diasTotal, tocaHoy:false, faltan:null};
+  }
+  // El primer contacto se mide desde el envio; los siguientes desde el
+  // contacto anterior, para no apurar a alguien al que recien se le escribio.
+  var espera=paso===0?SEG_DIAS[0]:(SEG_DIAS[paso]-SEG_DIAS[paso-1]);
+  var faltan=espera-(dias||0);
+  return {
+    agotado:false, paso:paso, pasoSugerido:paso+1,
+    dias:dias, diasTotal:diasTotal,
+    tocaHoy:faltan<=0, faltan:faltan
+  };
+}
+
+// A una empresa no se le dice "Hola Constructora": el primer nombre solo
+// sirve cuando el cliente es una persona. Ante la duda se saluda sin nombre,
+// que suena bien igual.
+var SEG_MARCAS_EMPRESA=["constructora","empresa","spa","s.p.a","ltda","limitada","s.a","sociedad","comercial","inmobiliaria","hotel","clinica","clínica","colegio","restaurant","servicios","import","distribuidora"];
+function saludoNombre(nombre){
+  var n=String(nombre||"").trim();
+  if(!n)return "";
+  var bajo=n.toLowerCase();
+  for(var i=0;i<SEG_MARCAS_EMPRESA.length;i++){
+    if(bajo.indexOf(SEG_MARCAS_EMPRESA[i])!==-1)return "";
+  }
+  return " "+n.split(/\s+/)[0];
+}
+// Devuelve la frase completa, con preposicion incluida: si no, el caso de
+// cero dias quedaba como "hace hoy".
+function diasTexto(d){
+  if(d==null)return "hace unos días";
+  if(d<=0)return "hoy";
+  if(d===1)return "hace 1 día";
+  return "hace "+d+" días";
+}
+
+var SEG_PLANTILLAS=[
+  "Hola{nombre}, te saluda León Ingeniería ❄️. Te envié la cotización N°{nro} {dias} y quería saber si te llegó bien y si te surgió alguna duda. Cualquier cosa que necesites aclarar, aquí estoy 👷",
+  "Hola{nombre}, ¿cómo estás? Te escribo por la cotización N°{nro}. Si el presupuesto te hace sentido podemos coordinar la visita esta semana o la próxima; si necesitas ajustar algo, dime y lo vemos. 🔧",
+  "Hola{nombre}, último mensaje de mi parte por ahora sobre la cotización N°{nro} 😊. Si más adelante retomas la idea avísame y la actualizamos con los precios del momento. ¡Que estés muy bien! ❄️"
+];
+
+function mensajeSeguimiento(r, paso){
+  var s=seguimientoDe(r);
+  var tpl=SEG_PLANTILLAS[Math.min(paso-1, SEG_PLANTILLAS.length-1)];
+  return tpl
+    .replace("{nombre}", saludoNombre(r.nombre))
+    .replace("{nro}", r.nro)
+    .replace("{dias}", diasTexto(s.diasTotal));
+}
+
+function waSeguimiento(nro){
+  var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
+  if(!r)return;
+  var s=seguimientoDe(r);
+  var paso=Math.min((s.paso||0)+1, SEG_PLANTILLAS.length);
+  var num=String(r.tel||"").replace(/\D/g,"");
+  if(!num){alert("Esta cotización no tiene teléfono guardado. Ábrela con \"Reabrir Cotización\" y vuelve a generarla para que quede registrado.");return;}
+  if(num.length>8&&num.indexOf("56")===0)num=num.slice(2);
+  if(num.length===9&&num.charAt(0)==="9")num=num.slice(1);
+  num="569"+num.slice(-8);
+  window.open("https://wa.me/"+num+"?text="+encodeURIComponent(mensajeSeguimiento(r,paso)),"_blank");
+  registrarContacto(nro);
+}
+
+function registrarContacto(nro){
+  var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
+  if(!r)return;
+  r.contactos=(r.contactos||[]).concat([{fecha:hoyISO()}]);
+  saveRegList();
+  renderSeguimiento();
+}
+
+function cerrarCotizacion(nro, estado){
+  var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
+  if(!r)return;
+  if(estado==="Rechazada"){
+    // El motivo es el dato que despues permite saber si se pierde por precio,
+    // por plazo o por silencio. Sin eso, "rechazada" no dice nada.
+    var motivo=prompt("¿Por qué no cerró?\n\nPrecio · Plazo · No contestó · Compró a otro · Otro","No contestó");
+    if(motivo===null)return;
+    r.motivo=motivo.trim();
+  }
+  r.estado=estado;
+  r.fechaCierre=hoyISO();
+  saveRegList();
+  renderStatsAdmin();
+  renderSeguimiento();
 }
 function setEstadoReg(nro,estado){
   var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
@@ -2767,6 +3273,83 @@ function setEstadoReg(nro,estado){
   saveRegList();
   renderStatsAdmin();
 }
+function renderSeguimiento(){
+  var cont=document.getElementById("seg-lista");
+  if(!cont)return;
+  var badge=document.getElementById("seg-contador");
+
+  var pendientes=REG_LIST.filter(function(r){return (r.estado||"Pendiente")==="Pendiente";})
+    .map(function(r){return {r:r, s:seguimientoDe(r)};});
+
+  // Primero lo que ya se paso de fecha, despues lo de hoy, despues lo que
+  // espera. Dentro de cada grupo, lo mas antiguo arriba: es lo que mas se
+  // esta enfriando.
+  function prioridad(x){
+    if(x.s.agotado)return 3;
+    if(x.s.faltan<0)return 0;
+    if(x.s.tocaHoy)return 1;
+    return 2;
+  }
+  pendientes.sort(function(a,b){
+    var pa=prioridad(a), pb=prioridad(b);
+    if(pa!==pb)return pa-pb;
+    return (b.s.diasTotal||0)-(a.s.diasTotal||0);
+  });
+
+  var tocan=pendientes.filter(function(x){return !x.s.agotado && x.s.tocaHoy;}).length;
+  var montoEnJuego=pendientes.reduce(function(a,x){return a+(x.r.total||0);},0);
+
+  if(badge){
+    badge.textContent=tocan?(tocan+" por contactar hoy"):"";
+  }
+
+  if(!pendientes.length){
+    cont.innerHTML='<div class="seg-vacio">No hay cotizaciones pendientes de respuesta.<br>'
+      +'<span style="font-size:12.5px">Las cotizaciones que generes aparecen aquí hasta que las marques como cerradas o perdidas.</span></div>';
+    return;
+  }
+
+  var resumen='<div class="seg-resumen">'
+    +'<span><b>'+tocan+'</b> por contactar hoy</span>'
+    +'<span><b>'+pendientes.length+'</b> esperando respuesta</span>'
+    +'<span><b>'+fmt(montoEnJuego)+'</b> en juego</span>'
+    +'</div>';
+
+  cont.innerHTML=resumen+pendientes.map(function(x){
+    var r=x.r, s=x.s;
+    var clase, chip, chipTxt;
+    if(s.agotado){
+      clase="espera"; chip="c-espera"; chipTxt="sin respuesta tras 3 contactos";
+    }else if(s.faltan<0){
+      clase="urge"; chip="c-urge"; chipTxt="atrasado "+Math.abs(s.faltan)+"d";
+    }else if(s.tocaHoy){
+      clase="hoy"; chip="c-hoy"; chipTxt="contacto "+s.pasoSugerido+" hoy";
+    }else{
+      clase="espera"; chip="c-espera"; chipTxt="en "+s.faltan+"d";
+    }
+
+    var meta=[];
+    meta.push("N°"+esc(String(r.nro)));
+    if(s.diasTotal!=null)meta.push("enviada hace "+s.diasTotal+"d");
+    if(r.comuna)meta.push(esc(r.comuna));
+    if((r.contactos||[]).length)meta.push((r.contactos||[]).length+" contacto"+((r.contactos||[]).length>1?"s":""));
+
+    return '<div class="seg-card '+clase+'">'
+      +'<div class="seg-main">'
+        +'<div class="seg-nom">'+(esc(r.nombre)||"Sin nombre")+' <span class="seg-chip '+chip+'">'+chipTxt+'</span></div>'
+        +'<div class="seg-meta">'+meta.join(" · ")+'</div>'
+        +(r.serv?'<div class="seg-meta">'+esc(r.serv)+'</div>':'')
+      +'</div>'
+      +'<div class="seg-monto">'+fmt(r.total||0)+'</div>'
+      +'<div class="seg-acc">'
+        +(r.tel?'<button class="seg-btn wa" onclick="waSeguimiento(\''+escAttr(String(r.nro))+'\')">📲 Escribir</button>':'<span style="font-size:12px;color:var(--txt2)">sin teléfono</span>')
+        +'<button class="seg-btn ok" onclick="cerrarCotizacion(\''+escAttr(String(r.nro))+'\',\'Aceptada\')">✓ Cerró</button>'
+        +'<button class="seg-btn no" onclick="cerrarCotizacion(\''+escAttr(String(r.nro))+'\',\'Rechazada\')">✕ Se perdió</button>'
+      +'</div>'
+    +'</div>';
+  }).join("");
+}
+
 function renderStatsAdmin(){
   var el=document.getElementById("statslista");
   if(!el)return;
