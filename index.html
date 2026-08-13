@@ -1978,24 +1978,66 @@ function telNormalizado(tel){
   return d.length>=8 ? d.slice(-8) : "";
 }
 
-// Devuelve la clave del cliente en la base ("c1786...") o null si es nuevo.
-function buscarClienteExistente(clientes, row){
-  if(!clientes)return null;
+// La identidad NO es la persona: es la persona en una direccion.
+//
+// Eduardo tiene dos fichas y no son un duplicado -- una es su casa en Lo
+// Barnechea y la otra su oficina en Vitacura, cada una con sus equipos y su
+// propio ciclo de mantencion. Fusionarlas por tener el mismo RUT habria
+// borrado uno de los dos vencimientos. Una empresa con sucursales es el mismo
+// caso multiplicado.
+//
+// Entonces: primero se busca a la persona (RUT, y si no hay, telefono), y
+// despues, entre sus fichas, la que corresponde a esta direccion.
+
+function direccionNormalizada(dir){
+  return String(dir||"")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")   // sin tildes
+    .replace(/[^a-z0-9 ]/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+// Dos direcciones se consideran la misma si una contiene a la otra: en terreno
+// la misma casa se escribe "Irarrazaval 1234" o "Irarrazaval 1234 depto 52
+// (porton verde)". Exigir igualdad exacta crearia fichas nuevas por una coma.
+function mismaDireccion(a,b){
+  var x=direccionNormalizada(a), y=direccionNormalizada(b);
+  if(!x || !y) return false;
+  return x===y || x.indexOf(y)===0 || y.indexOf(x)===0;
+}
+
+// Todas las fichas que son de esta misma persona.
+function fichasDeLaPersona(clientes, row){
+  var res=[];
+  if(!clientes)return res;
   var rutBuscado=rutNormalizado(row.rut);
   var telBuscado=telNormalizado(row.telefono);
-  if(!rutBuscado && !telBuscado)return null;
-  var claves=Object.keys(clientes);
-  // El RUT manda: es unico de verdad. Un telefono puede repetirse entre
-  // marido y mujer, o quedar reasignado, asi que solo se usa si no hay RUT.
-  for(var i=0;i<claves.length;i++){
-    var c=clientes[claves[i]];
-    if(c && rutBuscado && rutNormalizado(c.rut)===rutBuscado)return claves[i];
-  }
-  if(!rutBuscado){
-    for(var j=0;j<claves.length;j++){
-      var d=clientes[claves[j]];
-      if(d && telBuscado && telNormalizado(d.telefono)===telBuscado)return claves[j];
-    }
+  if(!rutBuscado && !telBuscado)return res;
+  Object.keys(clientes).forEach(function(k){
+    var c=clientes[k];
+    if(!c)return;
+    // El RUT manda: es unico de verdad. El telefono solo se usa si no hay RUT,
+    // porque puede repetirse entre marido y mujer o quedar reasignado.
+    var coincide = rutBuscado
+      ? (rutNormalizado(c.rut)===rutBuscado)
+      : (telBuscado && telNormalizado(c.telefono)===telBuscado);
+    if(coincide)res.push({clave:k, ficha:c});
+  });
+  return res;
+}
+
+// Entre las fichas de la persona, la que corresponde a esta direccion.
+// Si la cotizacion vino sin direccion, se cae a la comuna: es poco, pero es
+// mejor que crear una ficha nueva cada vez que alguien no escribio la calle.
+function fichaDeEstaDireccion(fichas, row){
+  var conDireccion=fichas.filter(function(f){return mismaDireccion(f.ficha.direccion,row.direccion);});
+  if(conDireccion.length)return conDireccion[0];
+  if(!direccionNormalizada(row.direccion)){
+    var mismaComuna=fichas.filter(function(f){
+      return (f.ficha.comuna||"").trim().toLowerCase()===(row.comuna||"").trim().toLowerCase();
+    });
+    if(mismaComuna.length===1)return mismaComuna[0];
   }
   return null;
 }
@@ -2087,19 +2129,41 @@ function enviarAIndicador(){
         }
         var clientes=null;
         try{clientes=JSON.parse(xhrGet.responseText);}catch(e){clientes=null;}
-        var clave=buscarClienteExistente(clientes,row);
 
-        if(clave){
-          var existente=clientes[clave];
+        var fichas=fichasDeLaPersona(clientes,row);
+        var match=fichas.length?fichaDeEstaDireccion(fichas,row):null;
+
+        // La persona ya existe, pero en otra direccion: es una instalacion
+        // nueva (la oficina ademas de la casa, otra sucursal), no un
+        // duplicado. Se avisa y se crea ficha aparte, que es lo correcto.
+        if(fichas.length && !match){
+          var donde=fichas.map(function(f){
+            return "  • "+(f.ficha.lugar||"sin tipo")+" en "+(f.ficha.comuna||"sin comuna")
+                   +(f.ficha.direccion?(" — "+f.ficha.direccion):"");
+          }).join("\n");
+          if(!confirm((fichas[0].ficha.cliente||row.cliente)+" ya tiene "
+              +(fichas.length===1?"una ficha":fichas.length+" fichas")+" en el Indicador:\n\n"+donde
+              +"\n\nEsta cotización es para "+(row.direccion||row.comuna||"otra dirección")+"."
+              +"\n\nSe va a crear una ficha aparte, con su propio ciclo de mantención."
+              +"\n\nAceptar = crear ficha aparte.\nCancelar = no hacer nada (si en realidad es la misma dirección, corrígela y vuelve a intentar).")){
+            terminar(null);
+            return;
+          }
+        }
+
+        if(match){
+          var clave=match.clave;
+          var existente=match.ficha;
           var patch=fusionarConExistente(existente,row);
           // Se confirma antes de tocar una ficha que ya existe: si la deteccion
           // se equivoco, es mejor enterarse aqui que despues.
           var comoLoReconoci=rutNormalizado(row.rut)&&rutNormalizado(existente.rut)===rutNormalizado(row.rut)
             ? "mismo RUT" : "mismo teléfono";
-          if(!confirm("Este cliente ya está en el Indicador:\n\n"
-              +(existente.cliente||"(sin nombre)")+" — "+(existente.comuna||"sin comuna")
-              +"\n(reconocido por "+comoLoReconoci+")\n\n"
-              +"¿Actualizo su ficha en vez de crear uno nuevo?\n\n"
+          if(!confirm("Esta es la misma instalación que ya está en el Indicador:\n\n"
+              +(existente.cliente||"(sin nombre)")+" — "+(existente.lugar||"sin tipo")+" en "+(existente.comuna||"sin comuna")
+              +(existente.direccion?("\n"+existente.direccion):"")
+              +"\n(reconocido por "+comoLoReconoci+" y misma dirección)\n\n"
+              +"¿Actualizo su ficha en vez de crear una nueva?\n\n"
               +"Se le suman los equipos cotizados y la próxima mantención pasa a "
               +row.duracion+" meses desde hoy.")){
             terminar(null);
