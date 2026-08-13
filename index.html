@@ -3415,10 +3415,60 @@ function nombreClave(n){
     .replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
 }
 
+// El telefono de una cotizacion vieja esta guardado en el historial del Apps
+// Script -- pdfRecord() siempre lo mando -- lo que faltaba era traerlo de
+// vuelta. Es el dato exacto de esa cotizacion, no una coincidencia por nombre,
+// asi que se intenta esto primero y el Indicador queda como respaldo.
+function completarDesdeHistorial(faltan, listo){
+  if(!GAS_URL||!faltan.length){listo(0);return;}
+  var pendientes=faltan.slice(), completados=0, enVuelo=0, MAX=4;
+
+  function siguiente(){
+    if(!pendientes.length && enVuelo===0){listo(completados);return;}
+    while(pendientes.length && enVuelo<MAX){
+      (function(r){
+        enVuelo++;
+        fetch(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
+          .then(function(res){return res.json();})
+          .then(function(d){
+            if(d&&!d.error){
+              // La planilla puede devolver "#ERROR!" en una celda con formula
+              // rota. Se toma el valor solo si de verdad quedan digitos --
+              // contar "#ERROR!" como telefono recuperado era peor que no
+              // recuperar nada, porque decia que si y dejaba el campo vacio.
+              var t=String(d.tel||"").replace(/\D/g,"");
+              if(t&&!r.tel){r.tel=t;completados++;}
+              if(d.rut&&!/#ERROR/i.test(String(d.rut))&&!r.rut)r.rut=d.rut;
+              if(d.comuna&&!/#ERROR/i.test(String(d.comuna))&&!r.comuna)r.comuna=d.comuna;
+            }
+          })
+          .catch(function(){})
+          .then(function(){enVuelo--;siguiente();});
+      })(pendientes.shift());
+    }
+  }
+  siguiente();
+}
+
 function completarTelefonos(){
   var faltan=REG_LIST.filter(function(r){return !r.tel;});
   if(!faltan.length){alert("Todas las cotizaciones ya tienen teléfono.");return;}
 
+  completarDesdeHistorial(faltan, function(delHistorial){
+    var siguenFaltando=REG_LIST.filter(function(r){return !r.tel;});
+    if(!siguenFaltando.length){
+      if(delHistorial)saveRegList();
+      renderSeguimiento();
+      alert("Teléfonos recuperados del historial de cotizaciones:\n\n"
+        +"✓ "+delHistorial+(delHistorial===1?" cotización quedó":" cotizaciones quedaron")+" con teléfono\n\n"
+        +"Todas las pendientes tienen teléfono.");
+      return;
+    }
+    completarDesdeIndicador(siguenFaltando, delHistorial);
+  });
+}
+
+function completarDesdeIndicador(faltan, delHistorial){
   getFirebaseIdToken(function(token){
     if(!token){alert("Necesitas sesión iniciada para leer el Indicador.");return;}
     withAppCheckHeader(function(xhr){
@@ -3454,10 +3504,11 @@ function completarTelefonos(){
           completados++;
         });
 
-        if(completados)saveRegList();
+        if(completados||delHistorial)saveRegList();
         renderSeguimiento();
-        alert("Teléfonos completados desde el Indicador:\n\n"
-          +"✓ "+completados+(completados===1?" cotización quedó":" cotizaciones quedaron")+" con teléfono\n"
+        alert("Teléfonos recuperados:\n\n"
+          +"✓ "+delHistorial+" del historial de cotizaciones (dato exacto)\n"
+          +"✓ "+completados+" del Indicador, por coincidencia de nombre\n"
           +(ambiguosN?("• "+ambiguosN+" con nombre repetido en el Indicador — se dejaron en blanco a propósito\n"):"")
           +(sinMatch?("• "+sinMatch+" sin cliente equivalente\n"):"")
           +"\nLas que quedaron sin teléfono se pueden completar reabriendo la cotización.");
