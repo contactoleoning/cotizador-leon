@@ -154,6 +154,30 @@ select option{background:#161619;color:var(--txt)}
 #lock-overlay .lock-btn:hover{transform:translateY(-1px);box-shadow:0 9px 24px rgba(245,208,78,.35)}
 #lock-overlay .lock-btn:active{transform:translateY(0)}
 #lock-overlay .lock-err{color:#e74c3c;font-size:13px;font-weight:600;min-height:18px}
+/* ── Seguimiento de cotizaciones ── */
+.seg-card{border:1px solid var(--brd);border-radius:var(--rs);background:var(--bg3);padding:12px 14px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.seg-card+.seg-card{margin-top:8px}
+.seg-card.urge{border-left:3px solid #e07a5f}
+.seg-card.hoy{border-left:3px solid var(--acc)}
+.seg-card.espera{opacity:.62}
+.seg-main{flex:1;min-width:200px}
+.seg-nom{font-size:15px;font-weight:700;color:var(--txt);line-height:1.25}
+.seg-meta{font-size:12.5px;color:var(--txt2);margin-top:2px}
+.seg-monto{font-size:15px;font-weight:700;color:var(--grn);white-space:nowrap}
+.seg-chip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:20px;border:1px solid;white-space:nowrap}
+.seg-chip.c-urge{color:#e07a5f;border-color:#e07a5f}
+.seg-chip.c-hoy{color:var(--acc);border-color:var(--acc)}
+.seg-chip.c-espera{color:var(--txt2);border-color:var(--brd2)}
+.seg-acc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.seg-btn{font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:6px;border:1px solid var(--brd2);background:var(--inp);color:var(--txt);cursor:pointer;font-family:'DM Sans',sans-serif}
+.seg-btn:hover{border-color:var(--acc);color:var(--acc)}
+.seg-btn.wa{background:#25d366;color:#073b22;border-color:#25d366}
+.seg-btn.wa:hover{filter:brightness(1.06);color:#073b22}
+.seg-btn.ok{border-color:var(--grn);color:var(--grn)}
+.seg-btn.no{border-color:var(--brd2);color:var(--txt2)}
+.seg-vacio{font-size:14px;color:var(--txt2);padding:14px;background:var(--bg3);border-radius:var(--rs);text-align:center}
+.seg-resumen{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--txt2);margin-bottom:10px}
+.seg-resumen b{color:var(--txt);font-size:15px}
 .card{transition:box-shadow .2s,border-color .2s}
 .card:hover{box-shadow:0 6px 22px rgba(0,0,0,.28)}
 .btn{transition:transform .12s,filter .15s,box-shadow .2s}
@@ -548,6 +572,15 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
 </div><!-- /cot-wrap -->
 </div><!-- /view-cot -->
 <div id="view-info" style="display:none">
+
+  <!-- SEGUIMIENTO DE COTIZACIONES -->
+  <div class="card">
+    <div class="ct" style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--brd)">
+      <span>📞 Seguimiento de Cotizaciones</span>
+      <span id="seg-contador" style="font-size:12.5px;font-weight:600;color:var(--txt2);text-transform:none;letter-spacing:0"></span>
+    </div>
+    <div id="seg-lista"></div>
+  </div>
 
   <!-- HISTORIAL COTIZACIONES -->
   <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px">
@@ -1132,7 +1165,7 @@ function showTab(t){
     document.getElementById("view-"+x).style.display=(x===t)?"":"none";
     document.getElementById("tab-"+x).className="tab"+(x===t?" act":"");
   });
-  if(t==="info")cargarExtremosCotizaciones();
+  if(t==="info"){cargarExtremosCotizaciones();renderSeguimiento();}
 }
 
 function toggleKit(){}
@@ -3086,9 +3119,138 @@ function registrarCotizacion(P){
   var servicios=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"—";
   var ya=REG_LIST.find(function(r){return String(r.nro)===String(P.nro);});
   if(ya)return;
-  REG_LIST.push({nro:P.nro,fecha:P.fecha,nombre:P.nombre||"",total:P.tot,serv:servicios,estado:"Pendiente"});
+  // Se guarda el telefono y la comuna ademas del nombre: sin telefono no hay
+  // forma de hacerle seguimiento a la cotizacion sin ir a buscar el dato a
+  // otro lado, que es exactamente lo que hace que el seguimiento no se haga.
+  REG_LIST.push({
+    nro:P.nro, fecha:P.fecha, nombre:P.nombre||"", total:P.tot, serv:servicios,
+    estado:"Pendiente",
+    tel:P.tel||"", comuna:P.comuna||"", rut:P.rut||"",
+    contactos:[]
+  });
   saveRegList();
   renderStatsAdmin();
+  renderSeguimiento();
+}
+
+// ═══════════════════════════════════════
+// SEGUIMIENTO DE COTIZACIONES
+// ═══════════════════════════════════════
+// Una cotizacion enviada y no respondida no se pierde por precio: se pierde
+// por silencio. Nadie se acuerda de volver a llamar al quinto dia con 20
+// cotizaciones dando vueltas. Esto lo convierte en una lista de tareas.
+//
+// La cadencia es la misma que ya usa el Indicador para los vencimientos:
+// tres contactos, espaciados. Dia 2 mientras esta fresco, dia 7 cuando ya lo
+// penso, dia 15 el ultimo antes de darla por perdida.
+var SEG_DIAS=[2,7,15];
+
+function diasEntre(desdeISO, hastaISO){
+  if(!desdeISO)return null;
+  var a=new Date(desdeISO+"T00:00:00"), b=new Date((hastaISO||hoyISO())+"T00:00:00");
+  if(isNaN(a)||isNaN(b))return null;
+  return Math.round((b-a)/86400000);
+}
+function hoyISO(){
+  var d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+// Estado de seguimiento de una cotizacion pendiente.
+function seguimientoDe(r){
+  var contactos=r.contactos||[];
+  var paso=contactos.length;                 // cuantos contactos ya se hicieron
+  var desde=contactos.length?contactos[contactos.length-1].fecha:r.fecha;
+  var dias=diasEntre(desde, hoyISO());
+  var diasTotal=diasEntre(r.fecha, hoyISO());
+  if(paso>=SEG_DIAS.length){
+    return {agotado:true, paso:paso, dias:dias, diasTotal:diasTotal, tocaHoy:false, faltan:null};
+  }
+  // El primer contacto se mide desde el envio; los siguientes desde el
+  // contacto anterior, para no apurar a alguien al que recien se le escribio.
+  var espera=paso===0?SEG_DIAS[0]:(SEG_DIAS[paso]-SEG_DIAS[paso-1]);
+  var faltan=espera-(dias||0);
+  return {
+    agotado:false, paso:paso, pasoSugerido:paso+1,
+    dias:dias, diasTotal:diasTotal,
+    tocaHoy:faltan<=0, faltan:faltan
+  };
+}
+
+// A una empresa no se le dice "Hola Constructora": el primer nombre solo
+// sirve cuando el cliente es una persona. Ante la duda se saluda sin nombre,
+// que suena bien igual.
+var SEG_MARCAS_EMPRESA=["constructora","empresa","spa","s.p.a","ltda","limitada","s.a","sociedad","comercial","inmobiliaria","hotel","clinica","clínica","colegio","restaurant","servicios","import","distribuidora"];
+function saludoNombre(nombre){
+  var n=String(nombre||"").trim();
+  if(!n)return "";
+  var bajo=n.toLowerCase();
+  for(var i=0;i<SEG_MARCAS_EMPRESA.length;i++){
+    if(bajo.indexOf(SEG_MARCAS_EMPRESA[i])!==-1)return "";
+  }
+  return " "+n.split(/\s+/)[0];
+}
+// Devuelve la frase completa, con preposicion incluida: si no, el caso de
+// cero dias quedaba como "hace hoy".
+function diasTexto(d){
+  if(d==null)return "hace unos días";
+  if(d<=0)return "hoy";
+  if(d===1)return "hace 1 día";
+  return "hace "+d+" días";
+}
+
+var SEG_PLANTILLAS=[
+  "Hola{nombre}, te saluda León Ingeniería ❄️. Te envié la cotización N°{nro} {dias} y quería saber si te llegó bien y si te surgió alguna duda. Cualquier cosa que necesites aclarar, aquí estoy 👷",
+  "Hola{nombre}, ¿cómo estás? Te escribo por la cotización N°{nro}. Si el presupuesto te hace sentido podemos coordinar la visita esta semana o la próxima; si necesitas ajustar algo, dime y lo vemos. 🔧",
+  "Hola{nombre}, último mensaje de mi parte por ahora sobre la cotización N°{nro} 😊. Si más adelante retomas la idea avísame y la actualizamos con los precios del momento. ¡Que estés muy bien! ❄️"
+];
+
+function mensajeSeguimiento(r, paso){
+  var s=seguimientoDe(r);
+  var tpl=SEG_PLANTILLAS[Math.min(paso-1, SEG_PLANTILLAS.length-1)];
+  return tpl
+    .replace("{nombre}", saludoNombre(r.nombre))
+    .replace("{nro}", r.nro)
+    .replace("{dias}", diasTexto(s.diasTotal));
+}
+
+function waSeguimiento(nro){
+  var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
+  if(!r)return;
+  var s=seguimientoDe(r);
+  var paso=Math.min((s.paso||0)+1, SEG_PLANTILLAS.length);
+  var num=String(r.tel||"").replace(/\D/g,"");
+  if(!num){alert("Esta cotización no tiene teléfono guardado. Ábrela con \"Reabrir Cotización\" y vuelve a generarla para que quede registrado.");return;}
+  if(num.length>8&&num.indexOf("56")===0)num=num.slice(2);
+  if(num.length===9&&num.charAt(0)==="9")num=num.slice(1);
+  num="569"+num.slice(-8);
+  window.open("https://wa.me/"+num+"?text="+encodeURIComponent(mensajeSeguimiento(r,paso)),"_blank");
+  registrarContacto(nro);
+}
+
+function registrarContacto(nro){
+  var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
+  if(!r)return;
+  r.contactos=(r.contactos||[]).concat([{fecha:hoyISO()}]);
+  saveRegList();
+  renderSeguimiento();
+}
+
+function cerrarCotizacion(nro, estado){
+  var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
+  if(!r)return;
+  if(estado==="Rechazada"){
+    // El motivo es el dato que despues permite saber si se pierde por precio,
+    // por plazo o por silencio. Sin eso, "rechazada" no dice nada.
+    var motivo=prompt("¿Por qué no cerró?\n\nPrecio · Plazo · No contestó · Compró a otro · Otro","No contestó");
+    if(motivo===null)return;
+    r.motivo=motivo.trim();
+  }
+  r.estado=estado;
+  r.fechaCierre=hoyISO();
+  saveRegList();
+  renderStatsAdmin();
+  renderSeguimiento();
 }
 function setEstadoReg(nro,estado){
   var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
@@ -3097,6 +3259,83 @@ function setEstadoReg(nro,estado){
   saveRegList();
   renderStatsAdmin();
 }
+function renderSeguimiento(){
+  var cont=document.getElementById("seg-lista");
+  if(!cont)return;
+  var badge=document.getElementById("seg-contador");
+
+  var pendientes=REG_LIST.filter(function(r){return (r.estado||"Pendiente")==="Pendiente";})
+    .map(function(r){return {r:r, s:seguimientoDe(r)};});
+
+  // Primero lo que ya se paso de fecha, despues lo de hoy, despues lo que
+  // espera. Dentro de cada grupo, lo mas antiguo arriba: es lo que mas se
+  // esta enfriando.
+  function prioridad(x){
+    if(x.s.agotado)return 3;
+    if(x.s.faltan<0)return 0;
+    if(x.s.tocaHoy)return 1;
+    return 2;
+  }
+  pendientes.sort(function(a,b){
+    var pa=prioridad(a), pb=prioridad(b);
+    if(pa!==pb)return pa-pb;
+    return (b.s.diasTotal||0)-(a.s.diasTotal||0);
+  });
+
+  var tocan=pendientes.filter(function(x){return !x.s.agotado && x.s.tocaHoy;}).length;
+  var montoEnJuego=pendientes.reduce(function(a,x){return a+(x.r.total||0);},0);
+
+  if(badge){
+    badge.textContent=tocan?(tocan+" por contactar hoy"):"";
+  }
+
+  if(!pendientes.length){
+    cont.innerHTML='<div class="seg-vacio">No hay cotizaciones pendientes de respuesta.<br>'
+      +'<span style="font-size:12.5px">Las cotizaciones que generes aparecen aquí hasta que las marques como cerradas o perdidas.</span></div>';
+    return;
+  }
+
+  var resumen='<div class="seg-resumen">'
+    +'<span><b>'+tocan+'</b> por contactar hoy</span>'
+    +'<span><b>'+pendientes.length+'</b> esperando respuesta</span>'
+    +'<span><b>'+fmt(montoEnJuego)+'</b> en juego</span>'
+    +'</div>';
+
+  cont.innerHTML=resumen+pendientes.map(function(x){
+    var r=x.r, s=x.s;
+    var clase, chip, chipTxt;
+    if(s.agotado){
+      clase="espera"; chip="c-espera"; chipTxt="sin respuesta tras 3 contactos";
+    }else if(s.faltan<0){
+      clase="urge"; chip="c-urge"; chipTxt="atrasado "+Math.abs(s.faltan)+"d";
+    }else if(s.tocaHoy){
+      clase="hoy"; chip="c-hoy"; chipTxt="contacto "+s.pasoSugerido+" hoy";
+    }else{
+      clase="espera"; chip="c-espera"; chipTxt="en "+s.faltan+"d";
+    }
+
+    var meta=[];
+    meta.push("N°"+esc(String(r.nro)));
+    if(s.diasTotal!=null)meta.push("enviada hace "+s.diasTotal+"d");
+    if(r.comuna)meta.push(esc(r.comuna));
+    if((r.contactos||[]).length)meta.push((r.contactos||[]).length+" contacto"+((r.contactos||[]).length>1?"s":""));
+
+    return '<div class="seg-card '+clase+'">'
+      +'<div class="seg-main">'
+        +'<div class="seg-nom">'+(esc(r.nombre)||"Sin nombre")+' <span class="seg-chip '+chip+'">'+chipTxt+'</span></div>'
+        +'<div class="seg-meta">'+meta.join(" · ")+'</div>'
+        +(r.serv?'<div class="seg-meta">'+esc(r.serv)+'</div>':'')
+      +'</div>'
+      +'<div class="seg-monto">'+fmt(r.total||0)+'</div>'
+      +'<div class="seg-acc">'
+        +(r.tel?'<button class="seg-btn wa" onclick="waSeguimiento(\''+escAttr(String(r.nro))+'\')">📲 Escribir</button>':'<span style="font-size:12px;color:var(--txt2)">sin teléfono</span>')
+        +'<button class="seg-btn ok" onclick="cerrarCotizacion(\''+escAttr(String(r.nro))+'\',\'Aceptada\')">✓ Cerró</button>'
+        +'<button class="seg-btn no" onclick="cerrarCotizacion(\''+escAttr(String(r.nro))+'\',\'Rechazada\')">✕ Se perdió</button>'
+      +'</div>'
+    +'</div>';
+  }).join("");
+}
+
 function renderStatsAdmin(){
   var el=document.getElementById("statslista");
   if(!el)return;
