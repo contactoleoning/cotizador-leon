@@ -26,6 +26,9 @@ body{background:var(--bg);color:var(--txt);font-family:"DM Sans",sans-serif;min-
 .hdr{background:var(--bg2);border-bottom:2px solid var(--brd);padding:11px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .logo{height:42px;width:auto}
 .hbadge{background:var(--bg3);border:2px solid var(--brd);padding:5px 13px;border-radius:20px;font-size:15px;font-weight:700;color:var(--acc)}
+.hsalir{background:var(--bg3);border:2px solid var(--brd);color:var(--txt2);padding:5px 13px;border-radius:20px;font-size:13px;font-weight:700;transition:color .18s,border-color .18s}
+.hsalir:hover{color:var(--acc);border-color:var(--acc)}
+.hsalir:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .tabs{display:flex;gap:3px;padding:10px 12px 0;background:var(--bg2);border-bottom:2px solid var(--brd);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:10px 16px;border-radius:var(--rs) var(--rs) 0 0;font-size:14px;font-weight:700;cursor:pointer;color:var(--txt2);border:2px solid transparent;border-bottom:none;transition:all .15s;letter-spacing:.02em;white-space:nowrap;flex-shrink:0}
@@ -185,6 +188,7 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
     <span id="sync-dot" style="width:9px;height:9px;border-radius:50%;background:#888;display:inline-block;transition:background .4s"></span>
     <span id="sync-lbl">conectando...</span>
   </div>
+  <button class="hsalir" id="btnsalir" onclick="cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión">Salir</button>
 </header>
 <nav class="tabs">
   <div class="tab act" id="tab-cot" data-tab="cot">CREAR COTIZACIÓN</div>
@@ -3715,6 +3719,25 @@ firebase.auth().onAuthStateChanged(function(user){
   console.error('Firebase Auth no se pudo iniciar:',e);
   lockError('No se pudo conectar con el servidor. Revisa la conexión y recarga.');
 }
+
+// Bloqueo por inactividad, igual que en el Indicador.
+// Antes la sesion moria al cerrar la pestaña, porque se marcaba en
+// sessionStorage. Firebase Auth, en cambio, la deja guardada: sin esto el
+// cotizador quedaria abierto para siempre en un computador compartido, con
+// los costos y margenes a la vista. Cuatro horas alcanzan para una jornada
+// cambiando de ventana, pero cierran si el equipo queda abierto de un dia
+// para otro. El boton Salir sirve para cerrar antes.
+var lastHiddenAt=0;
+var RELOCK_MS=4*60*60*1000;
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='hidden'){
+    lastHiddenAt=Date.now();
+  }else if(document.visibilityState==='visible'){
+    if(lastHiddenAt&&(Date.now()-lastHiddenAt)>RELOCK_MS&&firebase.auth().currentUser){
+      cerrarSesion();
+    }
+  }
+});
 
 // Registrar service worker (PWA instalable)
 if("serviceWorker" in navigator){
