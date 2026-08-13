@@ -1956,6 +1956,96 @@ function construirRowIndicador(){
   };
 }
 
+// ═══════════════════════════════════════
+// CLIENTE UNICO
+// ═══════════════════════════════════════
+// Hasta ahora cada cotizacion creaba un cliente nuevo con id de timestamp. El
+// mismo señor que compro en 2024 y vuelve en 2026 quedaba dos veces en el
+// Indicador, con dos vencimientos distintos, y nadie sabia que era recompra.
+//
+// La identidad es el RUT si lo hay, y si no el telefono. Son los dos unicos
+// datos que no cambian y que efectivamente pedimos. El nombre no sirve: se
+// escribe distinto cada vez ("Juan Perez", "juan perez", "Sr. Perez").
+
+function rutNormalizado(rut){
+  return String(rut||"").replace(/[^0-9kK]/g,"").toUpperCase();
+}
+
+// Mismo criterio que usa el Indicador para marcar por WhatsApp: los ultimos
+// 8 digitos. Asi dos formas de escribir el mismo movil se reconocen igual.
+function telNormalizado(tel){
+  var d=String(tel||"").replace(/\D/g,"");
+  return d.length>=8 ? d.slice(-8) : "";
+}
+
+// Devuelve la clave del cliente en la base ("c1786...") o null si es nuevo.
+function buscarClienteExistente(clientes, row){
+  if(!clientes)return null;
+  var rutBuscado=rutNormalizado(row.rut);
+  var telBuscado=telNormalizado(row.telefono);
+  if(!rutBuscado && !telBuscado)return null;
+  var claves=Object.keys(clientes);
+  // El RUT manda: es unico de verdad. Un telefono puede repetirse entre
+  // marido y mujer, o quedar reasignado, asi que solo se usa si no hay RUT.
+  for(var i=0;i<claves.length;i++){
+    var c=clientes[claves[i]];
+    if(c && rutBuscado && rutNormalizado(c.rut)===rutBuscado)return claves[i];
+  }
+  if(!rutBuscado){
+    for(var j=0;j<claves.length;j++){
+      var d=clientes[claves[j]];
+      if(d && telBuscado && telNormalizado(d.telefono)===telBuscado)return claves[j];
+    }
+  }
+  return null;
+}
+
+// Que se actualiza cuando el cliente ya existia.
+//
+// Regla: los datos que ya estan en el Indicador ganan. Alguien los reviso,
+// los corrigio en terreno o los completo a mano; la cotizacion de hoy solo
+// rellena lo que falta. Las excepciones son las tres cosas que la venta de
+// hoy si cambia de verdad: cuando parte el nuevo ciclo, cada cuanto toca, y
+// que servicio se vendio.
+function fusionarConExistente(existente, row){
+  var patch={
+    inicia:row.inicia,
+    duracion:row.duracion,
+    servicio:row.servicio,
+    aviso:false
+  };
+
+  ["telefono","rut","direccion","comuna","lugar"].forEach(function(campo){
+    var actual=(existente[campo]||"").toString().trim();
+    if(!actual && row[campo])patch[campo]=row[campo];
+  });
+  if(!(existente.telefono||"").toString().trim() && row.telefono){
+    patch.telefonoFijo=row.telefonoFijo;
+  }
+
+  // Los equipos se suman, no se reemplazan: el cliente puede haber comprado
+  // un split en 2024 y otro ahora, y los dos siguen en la casa. Se evita
+  // repetir el mismo marca+modelo+btu que ya estaba anotado.
+  var yaTiene=(existente.equipos||[]).slice();
+  var firma=function(e){return [(e.marca||""),(e.modelo||""),String(e.btu||"")].join("|").toLowerCase();};
+  var firmas={};
+  yaTiene.forEach(function(e){firmas[firma(e)]=true;});
+  (row.equipos||[]).forEach(function(e){
+    if(!firmas[firma(e)]){yaTiene.push(e);firmas[firma(e)]=true;}
+  });
+  patch.equipos=yaTiene;
+
+  // Historial de cotizaciones: lo que permite ver que este cliente ya compro
+  // antes y por cuanto. Es la base de poder hablar de recompra.
+  var cots=(existente.cotizaciones||[]).slice();
+  cots.push({nro:row.nroCotizacion,monto:row.montoCotizado,fecha:row.inicia,servicio:row.servicio});
+  patch.cotizaciones=cots;
+  patch.nroCotizacion=row.nroCotizacion;
+  patch.montoCotizado=row.montoCotizado;
+
+  return patch;
+}
+
 function enviarAIndicador(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
   if(!document.getElementById("cnombre").value.trim()){
@@ -1967,34 +2057,96 @@ function enviarAIndicador(){
   var textoOrig=btn.textContent;
   btn.disabled=true; btn.textContent="Enviando...";
 
+  function terminar(msg){
+    btn.disabled=false; btn.textContent=textoOrig;
+    if(msg)alert(msg);
+  }
+  function avisoDatosFaltantes(){
+    var faltan=[];
+    if(!row.telefono)faltan.push("teléfono");
+    if(!row.rut)faltan.push("RUT");
+    if(!row.direccion)faltan.push("dirección");
+    return faltan.length?("\n\nQuedó sin "+faltan.join(", ")+". Se puede completar en el Indicador."):"";
+  }
+
   getFirebaseIdToken(function(token){
     if(!token){
-      btn.disabled=false; btn.textContent=textoOrig;
-      alert("No se pudo autenticar con el Indicador. Intenta de nuevo.");
+      terminar("No se pudo autenticar con el Indicador. Intenta de nuevo.");
       return;
     }
-    withAppCheckHeader(function(xhr2){
-      xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+row.id+".json?auth="+token, true);
-      xhr2.setRequestHeader("Content-Type","application/json");
-      xhr2.onreadystatechange=function(){
-        if(xhr2.readyState===4){
-          btn.disabled=false; btn.textContent=textoOrig;
-          if(xhr2.status>=200&&xhr2.status<300){
-            var faltan=[];
-            if(!row.telefono)faltan.push("teléfono");
-            if(!row.rut)faltan.push("RUT");
-            if(!row.direccion)faltan.push("dirección");
-            alert("✓ "+row.cliente+" agregado al Indicador de Vencimiento."
-              +"\n\nMantención a "+row.duracion+" meses"
-              +(row.equipos.length?("\n"+row.equipos.length+" equipo"+(row.equipos.length>1?"s":"")+" en su ficha"):"")
-              +(faltan.length?("\n\nQuedó sin "+faltan.join(", ")+". Se puede completar en el Indicador."):""));
-          }else{
-            alert("No se pudo agregar al Indicador. Intenta de nuevo.");
-          }
+
+    // Primero se mira si el cliente ya existe. La base completa pesa unos
+    // 27 KB, asi que traerla entera sale mas barato que inventar un indice.
+    withAppCheckHeader(function(xhrGet){
+      xhrGet.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
+      xhrGet.onreadystatechange=function(){
+        if(xhrGet.readyState!==4)return;
+        if(xhrGet.status<200||xhrGet.status>=300){
+          terminar("No se pudo consultar el Indicador. Revisa tu conexión e intenta de nuevo.");
+          return;
         }
+        var clientes=null;
+        try{clientes=JSON.parse(xhrGet.responseText);}catch(e){clientes=null;}
+        var clave=buscarClienteExistente(clientes,row);
+
+        if(clave){
+          var existente=clientes[clave];
+          var patch=fusionarConExistente(existente,row);
+          // Se confirma antes de tocar una ficha que ya existe: si la deteccion
+          // se equivoco, es mejor enterarse aqui que despues.
+          var comoLoReconoci=rutNormalizado(row.rut)&&rutNormalizado(existente.rut)===rutNormalizado(row.rut)
+            ? "mismo RUT" : "mismo teléfono";
+          if(!confirm("Este cliente ya está en el Indicador:\n\n"
+              +(existente.cliente||"(sin nombre)")+" — "+(existente.comuna||"sin comuna")
+              +"\n(reconocido por "+comoLoReconoci+")\n\n"
+              +"¿Actualizo su ficha en vez de crear uno nuevo?\n\n"
+              +"Se le suman los equipos cotizados y la próxima mantención pasa a "
+              +row.duracion+" meses desde hoy.")){
+            terminar(null);
+            return;
+          }
+          withAppCheckHeader(function(xhrPatch){
+            xhrPatch.open("PATCH", FIREBASE_DB_URL+"/leon_clientes/"+clave+".json?auth="+token, true);
+            xhrPatch.setRequestHeader("Content-Type","application/json");
+            xhrPatch.onreadystatechange=function(){
+              if(xhrPatch.readyState!==4)return;
+              if(xhrPatch.status>=200&&xhrPatch.status<300){
+                terminar("✓ Ficha de "+(existente.cliente||row.cliente)+" actualizada."
+                  +"\n\nCotización N°"+row.nroCotizacion+" agregada a su historial"
+                  +" ("+((patch.cotizaciones||[]).length)+" en total)"
+                  +"\nPróxima mantención a "+row.duracion+" meses"
+                  +"\n"+(patch.equipos||[]).length+" equipo(s) en su ficha");
+              }else{
+                terminar("No se pudo actualizar la ficha. Intenta de nuevo.");
+              }
+            };
+            xhrPatch.onerror=function(){terminar("No se pudo actualizar la ficha. Revisa tu conexión.");};
+            return JSON.stringify(patch);
+          });
+          return;
+        }
+
+        // Cliente nuevo: se crea como siempre.
+        row.cotizaciones=[{nro:row.nroCotizacion,monto:row.montoCotizado,fecha:row.inicia,servicio:row.servicio}];
+        withAppCheckHeader(function(xhr2){
+          xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+row.id+".json?auth="+token, true);
+          xhr2.setRequestHeader("Content-Type","application/json");
+          xhr2.onreadystatechange=function(){
+            if(xhr2.readyState!==4)return;
+            if(xhr2.status>=200&&xhr2.status<300){
+              terminar("✓ "+row.cliente+" agregado al Indicador de Vencimiento."
+                +"\n\nMantención a "+row.duracion+" meses"
+                +(row.equipos.length?("\n"+row.equipos.length+" equipo"+(row.equipos.length>1?"s":"")+" en su ficha"):"")
+                +avisoDatosFaltantes());
+            }else{
+              terminar("No se pudo agregar al Indicador. Intenta de nuevo.");
+            }
+          };
+          xhr2.onerror=function(){terminar("No se pudo agregar al Indicador. Revisa tu conexión.");};
+          return JSON.stringify(row);
+        });
       };
-      xhr2.onerror=function(){btn.disabled=false; btn.textContent=textoOrig; alert("No se pudo agregar al Indicador. Revisa tu conexión.");};
-      return JSON.stringify(row);
+      xhrGet.onerror=function(){terminar("No se pudo consultar el Indicador. Revisa tu conexión.");};
     });
   });
 }
