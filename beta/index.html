@@ -3219,7 +3219,7 @@ function cargarRegDeFirebase(){
           if(cRem>cLoc || (cerradoRem&&!cerradoLoc)) porNro[String(rem.nro)]=rem;
         });
         REG_LIST=Object.keys(porNro).map(function(k){return porNro[k];})
-          .sort(function(a,b){return String(a.fecha||"").localeCompare(String(b.fecha||""));});
+          .sort(function(a,b){return fechaISO(a.fecha).localeCompare(fechaISO(b.fecha));});
         try{localStorage.setItem("reg_list",JSON.stringify(REG_LIST));}catch(e){}
         renderStatsAdmin(); renderSeguimiento();
       };
@@ -3275,11 +3275,34 @@ function registrarCotizacion(P){
 // penso, dia 15 el ultimo antes de darla por perdida.
 var SEG_DIAS=[2,7,15];
 
-function diasEntre(desdeISO, hastaISO){
-  if(!desdeISO)return null;
-  var a=new Date(desdeISO+"T00:00:00"), b=new Date((hastaISO||hoyISO())+"T00:00:00");
-  if(isNaN(a)||isNaN(b))return null;
-  return Math.round((b-a)/86400000);
+// Las cotizaciones guardan la fecha como DD-MM-YYYY -- asi la arma armarPDF
+// para que salga legible en el PDF -- pero todo lo que calcula (dias
+// transcurridos, agrupacion por mes, orden cronologico) necesita ISO.
+// Mezclar los dos formatos hacia dos daños silenciosos: los dias desde el
+// envio salian null, y agrupar por los primeros 7 caracteres partia
+// "03-08-2026" en "03-08-2", o sea agrupaba por DIA creyendo que era el mes.
+//
+// Se normaliza al leer, sin migrar los datos: asi conviven los registros
+// viejos con cualquier formato que venga despues.
+function fechaISO(f){
+  var t=String(f||"").trim();
+  if(!t)return "";
+  if(/^\d{4}-\d{2}-\d{2}/.test(t))return t.slice(0,10);
+  var m=t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+  if(m)return m[3]+"-"+("0"+m[2]).slice(-2)+"-"+("0"+m[1]).slice(-2);
+  return "";
+}
+function mesDe(f){
+  var iso=fechaISO(f);
+  return iso?iso.substring(0,7):"";
+}
+
+function diasEntre(desde, hasta){
+  var a=fechaISO(desde), b=fechaISO(hasta)||hoyISO();
+  if(!a)return null;
+  var da=new Date(a+"T00:00:00"), db=new Date(b+"T00:00:00");
+  if(isNaN(da)||isNaN(db))return null;
+  return Math.round((db-da)/86400000);
 }
 function hoyISO(){
   var d=new Date();
@@ -3548,7 +3571,7 @@ function renderStatsAdmin(){
   // Mes seleccionado (formato YYYY-MM); por defecto el mes actual
   var meses=[];
   REG_LIST.forEach(function(r){
-    var m=(r.fecha||"").substring(0,7);
+    var m=mesDe(r.fecha);
     if(m&&meses.indexOf(m)===-1)meses.push(m);
   });
   meses.sort().reverse();
@@ -3558,7 +3581,7 @@ function renderStatsAdmin(){
   var NOMBRES_MES={"01":"Enero","02":"Febrero","03":"Marzo","04":"Abril","05":"Mayo","06":"Junio","07":"Julio","08":"Agosto","09":"Septiembre","10":"Octubre","11":"Noviembre","12":"Diciembre"};
   function labelMes(m){var p=m.split("-");return (NOMBRES_MES[p[1]]||p[1])+" "+p[0];}
 
-  var delMes=REG_LIST.filter(function(r){return (r.fecha||"").substring(0,7)===selMes;});
+  var delMes=REG_LIST.filter(function(r){return mesDe(r.fecha)===selMes;});
   var nTot=delMes.length;
   var nAcep=delMes.filter(function(r){return r.estado==="Aceptada";}).length;
   var nRech=delMes.filter(function(r){return r.estado==="Rechazada";}).length;
@@ -3593,7 +3616,7 @@ function renderStatsAdmin(){
   if(meses.length>1){
     var porMes={};
     REG_LIST.forEach(function(r){
-      var m=(r.fecha||"").substring(0,7);
+      var m=mesDe(r.fecha);
       if(!m)return;
       if(!porMes[m])porMes[m]={n:0,cerradas:0,monto:0};
       porMes[m].n++;
@@ -3729,6 +3752,56 @@ function renderStatsAdmin(){
         +'<td style="padding:7px 4px;text-align:right;font-weight:700;color:var(--grn)">'+fmt(d.monto)+'</td></tr>';
     });
     html+='</table></div>';
+  }
+
+  // ── Clientes que vuelven ───────────────────────────────────────────────
+  // La pregunta no es cuantos clientes se repiten, sino cuanta plata viene de
+  // gente que ya te conocia. Conseguir un cliente nuevo cuesta publicidad y
+  // tiempo; que vuelva uno viejo cuesta un WhatsApp. Si la mayor parte de la
+  // plata viene de clientes nuevos, el trabajo de postventa esta sin explotar.
+  //
+  // Se identifica al cliente igual que en el resto del sistema: RUT si lo hay,
+  // y si no el telefono. El nombre no sirve, se escribe distinto cada vez.
+  function claveCliente(r){
+    var ru=rutNormalizado(r.rut);
+    if(ru)return "r"+ru;
+    var te=telNormalizado(r.tel);
+    return te?("t"+te):"";
+  }
+
+  // Una cotizacion es "de cliente que vuelve" si ese mismo cliente tiene otra
+  // cotizacion ANTERIOR en el registro completo, no solo dentro del mes.
+  var primeraVez={};
+  REG_LIST.forEach(function(r){
+    var k=claveCliente(r); if(!k)return;
+    var f=fechaISO(r.fecha); if(!f)return;
+    if(!primeraVez[k]||f<primeraVez[k])primeraVez[k]=f;
+  });
+
+  var repN=0, repMonto=0, nueN=0, nueMonto=0, sinIdent=0;
+  delMes.forEach(function(r){
+    var k=claveCliente(r);
+    if(!k){sinIdent++;return;}
+    var f=fechaISO(r.fecha);
+    var vuelve = f && primeraVez[k] && f>primeraVez[k];
+    var monto = (r.estado==="Aceptada") ? (r.total||0) : 0;
+    if(vuelve){repN++;repMonto+=monto;}else{nueN++;nueMonto+=monto;}
+  });
+
+  if(repN||nueN){
+    var totalMonto=repMonto+nueMonto;
+    var pctPlata=totalMonto?Math.round(repMonto/totalMonto*100):0;
+    html+='<div class="gl">Clientes que vuelven</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+      +'<div style="'+box+'"><div style="'+big+';color:var(--acc);font-size:18px">'+fmt(repMonto)+'</div><div style="'+sm+'">De clientes que vuelven ('+repN+')</div></div>'
+      +'<div style="'+box+'"><div style="'+big+';color:var(--txt2);font-size:18px">'+fmt(nueMonto)+'</div><div style="'+sm+'">De clientes nuevos ('+nueN+')</div></div>'
+      +'</div>';
+    if(totalMonto){
+      html+='<div style="font-size:13px;color:var(--txt2);margin-bottom:14px">'
+        +'<b style="color:var(--txt);font-size:15px">'+pctPlata+'%</b> de lo vendido este mes vino de gente que ya te conocía.'
+        +(sinIdent?(' <span style="color:var(--txt3)">('+sinIdent+' cotización'+(sinIdent>1?'es':'')+' sin RUT ni teléfono, no se pueden clasificar)</span>'):'')
+        +'</div>';
+    }
   }
 
   if(topServ.length){
