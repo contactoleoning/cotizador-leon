@@ -305,6 +305,15 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
     <div class="fr"><span class="fl">N° Cotización</span><input type="text" id="nro" readonly style="opacity:0.7;cursor:default;font-weight:600;color:var(--acc)"></div>
     <div class="fr"><span class="fl">Fecha</span><input type="date" id="fecha"></div>
     <div class="fr"><span class="fl">Vendedor</span><input type="text" id="cvendedor" placeholder="Nombre del vendedor" oninput="localStorage.setItem('vendedor_nombre',this.value)"></div>
+    <div class="fr"><span class="fl">¿Cómo llegó?</span><select id="ccanal">
+      <option value="">— sin registrar —</option>
+      <option>Instagram</option>
+      <option>Referido</option>
+      <option>WhatsApp directo</option>
+      <option>Llamada</option>
+      <option>Cliente que vuelve</option>
+      <option>Otro</option>
+    </select></div>
     <div class="fr"><span class="fl">RUT Cliente</span><input type="text" id="crut" placeholder="12.345.678-9" oninput="checkRut(this)"></div>
     <div id="rut-msg" style="font-size:12px;margin:-8px 0 8px 0;display:none"></div>
     <div class="fr"><span class="fl">Tipo Cliente</span><div style="display:flex;gap:6px;flex:1">
@@ -1985,6 +1994,7 @@ function construirRowIndicador(){
       aviso:false,
       nroCotizacion:nro,
       montoCotizado:totales.tot,
+      canal:(document.getElementById("ccanal")||{value:""}).value||"",
       obs:"Generado desde cotización N°"+nro+" — total "+fmt(totales.tot)
   };
 }
@@ -3233,6 +3243,7 @@ function registrarCotizacion(P){
     nro:P.nro, fecha:P.fecha, nombre:P.nombre||"", total:P.tot, serv:servicios,
     estado:"Pendiente",
     tel:P.tel||"", comuna:P.comuna||"", rut:P.rut||"",
+    canal:(document.getElementById("ccanal")||{value:""}).value||"",
     contactos:[]
   });
   saveRegList();
@@ -3636,6 +3647,42 @@ function renderStatsAdmin(){
       +'<div style="'+box+'"><div style="'+big+';color:var(--grn)">'+tConSeg+'%</div><div style="'+sm+'">Con seguimiento ('+conSeg.length+')</div></div>'
       +'<div style="'+box+'"><div style="'+big+';color:var(--txt2)">'+tSinSeg+'%</div><div style="'+sm+'">Sin seguimiento ('+sinSeg.length+')</div></div>'
       +'</div>';
+  }
+
+  // ── De donde viene la plata ────────────────────────────────────────────
+  // No basta con saber por que canal llegan mas: llegan muchos por un lado y
+  // compran los del otro. Por eso se muestran las tres cifras juntas --
+  // cuantos llegaron, cuantos cerraron y cuanta plata dejaron -- en vez de
+  // solo el conteo, que es la metrica que hace poner plata donde no rinde.
+  var porCanal={};
+  delMes.forEach(function(r){
+    var c=(r.canal||"").trim()||"Sin registrar";
+    if(!porCanal[c])porCanal[c]={n:0,cerradas:0,monto:0};
+    porCanal[c].n++;
+    if(r.estado==="Aceptada"){porCanal[c].cerradas++;porCanal[c].monto+=(r.total||0);}
+  });
+  var canales=Object.keys(porCanal).sort(function(a,b){return porCanal[b].monto-porCanal[a].monto;});
+  // Si lo unico que hay es "Sin registrar", la seccion no aporta nada todavia.
+  var hayCanalReal=canales.some(function(c){return c!=="Sin registrar";});
+  if(hayCanalReal){
+    html+='<div class="gl">De dónde viene la plata</div>'
+      +'<div class="scroll-x" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:14px">'
+      +'<tr style="color:var(--txt3);font-size:11px;text-transform:uppercase;letter-spacing:.05em">'
+      +'<th style="text-align:left;padding:6px 4px">Canal</th>'
+      +'<th style="text-align:right;padding:6px 4px">Cotiz.</th>'
+      +'<th style="text-align:right;padding:6px 4px">Cierre</th>'
+      +'<th style="text-align:right;padding:6px 4px">Vendido</th></tr>';
+    canales.forEach(function(c){
+      var d=porCanal[c];
+      var pct=d.n?Math.round(d.cerradas/d.n*100):0;
+      var apagado=(c==="Sin registrar");
+      html+='<tr style="border-top:1px solid var(--brd)'+(apagado?';opacity:.55':'')+'">'
+        +'<td style="padding:7px 4px;color:var(--txt)">'+esc(c)+'</td>'
+        +'<td style="padding:7px 4px;text-align:right;color:var(--txt2)">'+d.n+'</td>'
+        +'<td style="padding:7px 4px;text-align:right;color:'+(pct>=50?'var(--grn)':'var(--txt2)')+'">'+pct+'%</td>'
+        +'<td style="padding:7px 4px;text-align:right;font-weight:700;color:var(--grn)">'+fmt(d.monto)+'</td></tr>';
+    });
+    html+='</table></div>';
   }
 
   if(topServ.length){
