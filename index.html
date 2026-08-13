@@ -3207,7 +3207,7 @@ function cargarRegDeFirebase(){
           if(cRem>cLoc || (cerradoRem&&!cerradoLoc)) porNro[String(rem.nro)]=rem;
         });
         REG_LIST=Object.keys(porNro).map(function(k){return porNro[k];})
-          .sort(function(a,b){return String(a.fecha||"").localeCompare(String(b.fecha||""));});
+          .sort(function(a,b){return fechaISO(a.fecha).localeCompare(fechaISO(b.fecha));});
         try{localStorage.setItem("reg_list",JSON.stringify(REG_LIST));}catch(e){}
         renderStatsAdmin(); renderSeguimiento();
       };
@@ -3263,11 +3263,34 @@ function registrarCotizacion(P){
 // penso, dia 15 el ultimo antes de darla por perdida.
 var SEG_DIAS=[2,7,15];
 
-function diasEntre(desdeISO, hastaISO){
-  if(!desdeISO)return null;
-  var a=new Date(desdeISO+"T00:00:00"), b=new Date((hastaISO||hoyISO())+"T00:00:00");
-  if(isNaN(a)||isNaN(b))return null;
-  return Math.round((b-a)/86400000);
+// Las cotizaciones guardan la fecha como DD-MM-YYYY -- asi la arma armarPDF
+// para que salga legible en el PDF -- pero todo lo que calcula (dias
+// transcurridos, agrupacion por mes, orden cronologico) necesita ISO.
+// Mezclar los dos formatos hacia dos daños silenciosos: los dias desde el
+// envio salian null, y agrupar por los primeros 7 caracteres partia
+// "03-08-2026" en "03-08-2", o sea agrupaba por DIA creyendo que era el mes.
+//
+// Se normaliza al leer, sin migrar los datos: asi conviven los registros
+// viejos con cualquier formato que venga despues.
+function fechaISO(f){
+  var t=String(f||"").trim();
+  if(!t)return "";
+  if(/^\d{4}-\d{2}-\d{2}/.test(t))return t.slice(0,10);
+  var m=t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+  if(m)return m[3]+"-"+("0"+m[2]).slice(-2)+"-"+("0"+m[1]).slice(-2);
+  return "";
+}
+function mesDe(f){
+  var iso=fechaISO(f);
+  return iso?iso.substring(0,7):"";
+}
+
+function diasEntre(desde, hasta){
+  var a=fechaISO(desde), b=fechaISO(hasta)||hoyISO();
+  if(!a)return null;
+  var da=new Date(a+"T00:00:00"), db=new Date(b+"T00:00:00");
+  if(isNaN(da)||isNaN(db))return null;
+  return Math.round((db-da)/86400000);
 }
 function hoyISO(){
   var d=new Date();
@@ -3536,7 +3559,7 @@ function renderStatsAdmin(){
   // Mes seleccionado (formato YYYY-MM); por defecto el mes actual
   var meses=[];
   REG_LIST.forEach(function(r){
-    var m=(r.fecha||"").substring(0,7);
+    var m=mesDe(r.fecha);
     if(m&&meses.indexOf(m)===-1)meses.push(m);
   });
   meses.sort().reverse();
@@ -3546,7 +3569,7 @@ function renderStatsAdmin(){
   var NOMBRES_MES={"01":"Enero","02":"Febrero","03":"Marzo","04":"Abril","05":"Mayo","06":"Junio","07":"Julio","08":"Agosto","09":"Septiembre","10":"Octubre","11":"Noviembre","12":"Diciembre"};
   function labelMes(m){var p=m.split("-");return (NOMBRES_MES[p[1]]||p[1])+" "+p[0];}
 
-  var delMes=REG_LIST.filter(function(r){return (r.fecha||"").substring(0,7)===selMes;});
+  var delMes=REG_LIST.filter(function(r){return mesDe(r.fecha)===selMes;});
   var nTot=delMes.length;
   var nAcep=delMes.filter(function(r){return r.estado==="Aceptada";}).length;
   var nRech=delMes.filter(function(r){return r.estado==="Rechazada";}).length;
@@ -3573,7 +3596,41 @@ function renderStatsAdmin(){
   var big='font-size:22px;font-weight:800';
   var sm='font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:600;margin-top:3px';
 
-  var html=selHtml
+  // ── Tendencia mes a mes ────────────────────────────────────────────────
+  // El resto del panel mira un mes a la vez, que sirve para revisar pero no
+  // para ver si vas mejorando. Esto pone los meses uno debajo del otro, del
+  // mas antiguo al mas nuevo, para que la direccion se lea de una.
+  var tendencia="";
+  if(meses.length>1){
+    var porMes={};
+    REG_LIST.forEach(function(r){
+      var m=mesDe(r.fecha);
+      if(!m)return;
+      if(!porMes[m])porMes[m]={n:0,cerradas:0,monto:0};
+      porMes[m].n++;
+      if(r.estado==="Aceptada"){porMes[m].cerradas++;porMes[m].monto+=(r.total||0);}
+    });
+    var orden=Object.keys(porMes).sort();          // ascendente: el tiempo avanza hacia abajo
+    var maxMonto=Math.max.apply(null,orden.map(function(m){return porMes[m].monto;}))||1;
+    tendencia='<div class="gl">Mes a mes</div><div style="margin-bottom:16px">';
+    orden.forEach(function(m){
+      var d=porMes[m];
+      var pct=d.n?Math.round(d.cerradas/d.n*100):0;
+      var ancho=Math.round(d.monto/maxMonto*100);
+      tendencia+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:13px">'
+        +'<div style="flex:0 0 92px;color:var(--txt2)">'+labelMes(m)+'</div>'
+        +'<div style="flex:0 0 62px;text-align:right;color:var(--txt3)">'+d.n+' cotiz.</div>'
+        +'<div style="flex:0 0 46px;text-align:right;color:'+(pct>=50?'var(--grn)':'var(--txt2)')+'">'+pct+'%</div>'
+        +'<div style="flex:1;min-width:40px;height:10px;background:var(--bg3);border-radius:20px;overflow:hidden">'
+          +'<div style="width:'+ancho+'%;height:100%;background:var(--grn);border-radius:20px"></div></div>'
+        +'<div style="flex:0 0 96px;text-align:right;font-weight:700;color:var(--txt)">'+fmt(d.monto)+'</div>'
+        +'</div>';
+    });
+    tendencia+='<div style="font-size:11.5px;color:var(--txt3);margin-top:6px">'
+      +'cotizaciones · tasa de cierre · vendido</div></div>';
+  }
+
+  var html=tendencia+selHtml
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
     +'<div style="'+box+'"><div style="'+big+';color:var(--txt)">'+nTot+'</div><div style="'+sm+'">Cotizaciones</div></div>'
     +'<div style="'+box+'"><div style="'+big+';color:var(--acc)">'+tasa+'%</div><div style="'+sm+'">Tasa de cierre</div></div>'
