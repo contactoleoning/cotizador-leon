@@ -3573,7 +3573,41 @@ function renderStatsAdmin(){
   var big='font-size:22px;font-weight:800';
   var sm='font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:600;margin-top:3px';
 
-  var html=selHtml
+  // ── Tendencia mes a mes ────────────────────────────────────────────────
+  // El resto del panel mira un mes a la vez, que sirve para revisar pero no
+  // para ver si vas mejorando. Esto pone los meses uno debajo del otro, del
+  // mas antiguo al mas nuevo, para que la direccion se lea de una.
+  var tendencia="";
+  if(meses.length>1){
+    var porMes={};
+    REG_LIST.forEach(function(r){
+      var m=(r.fecha||"").substring(0,7);
+      if(!m)return;
+      if(!porMes[m])porMes[m]={n:0,cerradas:0,monto:0};
+      porMes[m].n++;
+      if(r.estado==="Aceptada"){porMes[m].cerradas++;porMes[m].monto+=(r.total||0);}
+    });
+    var orden=Object.keys(porMes).sort();          // ascendente: el tiempo avanza hacia abajo
+    var maxMonto=Math.max.apply(null,orden.map(function(m){return porMes[m].monto;}))||1;
+    tendencia='<div class="gl">Mes a mes</div><div style="margin-bottom:16px">';
+    orden.forEach(function(m){
+      var d=porMes[m];
+      var pct=d.n?Math.round(d.cerradas/d.n*100):0;
+      var ancho=Math.round(d.monto/maxMonto*100);
+      tendencia+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:13px">'
+        +'<div style="flex:0 0 92px;color:var(--txt2)">'+labelMes(m)+'</div>'
+        +'<div style="flex:0 0 62px;text-align:right;color:var(--txt3)">'+d.n+' cotiz.</div>'
+        +'<div style="flex:0 0 46px;text-align:right;color:'+(pct>=50?'var(--grn)':'var(--txt2)')+'">'+pct+'%</div>'
+        +'<div style="flex:1;min-width:40px;height:10px;background:var(--bg3);border-radius:20px;overflow:hidden">'
+          +'<div style="width:'+ancho+'%;height:100%;background:var(--grn);border-radius:20px"></div></div>'
+        +'<div style="flex:0 0 96px;text-align:right;font-weight:700;color:var(--txt)">'+fmt(d.monto)+'</div>'
+        +'</div>';
+    });
+    tendencia+='<div style="font-size:11.5px;color:var(--txt3);margin-top:6px">'
+      +'cotizaciones · tasa de cierre · vendido</div></div>';
+  }
+
+  var html=tendencia+selHtml
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
     +'<div style="'+box+'"><div style="'+big+';color:var(--txt)">'+nTot+'</div><div style="'+sm+'">Cotizaciones</div></div>'
     +'<div style="'+box+'"><div style="'+big+';color:var(--acc)">'+tasa+'%</div><div style="'+sm+'">Tasa de cierre</div></div>'
