@@ -3410,6 +3410,69 @@ function renderStatsAdmin(){
     +'<div style="'+box+'"><div style="font-size:17px;font-weight:800;color:#e74c3c">'+nRech+'</div><div style="'+sm+'">Rechazadas</div></div>'
     +'</div>';
 
+  // ── Lo que la tasa de cierre sola no dice ──────────────────────────────
+  // Tres preguntas que antes no se podian responder con estos datos:
+  // cuanto vale un cierre, cuanto se demora, y por que se pierden los que se
+  // pierden. El motivo se empezo a pedir al marcar una cotizacion como
+  // perdida; sin el, "rechazada" no dice nada accionable.
+  var aceptadas=delMes.filter(function(r){return r.estado==="Aceptada";});
+  var ticket=nAcep?Math.round(totCerrado/nAcep):0;
+
+  var conCierre=aceptadas.filter(function(r){return r.fecha&&r.fechaCierre;});
+  var diasCierre=conCierre.length
+    ? Math.round(conCierre.reduce(function(a,r){return a+(diasEntre(r.fecha,r.fechaCierre)||0);},0)/conCierre.length)
+    : null;
+
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<div style="'+box+'"><div style="'+big+';color:var(--txt);font-size:18px">'+(nAcep?fmt(ticket):"—")+'</div><div style="'+sm+'">Ticket promedio</div></div>'
+    +'<div style="'+box+'"><div style="'+big+';color:var(--txt);font-size:18px">'+(diasCierre!=null?(diasCierre+" d"):"—")+'</div><div style="'+sm+'">Demora en cerrar</div></div>'
+    +'</div>';
+
+  // Por que se pierden. Solo aparece si hay motivos registrados: antes de que
+  // se empezara a pedir, las rechazadas no tienen ninguno y una seccion vacia
+  // solo estorba.
+  var rechazadas=delMes.filter(function(r){return r.estado==="Rechazada";});
+  var motivos={};
+  rechazadas.forEach(function(r){
+    var m=(r.motivo||"").trim();
+    if(!m)return;
+    motivos[m]=(motivos[m]||0)+1;
+  });
+  var listaMotivos=Object.keys(motivos).sort(function(a,b){return motivos[b]-motivos[a];});
+  if(listaMotivos.length){
+    var totalConMotivo=listaMotivos.reduce(function(a,m){return a+motivos[m];},0);
+    html+='<div class="gl">Por qué se pierden</div><div style="padding:6px 0 14px 0">';
+    listaMotivos.forEach(function(m){
+      var pct=Math.round(motivos[m]/totalConMotivo*100);
+      html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
+        +'<div style="flex:0 0 120px;font-size:13.5px;color:var(--txt)">'+esc(m)+'</div>'
+        +'<div style="flex:1;height:8px;background:var(--bg3);border-radius:20px;overflow:hidden">'
+        +'<div style="width:'+pct+'%;height:100%;background:#e07a5f"></div></div>'
+        +'<div style="flex:0 0 54px;text-align:right;font-size:13px;color:var(--txt2)">'+motivos[m]+' ('+pct+'%)</div>'
+        +'</div>';
+    });
+    html+='</div>';
+  }
+
+  // Efecto del seguimiento: la pregunta que justifica todo el trabajo de
+  // perseguir cotizaciones. Compara las que recibieron al menos un contacto
+  // contra las que nunca se persiguieron.
+  var cerradasOPerdidas=delMes.filter(function(r){return r.estado==="Aceptada"||r.estado==="Rechazada";});
+  var conSeg=cerradasOPerdidas.filter(function(r){return (r.contactos||[]).length>0;});
+  var sinSeg=cerradasOPerdidas.filter(function(r){return !(r.contactos||[]).length;});
+  function tasaDe(lista){
+    if(!lista.length)return null;
+    return Math.round(lista.filter(function(r){return r.estado==="Aceptada";}).length/lista.length*100);
+  }
+  var tConSeg=tasaDe(conSeg), tSinSeg=tasaDe(sinSeg);
+  if(tConSeg!==null&&tSinSeg!==null){
+    html+='<div class="gl">Efecto del seguimiento</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+      +'<div style="'+box+'"><div style="'+big+';color:var(--grn)">'+tConSeg+'%</div><div style="'+sm+'">Con seguimiento ('+conSeg.length+')</div></div>'
+      +'<div style="'+box+'"><div style="'+big+';color:var(--txt2)">'+tSinSeg+'%</div><div style="'+sm+'">Sin seguimiento ('+sinSeg.length+')</div></div>'
+      +'</div>';
+  }
+
   if(topServ.length){
     html+='<div class="gl">Servicios más vendidos</div><div style="padding:6px 0 14px 0;font-size:14px;color:var(--txt2);line-height:1.9">';
     topServ.forEach(function(s,i){
