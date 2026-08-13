@@ -2995,8 +2995,20 @@ function loadCloudData(){
     }
     // registro de cotizaciones (estadísticas)
     if(rec.reg_list&&rec.reg_list.length){
-      var locales=REG_LIST.filter(function(l){return !rec.reg_list.find(function(r){return String(r.nro)===String(l.nro);});});
-      REG_LIST=rec.reg_list.concat(locales).filter(function(r){return REG_DELETED.indexOf(String(r.nro))===-1;});
+      // Antes esto tomaba la version del Apps Script como base y solo sumaba
+      // lo local que no existiera alla. Con Firebase escribiendo en paralelo
+      // eso borraba marcas: si el Apps Script contestaba despues de la
+      // fusion con Firebase, devolvia la cotizacion como pendiente y se
+      // perdia el cierre hecho desde otro equipo.
+      var porNro={};
+      REG_LIST.forEach(function(r){ if(r&&r.nro!=null)porNro[String(r.nro)]=r; });
+      rec.reg_list.forEach(function(r){
+        if(!r||r.nro==null)return;
+        var k=String(r.nro);
+        porNro[k]=mejorRegistro(porNro[k], r);
+      });
+      REG_LIST=Object.keys(porNro).map(function(k){return porNro[k];})
+        .filter(function(r){return REG_DELETED.indexOf(String(r.nro))===-1;});
       try{localStorage.setItem("reg_list",JSON.stringify(REG_LIST));}catch(e){}
       renderStatsAdmin();
     }
@@ -3137,6 +3149,27 @@ function loadRegList(){
 // cotizador sigue trabajando exactamente como antes.
 var REG_FB_LISTO=false;
 
+// Cual de dos versiones del mismo registro conservar. Gana la que tenga mas
+// informacion de seguimiento: mas contactos anotados, o un estado ya cerrado.
+// Es la misma regla en las dos fusiones -- la de Firebase y la del Apps
+// Script -- porque si cada una decidiera distinto, cual gana dependeria del
+// orden en que responde la red.
+function mejorRegistro(a, b){
+  if(!a)return b;
+  if(!b)return a;
+  // El estado manda sobre el conteo de contactos. Perder un contacto anotado
+  // descuadra la cadencia un poco; perder un "cerro" hace que le sigas
+  // escribiendo a alguien que ya te compro, que es mucho peor.
+  var cerradoA=a.estado&&a.estado!=="Pendiente";
+  var cerradoB=b.estado&&b.estado!=="Pendiente";
+  if(cerradoA!==cerradoB)return cerradoA?a:b;
+  var ca=(a.contactos||[]).length, cb=(b.contactos||[]).length;
+  if(ca!==cb)return ca>cb?a:b;
+  // A igualdad, gana el que tenga telefono: es lo que hace accionable la ficha.
+  if(!!a.tel!==!!b.tel)return a.tel?a:b;
+  return a;
+}
+
 function regPorNro(){
   var mapa={};
   REG_LIST.forEach(function(r){
@@ -3213,10 +3246,7 @@ function cargarRegDeFirebase(){
           if(REG_DELETED.indexOf(String(rem.nro))!==-1)return;   // borrada aca a proposito
           var loc=porNro[String(rem.nro)];
           if(!loc){ porNro[String(rem.nro)]=rem; return; }
-          var cRem=(rem.contactos||[]).length, cLoc=(loc.contactos||[]).length;
-          var cerradoRem=rem.estado&&rem.estado!=="Pendiente";
-          var cerradoLoc=loc.estado&&loc.estado!=="Pendiente";
-          if(cRem>cLoc || (cerradoRem&&!cerradoLoc)) porNro[String(rem.nro)]=rem;
+          porNro[String(rem.nro)]=mejorRegistro(loc, rem);
         });
         REG_LIST=Object.keys(porNro).map(function(k){return porNro[k];})
           .sort(function(a,b){return fechaISO(a.fecha).localeCompare(fechaISO(b.fecha));});
@@ -3463,16 +3493,20 @@ function completarDesdeHistorial(faltan, listo){
 }
 
 function completarTelefonos(){
-  var faltan=REG_LIST.filter(function(r){return !r.tel;});
-  if(!faltan.length){alert("Todas las cotizaciones ya tienen teléfono.");return;}
+  // Se traen también los RUT: el Indicador los necesita para completar sus
+  // fichas, y el historial los tiene aunque la columna de teléfono esté rota.
+  var faltan=REG_LIST.filter(function(r){return !r.tel||!r.rut;});
+  if(!faltan.length){alert("Todas las cotizaciones ya tienen teléfono y RUT.");return;}
 
   completarDesdeHistorial(faltan, function(delHistorial){
+    var conRut=REG_LIST.filter(function(r){return !!r.rut;}).length;
     var siguenFaltando=REG_LIST.filter(function(r){return !r.tel;});
     if(!siguenFaltando.length){
-      if(delHistorial)saveRegList();
+      saveRegList();
       renderSeguimiento();
-      alert("Teléfonos recuperados del historial de cotizaciones:\n\n"
-        +"✓ "+delHistorial+(delHistorial===1?" cotización quedó":" cotizaciones quedaron")+" con teléfono\n\n"
+      alert("Datos recuperados del historial de cotizaciones:\n\n"
+        +"✓ "+delHistorial+(delHistorial===1?" cotización quedó":" cotizaciones quedaron")+" con teléfono\n"
+        +"✓ "+conRut+" con RUT (los usa el Indicador para completar sus fichas)\n\n"
         +"Todas las pendientes tienen teléfono.");
       return;
     }
@@ -3518,9 +3552,11 @@ function completarDesdeIndicador(faltan, delHistorial){
 
         if(completados||delHistorial)saveRegList();
         renderSeguimiento();
-        alert("Teléfonos recuperados:\n\n"
-          +"✓ "+delHistorial+" del historial de cotizaciones (dato exacto)\n"
-          +"✓ "+completados+" del Indicador, por coincidencia de nombre\n"
+        var conRutFinal=REG_LIST.filter(function(r){return !!r.rut;}).length;
+        alert("Datos recuperados:\n\n"
+          +"✓ "+delHistorial+" teléfonos del historial (dato exacto)\n"
+          +"✓ "+completados+" teléfonos del Indicador, por coincidencia de nombre\n"
+          +"✓ "+conRutFinal+" cotizaciones con RUT — ahora el Indicador puede completar sus fichas\n"
           +(ambiguosN?("• "+ambiguosN+" con nombre repetido en el Indicador — se dejaron en blanco a propósito\n"):"")
           +(sinMatch?("• "+sinMatch+" sin cliente equivalente\n"):"")
           +"\nLas que quedaron sin teléfono se pueden completar reabriendo la cotización.");
@@ -3567,14 +3603,15 @@ function renderSeguimiento(){
   }
 
   var sinTel=pendientes.filter(function(x){return !x.r.tel;}).length;
+  var sinRut=REG_LIST.filter(function(r){return !r.rut;}).length;
   var resumen='<div class="seg-resumen">'
     +'<span><b>'+tocan+'</b> por contactar hoy</span>'
     +'<span><b>'+pendientes.length+'</b> esperando respuesta</span>'
     +'<span><b>'+fmt(montoEnJuego)+'</b> en juego</span>'
     +'</div>'
-    +(sinTel?('<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
-      +'<span>'+sinTel+' sin teléfono guardado.</span>'
-      +'<button class="seg-btn" onclick="completarTelefonos()">Buscarlos en el Indicador</button>'
+    +((sinTel||sinRut)?('<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+      +'<span>'+[sinTel?(sinTel+' sin teléfono'):'', sinRut?(sinRut+' sin RUT'):''].filter(Boolean).join(' · ')+'.</span>'
+      +'<button class="seg-btn" onclick="completarTelefonos()">Completar desde el historial</button>'
       +'</div>'):'');
 
   cont.innerHTML=resumen+pendientes.map(function(x){
