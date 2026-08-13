@@ -255,6 +255,14 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
   <div class="btnrow" id="actbtns" style="display:none;flex-direction:column">
     <button class="btn bwa" id="btnwa" style="background:#25d366;color:#073b22">📲 Enviar PDF por WhatsApp</button>
     <button class="btn bpdf" id="btnpdf">📄 Generar PDF Formal</button>
+    <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:2px">
+      <span style="font-size:14px;color:var(--txt2)">Próxima mantención en</span>
+      <select id="ind-duracion" style="background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:7px 8px;font-size:14px">
+        <option value="4">4 meses</option>
+        <option value="6" selected>6 meses</option>
+        <option value="12">12 meses</option>
+      </select>
+    </div>
     <button class="btn" id="btnindicador" style="background:#3b6ea5;color:#fff">📅 Agregar a Indicador de Vencimiento</button>
     <button class="btn" id="btnnuevacot" style="background:transparent;border:2px solid var(--brd2);color:var(--txt2)">🆕 Iniciar Cotización Nueva (siguiente N°)</button>
   </div>
@@ -1171,8 +1179,13 @@ function agregar(){
   if(!selProd)return;
   var cant=parseInt(document.getElementById("cantequipo").value)||1;
   var neto=pvN(selProd);
+  // Se guardan marca, modelo y btu por separado ademas de armados dentro de
+  // desc: el Indicador los necesita en campos distintos para la ficha de
+  // equipos del cliente, y sacarlos de vuelta partiendo el texto de desc es
+  // fragil (hay modelos con espacios).
   carrito.push({id:selProd.id+"_"+Date.now(),cod:selProd.id,
     desc:selProd.marca+" "+selProd.modelo+" "+selProd.btu+".000 BTU",
+    marca:selProd.marca,modelo:selProd.modelo,btu:selProd.btu,esEquipo:true,
     tipo:selProd.tipo,neto:neto,total:wIVA(neto),esCyber:false,disc:0,cant:cant});
   selProd=null;
   document.querySelectorAll(".pc").forEach(function(c){c.classList.remove("sel");});
@@ -1841,15 +1854,78 @@ function cargarExtremosCotizaciones(){
   xhr.send();
 }
 
-function enviarAIndicador(){
-  if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
+// Arma el registro que se manda al Indicador. Esta separado del envio a
+// proposito: asi se puede revisar exactamente que se va a escribir --
+// construirRowIndicador() en la consola -- sin tocar la base de clientes.
+function construirRowIndicador(){
   var nombre=document.getElementById("cnombre").value.trim();
-  if(!nombre){alert("Ingresa el nombre del cliente (campo Contacto o Nombre/Empresa) antes de enviarlo al Indicador.");return;}
   var comuna=document.getElementById("ccom").value.trim();
   var servicio=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"Instalación";
+
+  // El telefono se guarda como lo guarda el Indicador: solo digitos, y para
+  // los moviles solo los 8 ultimos, porque alla el enlace se arma como
+  // "tel:+569" + telefono. Si mandaramos 56912345678 quedaria +56956912345678.
+  var telPre=(document.getElementById("ctel-pre")||{value:"+569"}).value;
+  var telDigitos=(document.getElementById("ctel-num").value||"").replace(/\D/g,"");
+  var esFijo=telPre.indexOf("+569")!==0;
+  var telefono=telDigitos ? (esFijo ? (telPre+telDigitos).replace(/\D/g,"") : telDigitos.slice(-8)) : "";
+
+  var rut=(document.getElementById("crut").value||"").trim();
+  var direccion=(document.getElementById("cdir").value||"").trim();
+  var duracion=parseInt((document.getElementById("ind-duracion")||{value:"6"}).value,10)||6;
+  var totales=totalesCarrito();
+
+  // Los equipos cotizados pasan a la ficha del cliente. Una cotizacion de 3
+  // equipos genera 3 filas, no una: en terreno hay que saber cual equipo esta
+  // en que pieza. La ubicacion se deja vacia para que se complete en la visita.
+  var equipos=[];
+  carrito.forEach(function(p){
+    if(!p.esEquipo)return;
+    for(var i=0;i<(p.cant||1);i++){
+      equipos.push({marca:p.marca||"",modelo:p.modelo||"",btu:String(p.btu||""),ubicacion:""});
+    }
+  });
+
   var hoy=new Date();
   var inicia=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
   var nro=document.getElementById("nro").value.trim();
+
+  // Id por timestamp en vez de leer el maximo actual y sumar 1: ese patron
+  // (leer todos los ids, calcular max+1, escribir) puede pisarse si el
+  // Indicador u otra cotizacion crea un cliente casi al mismo tiempo.
+  //
+  // Antes aqui solo viajaban nombre, comuna, servicio y una duracion fija de
+  // 6 meses. El resultado era un cliente sin telefono -- o sea, sin boton de
+  // WhatsApp en el Indicador, imposible de contactar sin ir a buscar la
+  // cotizacion a mano -- y sin RUT, monto ni equipos. Justo los datos que
+  // acabamos de pedirle al cliente por telefono.
+  return {
+      id:Date.now(),
+      cliente:nombre,
+      lugar:"",
+      comuna:comuna,
+      direccion:direccion,
+      telefono:telefono,
+      telefonoFijo:esFijo && !!telefono,
+      rut:rut,
+      servicio:servicio,
+      inicia:inicia,
+      duracion:duracion,
+      equipos:equipos,
+      aviso:false,
+      nroCotizacion:nro,
+      montoCotizado:totales.tot,
+      obs:"Generado desde cotización N°"+nro+" — total "+fmt(totales.tot)
+  };
+}
+
+function enviarAIndicador(){
+  if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
+  if(!document.getElementById("cnombre").value.trim()){
+    alert("Ingresa el nombre del cliente (campo Contacto o Nombre/Empresa) antes de enviarlo al Indicador.");
+    return;
+  }
+  var row=construirRowIndicador();
   var btn=document.getElementById("btnindicador");
   var textoOrig=btn.textContent;
   btn.disabled=true; btn.textContent="Enviando...";
@@ -1860,20 +1936,21 @@ function enviarAIndicador(){
       alert("No se pudo autenticar con el Indicador. Intenta de nuevo.");
       return;
     }
-    // Id por timestamp en vez de leer el maximo actual y sumar 1: ese
-    // patron (leer todos los ids, calcular max+1, escribir) puede pisarse
-    // si el Indicador u otra cotizacion crea un cliente casi al mismo
-    // tiempo -- mismo problema que ya se corrigio del lado del Indicador.
-    var newId=Date.now();
-    var row={id:newId,cliente:nombre,lugar:"",comuna:comuna,servicio:servicio,inicia:inicia,duracion:6,aviso:false,obs:"Generado desde cotización N°"+nro};
     withAppCheckHeader(function(xhr2){
-      xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+newId+".json?auth="+token, true);
+      xhr2.open("PUT", FIREBASE_DB_URL+"/leon_clientes/c"+row.id+".json?auth="+token, true);
       xhr2.setRequestHeader("Content-Type","application/json");
       xhr2.onreadystatechange=function(){
         if(xhr2.readyState===4){
           btn.disabled=false; btn.textContent=textoOrig;
           if(xhr2.status>=200&&xhr2.status<300){
-            alert("✓ "+nombre+" agregado al Indicador de Vencimiento (6 meses por defecto, editable allá).");
+            var faltan=[];
+            if(!row.telefono)faltan.push("teléfono");
+            if(!row.rut)faltan.push("RUT");
+            if(!row.direccion)faltan.push("dirección");
+            alert("✓ "+row.cliente+" agregado al Indicador de Vencimiento."
+              +"\n\nMantención a "+row.duracion+" meses"
+              +(row.equipos.length?("\n"+row.equipos.length+" equipo"+(row.equipos.length>1?"s":"")+" en su ficha"):"")
+              +(faltan.length?("\n\nQuedó sin "+faltan.join(", ")+". Se puede completar en el Indicador."):""));
           }else{
             alert("No se pudo agregar al Indicador. Intenta de nuevo.");
           }
@@ -1961,14 +2038,24 @@ function checkRut(input){
 }
 function changeItemDisc(i,val){carrito[i].disc=Math.min(100,Math.max(0,parseInt(val)||0));renderCarrito();}
 
+// Los totales se calculaban aqui adentro, asi que solo existian mientras se
+// dibujaba el carrito. Ahora viven aparte para que otras partes -- el envio
+// al Indicador, por ejemplo -- puedan preguntar cuanto vale la cotizacion sin
+// tener que volver a dibujar nada ni repetir la formula.
+function totalesCarrito(){
+  var cyberPct=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
+  var sN=carrito.reduce(function(a,b){var d=b.disc||0;return a+(b.neto*(b.cant||1)*(1-d/100));},0);
+  var dM=cyberPct>0?Math.round(sN*cyberPct/100):0;
+  var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva;
+  return {cyberPct:cyberPct,sN:sN,dM:dM,nD:nD,iva:iva,tot:tot,totTC:Math.round(tot*1.035)};
+}
+
 function renderCarrito(){
   var cc=document.getElementById("cartcard"),ab=document.getElementById("actbtns");
   if(!carrito.length){cc.style.display="none";ab.style.display="none";return;}
   cc.style.display="block";ab.style.display="flex";
-  var cyberPct=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
-  var sN=carrito.reduce(function(a,b){var d=b.disc||0;return a+(b.neto*(b.cant||1)*(1-d/100));},0);
-  var dM=cyberPct>0?Math.round(sN*cyberPct/100):0;
-  var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
+  var t=totalesCarrito();
+  var cyberPct=t.cyberPct,sN=t.sN,dM=t.dM,nD=t.nD,iva=t.iva,tot=t.tot,totTC=t.totTC;
   document.getElementById("cartlista").innerHTML=carrito.map(function(p,i){
     var cant=p.cant||1;
     var disc=p.disc||0;
