@@ -3102,10 +3102,115 @@ function loadRegList(){
   try{var s=localStorage.getItem("reg_list");if(s){REG_LIST=JSON.parse(s);}}catch(e){REG_LIST=[];}
   try{var d=localStorage.getItem("reg_deleted");if(d){REG_DELETED=JSON.parse(d);}}catch(e){REG_DELETED=[];}
 }
+// ═══════════════════════════════════════
+// REGISTRO DE COTIZACIONES EN FIREBASE
+// ═══════════════════════════════════════
+// Hasta aqui el registro vivia solo en localStorage y en el Apps Script. Eso
+// dejaba el seguimiento fuera de las reglas de seguridad y fuera del respaldo
+// diario -- justo los datos que dicen cuanta plata hay en juego y a quien hay
+// que llamar hoy.
+//
+// El Apps Script se mantiene funcionando en paralelo a proposito. No se corta
+// uno hasta que el otro este probado con datos reales; si Firebase falla, el
+// cotizador sigue trabajando exactamente como antes.
+var REG_FB_LISTO=false;
+
+function regPorNro(){
+  var mapa={};
+  REG_LIST.forEach(function(r){
+    if(r&&r.nro!=null)mapa["n"+String(r.nro)]=r;
+  });
+  return mapa;
+}
+
+// Se escribe el mapa completo con PATCH en vez de registro por registro:
+// PATCH fusiona por clave, asi que no borra lo que otro equipo haya agregado
+// mientras tanto. La lista esta topada en 500 y cada registro es minusculo.
+function guardarRegEnFirebase(){
+  if(!REG_FB_LISTO)return;
+  getFirebaseIdToken(function(token){
+    if(!token)return;
+    withAppCheckHeader(function(xhr){
+      xhr.open("PATCH", FIREBASE_DB_URL+"/leon_cotizaciones.json?auth="+token, true);
+      xhr.setRequestHeader("Content-Type","application/json");
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState===4&&!(xhr.status>=200&&xhr.status<300)){
+          console.error("No se pudo guardar el registro en Firebase:",xhr.status,xhr.responseText);
+        }
+      };
+      return JSON.stringify(regPorNro());
+    });
+  });
+}
+
+function borrarRegDeFirebase(nro){
+  if(!REG_FB_LISTO)return;
+  getFirebaseIdToken(function(token){
+    if(!token)return;
+    withAppCheckHeader(function(xhr){
+      xhr.open("DELETE", FIREBASE_DB_URL+"/leon_cotizaciones/n"+encodeURIComponent(String(nro))+".json?auth="+token, true);
+      return null;
+    });
+  });
+}
+
+// Al iniciar sesion se trae lo que hay en Firebase y se fusiona con lo local.
+// Gana el que tenga mas informacion de seguimiento: mas contactos registrados,
+// o un estado ya cerrado. Asi, si alguien marco una cotizacion desde el
+// celular y otro la tiene vieja en el computador, no se pierde la marca.
+function cargarRegDeFirebase(){
+  getFirebaseIdToken(function(token){
+    if(!token)return;
+    withAppCheckHeader(function(xhr){
+      xhr.open("GET", FIREBASE_DB_URL+"/leon_cotizaciones.json?auth="+token, true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4)return;
+        if(!(xhr.status>=200&&xhr.status<300)){
+          console.error("No se pudo leer el registro desde Firebase:",xhr.status);
+          return;   // se sigue trabajando con lo local, como antes
+        }
+        var remoto=null;
+        try{remoto=JSON.parse(xhr.responseText);}catch(e){remoto=null;}
+        REG_FB_LISTO=true;
+
+        if(!remoto||!Object.keys(remoto).length){
+          // Primera vez: Firebase esta vacio y lo local es lo unico que hay.
+          if(REG_LIST.length){
+            console.log("Migrando "+REG_LIST.length+" cotizaciones a Firebase");
+            guardarRegEnFirebase();
+          }
+          renderStatsAdmin(); renderSeguimiento();
+          return;
+        }
+
+        var porNro={};
+        REG_LIST.forEach(function(r){if(r&&r.nro!=null)porNro[String(r.nro)]=r;});
+        Object.keys(remoto).forEach(function(k){
+          var rem=remoto[k];
+          if(!rem||rem.nro==null)return;
+          if(REG_DELETED.indexOf(String(rem.nro))!==-1)return;   // borrada aca a proposito
+          var loc=porNro[String(rem.nro)];
+          if(!loc){ porNro[String(rem.nro)]=rem; return; }
+          var cRem=(rem.contactos||[]).length, cLoc=(loc.contactos||[]).length;
+          var cerradoRem=rem.estado&&rem.estado!=="Pendiente";
+          var cerradoLoc=loc.estado&&loc.estado!=="Pendiente";
+          if(cRem>cLoc || (cerradoRem&&!cerradoLoc)) porNro[String(rem.nro)]=rem;
+        });
+        REG_LIST=Object.keys(porNro).map(function(k){return porNro[k];})
+          .sort(function(a,b){return String(a.fecha||"").localeCompare(String(b.fecha||""));});
+        try{localStorage.setItem("reg_list",JSON.stringify(REG_LIST));}catch(e){}
+        renderStatsAdmin(); renderSeguimiento();
+      };
+      return null;
+    });
+  });
+}
+
 function saveRegList(){
   if(REG_LIST.length>500)REG_LIST=REG_LIST.slice(-500);
   try{localStorage.setItem("reg_list",JSON.stringify(REG_LIST));}catch(e){}
   saveCloudData();
+  guardarRegEnFirebase();
 }
 function eliminarCotizacionReg(nro){
   if(!confirm("¿Eliminar la cotización N° "+nro+" del historial? Esto no se puede deshacer."))return;
@@ -3113,7 +3218,9 @@ function eliminarCotizacionReg(nro){
   if(REG_DELETED.indexOf(String(nro))===-1)REG_DELETED.push(String(nro));
   try{localStorage.setItem("reg_deleted",JSON.stringify(REG_DELETED));}catch(e){}
   saveRegList();
+  borrarRegDeFirebase(nro);
   renderStatsAdmin();
+  renderSeguimiento();
 }
 function registrarCotizacion(P){
   var servicios=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"—";
@@ -4355,7 +4462,10 @@ try{
 firebase.auth().onAuthStateChanged(function(user){
   var ov=document.getElementById('lock-overlay');
   if(user&&!user.isAnonymous){
-    cargarRolUsuario(user,function(){if(ov)ov.style.display='none';});
+    cargarRolUsuario(user,function(){
+      if(ov)ov.style.display='none';
+      cargarRegDeFirebase();
+    });
   }else{
     LEON_USUARIO=null;_fbIdToken=null;
     if(ov){
