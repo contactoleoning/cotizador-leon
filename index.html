@@ -257,12 +257,13 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
     <button class="btn bpdf" id="btnpdf">📄 Generar PDF Formal</button>
     <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:2px">
       <span style="font-size:14px;color:var(--txt2)">Próxima mantención en</span>
-      <select id="ind-duracion" style="background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:7px 8px;font-size:14px">
+      <select id="ind-duracion" onchange="duracionTocadaAMano=true;refrescarDuracionSugerida()" style="background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:7px 8px;font-size:14px">
         <option value="4">4 meses</option>
         <option value="6" selected>6 meses</option>
         <option value="12">12 meses</option>
       </select>
     </div>
+    <div id="ind-duracion-nota" style="font-size:12px;color:var(--txt2);text-align:center;margin-top:-4px"></div>
     <button class="btn" id="btnindicador" style="background:#3b6ea5;color:#fff">📅 Agregar a Indicador de Vencimiento</button>
     <button class="btn" id="btnnuevacot" style="background:transparent;border:2px solid var(--brd2);color:var(--txt2)">🆕 Iniciar Cotización Nueva (siguiente N°)</button>
   </div>
@@ -1854,6 +1855,42 @@ function cargarExtremosCotizaciones(){
   xhr.send();
 }
 
+// Cada cuanto tocaria la proxima mantencion, segun lo que ya sabemos de la
+// cotizacion. El criterio es de Isaac:
+//   - Local comercial, uso diario intenso  -> 4 meses
+//   - Casa                                  -> 6 meses
+//   - Equipo nuevo recien instalado         -> 12 meses (la primera al año)
+// El uso intenso manda sobre lo demas: un equipo nuevo en un local que trabaja
+// todos los dias no aguanta un año sin mantencion.
+//
+// Es una sugerencia, no una regla: en la practica el cliente posterga, pide
+// una vez al año, o cambia de opinion. Por eso el selector queda editable y
+// deja de auto-ajustarse apenas alguien lo toca a mano.
+function duracionSugerida(){
+  var tipo=(document.getElementById("cnombre").dataset.tipo)||"Particular";
+  var hayEquipoNuevo=carrito.some(function(p){return p.esEquipo;});
+  if(tipo==="Empresa")  return {meses:4, motivo:"local comercial, uso intenso"};
+  if(hayEquipoNuevo)    return {meses:12,motivo:"equipo nuevo, primera mantención al año"};
+  return {meses:6, motivo:"casa, uso normal"};
+}
+
+// Se apaga en cuanto el vendedor elige un valor distinto: a partir de ahi
+// manda el criterio de quien esta hablando con el cliente, no el nuestro.
+var duracionTocadaAMano=false;
+
+function refrescarDuracionSugerida(){
+  var sel=document.getElementById("ind-duracion");
+  var nota=document.getElementById("ind-duracion-nota");
+  if(!sel)return;
+  var sug=duracionSugerida();
+  if(!duracionTocadaAMano){
+    sel.value=String(sug.meses);
+    if(nota)nota.textContent="sugerido: "+sug.motivo;
+  }else{
+    if(nota)nota.textContent="elegido a mano";
+  }
+}
+
 // Arma el registro que se manda al Indicador. Esta separado del envio a
 // proposito: asi se puede revisar exactamente que se va a escribir --
 // construirRowIndicador() en la consola -- sin tocar la base de clientes.
@@ -1902,7 +1939,7 @@ function construirRowIndicador(){
   return {
       id:Date.now(),
       cliente:nombre,
-      lugar:"",
+      lugar:((document.getElementById("cnombre").dataset.tipo)==="Empresa")?"Oficina":"",
       comuna:comuna,
       direccion:direccion,
       telefono:telefono,
@@ -1990,6 +2027,7 @@ function setTipoCliente(tipo){
     inp.placeholder="Nombre del cliente";
   }
   inp.dataset.tipo=tipo;
+  if(typeof refrescarDuracionSugerida==="function")refrescarDuracionSugerida();
 }
 
 function formatRut(cuerpo,dv){
@@ -2081,6 +2119,7 @@ function renderCarrito(){
     +'<div class="tr tc"><span>Total tarjeta crédito +3,5%</span><span>'+fmt(totTC)+'</span></div>';
   document.getElementById("totales").innerHTML=th;
   updWA(sN,dM,nD,iva,tot);
+  refrescarDuracionSugerida();
 }
 
 function updWA(sN,dM,nD,iva,tot){
@@ -2727,7 +2766,11 @@ function asegurarNroLibre(){
 function nuevaCotizacion(){
   if(carrito.length&&!confirm("¿Iniciar una cotización nueva? Se vaciará el presupuesto actual (los datos del cliente no se borran).")) return;
   carrito=[];
+  // Cotizacion nueva, criterio nuevo: se vuelve a sugerir el intervalo en vez
+  // de arrastrar el que se eligio a mano para el cliente anterior.
+  duracionTocadaAMano=false;
   renderCarrito();
+  refrescarDuracionSugerida();
   incrementNro();
 }
 
