@@ -2983,8 +2983,20 @@ function loadCloudData(){
     }
     // registro de cotizaciones (estadísticas)
     if(rec.reg_list&&rec.reg_list.length){
-      var locales=REG_LIST.filter(function(l){return !rec.reg_list.find(function(r){return String(r.nro)===String(l.nro);});});
-      REG_LIST=rec.reg_list.concat(locales).filter(function(r){return REG_DELETED.indexOf(String(r.nro))===-1;});
+      // Antes esto tomaba la version del Apps Script como base y solo sumaba
+      // lo local que no existiera alla. Con Firebase escribiendo en paralelo
+      // eso borraba marcas: si el Apps Script contestaba despues de la
+      // fusion con Firebase, devolvia la cotizacion como pendiente y se
+      // perdia el cierre hecho desde otro equipo.
+      var porNro={};
+      REG_LIST.forEach(function(r){ if(r&&r.nro!=null)porNro[String(r.nro)]=r; });
+      rec.reg_list.forEach(function(r){
+        if(!r||r.nro==null)return;
+        var k=String(r.nro);
+        porNro[k]=mejorRegistro(porNro[k], r);
+      });
+      REG_LIST=Object.keys(porNro).map(function(k){return porNro[k];})
+        .filter(function(r){return REG_DELETED.indexOf(String(r.nro))===-1;});
       try{localStorage.setItem("reg_list",JSON.stringify(REG_LIST));}catch(e){}
       renderStatsAdmin();
     }
@@ -3125,6 +3137,27 @@ function loadRegList(){
 // cotizador sigue trabajando exactamente como antes.
 var REG_FB_LISTO=false;
 
+// Cual de dos versiones del mismo registro conservar. Gana la que tenga mas
+// informacion de seguimiento: mas contactos anotados, o un estado ya cerrado.
+// Es la misma regla en las dos fusiones -- la de Firebase y la del Apps
+// Script -- porque si cada una decidiera distinto, cual gana dependeria del
+// orden en que responde la red.
+function mejorRegistro(a, b){
+  if(!a)return b;
+  if(!b)return a;
+  // El estado manda sobre el conteo de contactos. Perder un contacto anotado
+  // descuadra la cadencia un poco; perder un "cerro" hace que le sigas
+  // escribiendo a alguien que ya te compro, que es mucho peor.
+  var cerradoA=a.estado&&a.estado!=="Pendiente";
+  var cerradoB=b.estado&&b.estado!=="Pendiente";
+  if(cerradoA!==cerradoB)return cerradoA?a:b;
+  var ca=(a.contactos||[]).length, cb=(b.contactos||[]).length;
+  if(ca!==cb)return ca>cb?a:b;
+  // A igualdad, gana el que tenga telefono: es lo que hace accionable la ficha.
+  if(!!a.tel!==!!b.tel)return a.tel?a:b;
+  return a;
+}
+
 function regPorNro(){
   var mapa={};
   REG_LIST.forEach(function(r){
@@ -3201,10 +3234,7 @@ function cargarRegDeFirebase(){
           if(REG_DELETED.indexOf(String(rem.nro))!==-1)return;   // borrada aca a proposito
           var loc=porNro[String(rem.nro)];
           if(!loc){ porNro[String(rem.nro)]=rem; return; }
-          var cRem=(rem.contactos||[]).length, cLoc=(loc.contactos||[]).length;
-          var cerradoRem=rem.estado&&rem.estado!=="Pendiente";
-          var cerradoLoc=loc.estado&&loc.estado!=="Pendiente";
-          if(cRem>cLoc || (cerradoRem&&!cerradoLoc)) porNro[String(rem.nro)]=rem;
+          porNro[String(rem.nro)]=mejorRegistro(loc, rem);
         });
         REG_LIST=Object.keys(porNro).map(function(k){return porNro[k];})
           .sort(function(a,b){return fechaISO(a.fecha).localeCompare(fechaISO(b.fecha));});
