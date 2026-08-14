@@ -31,6 +31,9 @@ body{background:var(--bg);color:var(--txt);font-family:"DM Sans",sans-serif;min-
 .hsalir:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .tabs{display:flex;gap:3px;padding:10px 12px 0;background:var(--bg2);border-bottom:2px solid var(--brd);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
+.tabwrap{position:relative}
+.tabwrap::after{content:"";position:absolute;top:0;right:0;width:26px;height:100%;pointer-events:none;
+  background:linear-gradient(to right,transparent,var(--bg2))}
 .tab{padding:10px 16px;border-radius:var(--rs) var(--rs) 0 0;font-size:14px;font-weight:700;cursor:pointer;color:var(--txt2);border:2px solid transparent;border-bottom:none;transition:all .15s;letter-spacing:.02em;white-space:nowrap;flex-shrink:0}
 .tab:hover{color:var(--txt);background:var(--bg3)}
 .tab.act{background:var(--bg);color:var(--acc);border-color:var(--brd)}
@@ -111,7 +114,7 @@ select option{background:#161619;color:var(--txt)}
 .btnrow .btn{margin-top:0}
 @media(max-width:480px){
   .main{padding:12px 10px 100px}
-  .tab{padding:9px 13px;font-size:13px}
+  .tab{padding:9px 11px;font-size:12.5px;letter-spacing:0}
   .tr.TT{font-size:22px}
   .pv{font-size:18px}
   .tipoinm{grid-template-columns:1fr}
@@ -214,11 +217,12 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
   </div>
   <button class="hsalir" id="btnsalir" onclick="cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión">Salir</button>
 </header>
-<nav class="tabs">
+<div class="tabwrap"><nav class="tabs">
   <div class="tab act" id="tab-cot" data-tab="cot">CREAR COTIZACIÓN</div>
   <div class="tab" id="tab-info" data-tab="info">INFORMACIÓN</div>
+  <div class="tab" id="tab-fin" data-tab="fin">FINANZAS</div>
   <div class="tab" id="tab-adm" data-tab="adm">ADMINISTRADOR</div>
-</nav>
+</nav></div>
 <main class="main">
 <div id="view-cot">
 <div id="cot-wrap">
@@ -664,6 +668,11 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
 
 </div>
 
+<div id="view-fin" style="display:none">
+  <div class="card">
+    <div id="statslista"></div>
+  </div>
+</div>
 <div id="view-adm" style="display:none">
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
     <div onclick="toggleAdmSec('eq')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
@@ -726,15 +735,6 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
     </div>
     <div id="adm-tras-body" style="display:none;padding:14px">
       <div id="traslista"></div>
-    </div>
-  </div>
-  <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
-    <div onclick="toggleAdmSec('stats')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
-      <div class="ct" style="margin:0;border:none;padding:0">📊 Estadísticas de Ventas</div>
-      <span id="adm-stats-arrow" style="font-size:18px;color:var(--acc);transition:transform .2s">▶</span>
-    </div>
-    <div id="adm-stats-body" style="display:none;padding:14px">
-      <div id="statslista"></div>
     </div>
   </div>
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
@@ -1170,11 +1170,17 @@ function saveOv(id){
 }
 
 function showTab(t){
-  ["cot","info","adm"].forEach(function(x){
-    document.getElementById("view-"+x).style.display=(x===t)?"":"none";
-    document.getElementById("tab-"+x).className="tab"+(x===t?" act":"");
+  ["cot","info","fin","adm"].forEach(function(x){
+    var v=document.getElementById("view-"+x), b=document.getElementById("tab-"+x);
+    if(v)v.style.display=(x===t)?"":"none";
+    if(b)b.className="tab"+(x===t?" act":"");
   });
+  // Con cuatro pestañas ya no caben todas en un telefono. La barra scrollea,
+  // pero si la activa queda fuera de vista uno cree que no paso nada.
+  var act=document.getElementById("tab-"+t);
+  if(act&&act.scrollIntoView)act.scrollIntoView({block:"nearest",inline:"nearest"});
   if(t==="info"){cargarExtremosCotizaciones();renderSeguimiento();}
+  if(t==="fin"){renderStatsAdmin();}
 }
 
 function toggleKit(){}
@@ -3338,6 +3344,20 @@ function trabajosPorLiquidar(){
     .sort(function(a,b){return String(fechaISO(b.fecha)).localeCompare(String(fechaISO(a.fecha)));});
 }
 
+// En Seguimiento va solo el recordatorio, no el formulario: esta pantalla es
+// para perseguir respuestas, no para hacer numeros. Pero sin el aviso los
+// trabajos se quedan sin liquidar para siempre y la mitad del sistema no sirve.
+function avisoPorLiquidarHTML(){
+  var n=trabajosPorLiquidar().length;
+  if(!n)return "";
+  return '<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;'
+    +'border:1px dashed var(--brd2);border-radius:var(--rs);padding:9px 12px">'
+    +'<span><b style="color:var(--txt)">'+n+' trabajo'+(n>1?'s':'')+'</b> sin anotar cuánto '
+    +(n>1?'costaron':'costó')+'.</span>'
+    +'<button class="seg-btn" onclick="showTab(\'fin\')">Ir a Finanzas</button>'
+    +'</div>';
+}
+
 function liquidarHTML(){
   var lista=trabajosPorLiquidar();
   if(!lista.length)return "";
@@ -4086,7 +4106,7 @@ function renderSeguimiento(){
   }
 
   if(!pendientes.length){
-    cont.innerHTML=liquidarHTML()+avisoAlternativasHTML()
+    cont.innerHTML=avisoPorLiquidarHTML()+avisoAlternativasHTML()
       +'<div class="seg-vacio">No hay cotizaciones pendientes de respuesta.<br>'
       +'<span style="font-size:12.5px">Las cotizaciones que generes aparecen aquí hasta que las marques como cerradas o perdidas.</span></div>';
     return;
@@ -4108,7 +4128,7 @@ function renderSeguimiento(){
       +'<button class="seg-btn" onclick="corregirDesdeLaPlanilla()">Revisar contra la planilla</button>'
       +' <span style="margin-left:6px">deja el registro igual a la planilla: corrige lo distinto y elimina lo que sobra</span>'
       +'</div>'
-    +liquidarHTML()
+    +avisoPorLiquidarHTML()
     +avisoAlternativasHTML();
 
   cont.innerHTML=resumen+pendientes.map(function(x){
@@ -4346,7 +4366,9 @@ function renderStatsAdmin(){
       +'cotizaciones · tasa de cierre · vendido</div></div>';
   }
 
-  var html=tendencia+selHtml
+  // El grafico primero: es lo que Isaac viene a ver cuando abre Finanzas. El
+  // detalle de un mes en particular va despues, para quien lo quiera revisar.
+  var html=graficosVentasHTML(NOMBRES_MES)+liquidarHTML()+tendencia+selHtml
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
     +'<div style="'+box+'"><div style="'+big+';color:var(--txt)">'+nTot+'</div><div style="'+sm+'">Cotizaciones</div></div>'
     +'<div style="'+box+'"><div style="'+big+';color:var(--acc)">'+tasa+'%</div><div style="'+sm+'">Tasa de cierre</div></div>'
@@ -4516,32 +4538,6 @@ function renderStatsAdmin(){
     html+='</div>';
   }
 
-  html+=graficosVentasHTML(NOMBRES_MES);
-
-  html+='<div class="gl">Cotizaciones de '+labelMes(selMes)+'</div>';
-  var ordenadas=delMes.slice().reverse();
-  ordenadas.forEach(function(r){
-    var colorE=r.estado==="Aceptada"?"var(--grn)":r.estado==="Rechazada"?"#e74c3c":"#f39c12";
-    var btn=function(est,label,color){
-      var activo=r.estado===est;
-      return '<button onclick="setEstadoReg(\''+escAttr(r.nro)+'\',\''+est+'\')" style="flex:1;padding:7px 4px;border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;border:2px solid '+color+';background:'+(activo?color:'transparent')+';color:'+(activo?'#10141f':color)+'">'+label+'</button>';
-    };
-    html+='<div style="padding:12px 0;border-bottom:1px solid var(--brd)">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
-      +'<div style="min-width:0"><span style="font-weight:800;color:var(--txt)">N° '+esc(r.nro)+'</span>'
-      +' <span style="color:var(--txt2);font-size:14px">'+esc(r.nombre||"")+'</span>'
-      +'<div style="font-size:13px;color:var(--txt3)">'+esc(r.fecha||"")+' · '+esc(r.serv||"")+'</div></div>'
-      +'<div style="font-weight:800;color:'+colorE+';white-space:nowrap">'+fmt(r.total||0)+'</div>'
-      +'</div>'
-      +'<div style="display:flex;gap:6px;margin-top:8px">'
-      +btn("Pendiente","Pendiente","#f39c12")
-      +btn("Aceptada","Aceptada","#27ae60")
-      +btn("Rechazada","Rechazada","#e74c3c")
-      +'<button onclick="eliminarCotizacionReg(\''+escAttr(r.nro)+'\')" title="Eliminar del historial" style="flex:0 0 auto;padding:7px 12px;border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;border:2px solid #c0392b;background:transparent;color:#c0392b">🗑</button>'
-      +'</div>'
-      +'</div>';
-  });
-
   // La segunda dimension: de lo vendido, cuanto quedo. Solo se puede afirmar
   // sobre los trabajos ya liquidados, asi que se dice cuantos faltan en vez de
   // mezclar liquidados con no liquidados y dar un margen que no significa nada.
@@ -4569,9 +4565,34 @@ function renderStatsAdmin(){
          +fila("Equipos, materiales, ayudante","− "+fmt(gastoLiq))
          +fila("Te quedó",fmt(margenLiq)+"  ("+pct+"%)",true)
         ):'<div style="font-size:13px;color:var(--txt2)">Todavía no anotas gastos de ningún trabajo de este mes.</div>')
-      +(faltan?('<div style="font-size:12.5px;color:var(--txt3);margin-top:8px">Falta'+(faltan>1?"n":"")+' liquidar '+faltan+'. Los anotas en Seguimiento, en «Trabajos por liquidar».</div>'):'')
+      +(faltan?('<div style="font-size:12.5px;color:var(--txt3);margin-top:8px">Falta'+(faltan>1?"n":"")+' liquidar '+faltan+'. Los anotas más arriba, en «Trabajos por liquidar».</div>'):'')
       +'</div>';
   }
+
+
+  html+='<div class="gl">Cotizaciones de '+labelMes(selMes)+'</div>';
+  var ordenadas=delMes.slice().reverse();
+  ordenadas.forEach(function(r){
+    var colorE=r.estado==="Aceptada"?"var(--grn)":r.estado==="Rechazada"?"#e74c3c":"#f39c12";
+    var btn=function(est,label,color){
+      var activo=r.estado===est;
+      return '<button onclick="setEstadoReg(\''+escAttr(r.nro)+'\',\''+est+'\')" style="flex:1;padding:7px 4px;border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;border:2px solid '+color+';background:'+(activo?color:'transparent')+';color:'+(activo?'#10141f':color)+'">'+label+'</button>';
+    };
+    html+='<div style="padding:12px 0;border-bottom:1px solid var(--brd)">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
+      +'<div style="min-width:0"><span style="font-weight:800;color:var(--txt)">N° '+esc(r.nro)+'</span>'
+      +' <span style="color:var(--txt2);font-size:14px">'+esc(r.nombre||"")+'</span>'
+      +'<div style="font-size:13px;color:var(--txt3)">'+esc(r.fecha||"")+' · '+esc(r.serv||"")+'</div></div>'
+      +'<div style="font-weight:800;color:'+colorE+';white-space:nowrap">'+fmt(r.total||0)+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:8px">'
+      +btn("Pendiente","Pendiente","#f39c12")
+      +btn("Aceptada","Aceptada","#27ae60")
+      +btn("Rechazada","Rechazada","#e74c3c")
+      +'<button onclick="eliminarCotizacionReg(\''+escAttr(r.nro)+'\')" title="Eliminar del historial" style="flex:0 0 auto;padding:7px 12px;border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;border:2px solid #c0392b;background:transparent;color:#c0392b">🗑</button>'
+      +'</div>'
+      +'</div>';
+  });
 
   el.innerHTML=html;
 }
@@ -5424,10 +5445,16 @@ function cargarRolUsuario(user,listo){
 // partir del costo, asi que el costo igual viaja. Esconderlo de verdad
 // requiere calcular el precio en el servidor (fase 2, ver SEGURIDAD.md).
 function aplicarRolEnUI(){
-  var tabAdm=document.getElementById('tab-adm');
-  if(tabAdm)tabAdm.style.display=esAdmin()?'':'none';
-  if(!esAdmin()&&document.getElementById('view-adm')&&document.getElementById('view-adm').style.display!=='none'){
-    showTab('cot');
+  // Finanzas muestra margenes y costos reales: un vendedor tampoco los ve.
+  ['tab-adm','tab-fin'].forEach(function(id){
+    var b=document.getElementById(id);
+    if(b)b.style.display=esAdmin()?'':'none';
+  });
+  if(!esAdmin()){
+    ['view-adm','view-fin'].forEach(function(id){
+      var v=document.getElementById(id);
+      if(v&&v.style.display!=='none')showTab('cot');
+    });
   }
   var v=document.getElementById('cvendedor');
   if(v&&LEON_USUARIO&&!v.value)v.value=LEON_USUARIO.nombre;
