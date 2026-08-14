@@ -3011,14 +3011,61 @@ function incrementNro(){
 // avanza el número solo, sin que haga falta acordarse del botón. Si es el
 // mismo cliente (o el número todavía no se ha usado), no toca nada -- eso
 // sigue permitiendo reimprimir/reintentar sin duplicar número.
+// Evita que dos clientes distintos queden con el mismo numero de cotizacion.
+//
+// Esta salvaguarda ya existia y aun asi la planilla terminó con DIEZ
+// cotizaciones numeradas 148, de clientes distintos, entre el 13 y el 24 de
+// julio. Fallaba por tres motivos, y los tres estan corregidos aca:
+//
+//   1. Avanzaba UNA sola vez. Si el 148 y el 149 estaban ocupados, saltaba al
+//      149 -- que tambien lo estaba -- y ahi se quedaba.
+//   2. Lo hacia en silencio. Nadie se enteraba de que el numero habia
+//      cambiado, ni de que se habia quedado repetido.
+//   3. Si REG_LIST venia vacio -- porque la sincronizacion habia fallado --
+//      no encontraba nada con que comparar y dejaba pasar todo. Ese es el
+//      caso que produjo la pila de 148: sin registro cargado, ninguna
+//      cotizacion "sabia" que el numero ya estaba usado.
+function nombreClaveCot(n){
+  return String(n||"").trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/\s+/g," ");
+}
+
 function asegurarNroLibre(){
   var nroActual=document.getElementById("nro").value.trim();
-  var nombreActual=(document.getElementById("cnombre").value||"").trim().toLowerCase();
+  var nombreActual=nombreClaveCot(document.getElementById("cnombre").value);
   if(!nombreActual) return;
-  var yaRegistrado=REG_LIST.find(function(r){return String(r.nro)===String(nroActual);});
-  if(yaRegistrado && (yaRegistrado.nombre||"").trim().toLowerCase()!==nombreActual){
-    incrementNro();
+
+  // Sin registro cargado no hay con que comparar. Antes seguia de largo en
+  // silencio; ahora al menos se avisa, porque es exactamente la situacion en
+  // la que se repiten los numeros.
+  if(!REG_LIST.length){
+    alert("No se pudo verificar el N° de cotización: el registro no está cargado.\n\n"
+      +"Si ya generaste otra cotización hoy, revisa que el N° "+nroActual+" no esté repetido "
+      +"antes de continuar.");
+    return;
   }
+
+  function ocupadoPorOtro(n){
+    var r=REG_LIST.find(function(x){return String(x.nro)===String(n);});
+    return r && nombreClaveCot(r.nombre)!==nombreActual;
+  }
+
+  if(!ocupadoPorOtro(nroActual)) return;   // libre, o es la misma cotizacion reimprimiendose
+
+  var deQuien=(REG_LIST.find(function(x){return String(x.nro)===String(nroActual);})||{}).nombre||"otro cliente";
+
+  // Avanzar hasta encontrar uno realmente libre, no solo el siguiente.
+  var n=parseInt(nroActual,10)||1;
+  var tope=n+500;
+  while(ocupadoPorOtro(n) && n<tope) n++;
+
+  alert("El N° "+nroActual+" ya está usado por «"+deQuien+"».\n\n"
+    +"Esta cotización pasa al N° "+n+".");
+
+  localStorage.setItem("cot_nro",String(n));
+  setNroUI(n);
+  saveCloudData();
 }
 
 // Botón "Iniciar Cotización Nueva" — recién acá avanza el número de cotización.
