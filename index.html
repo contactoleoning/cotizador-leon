@@ -17,7 +17,7 @@
   color-scheme:dark;
   --bg:#0b0b0d;--bg2:#161619;--bg3:#212126;--brd:#2a2a30;--brd2:#3a3a42;
   --txt:#f6f6f8;--txt2:#bdbdc7;--txt3:#82828d;
-  --acc:#d6d9de;--acc2:#a8adb6;--grn:#4fd884;--cy:#ff9f43;--blu:#5b9fd9;--red:#ff6b6b;
+  --acc:#d6d9de;--acc2:#a8adb6;--grn:#4fd884;--barra:#35a862;--cy:#ff9f43;--blu:#5b9fd9;--red:#ff6b6b;
   --r:12px;--rs:8px
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -4152,6 +4152,113 @@ function renderSeguimiento(){
   }).join("");
 }
 
+// VENTAS POR MES Y POR AÑO
+//
+// Una sola serie por grafico: cuanto se vendio. Nada de dos escalas en el mismo
+// eje -- si algun dia se quiere ver margen en el tiempo, va en su propio
+// grafico, no montado sobre este.
+//
+// Barras horizontales y no verticales: esto se mira en el telefono, en terreno,
+// y con doce meses en vertical las etiquetas quedan de canto e ilegibles.
+//
+// El verde de las barras (#35a862) no es el --grn de los botones. Un relleno
+// grande necesita menos luz que un acento chico: el --grn quedaba fuera de la
+// banda de luminosidad contra el fondo del panel. El contraste de los dos pasa.
+function ventasAgrupadas(porAnio){
+  var acc={};
+  REG_LIST.forEach(function(r){
+    if(r.estado!=="Aceptada")return;
+    var iso=fechaISO(r.fecha); if(!iso)return;
+    var k=porAnio?iso.substring(0,4):iso.substring(0,7);
+    var a=acc[k]||(acc[k]={neto:0,conIva:0,n:0,liq:0,margen:0});
+    a.neto+=netoDe(r); a.conIva+=(r.total||0); a.n++;
+    if(r.real){a.liq++; a.margen+=margenDe(r);}
+  });
+  return acc;
+}
+
+// La linea de tiempo se rellena mes a mes aunque no haya ventas. Un mes en cero
+// es informacion -- saltarselo haria ver una temporada pareja donde hubo un
+// hoyo.
+function mesesSeguidos(desde, hasta){
+  var out=[], y=+desde.substring(0,4), m=+desde.substring(5,7);
+  var yF=+hasta.substring(0,4), mF=+hasta.substring(5,7);
+  while(y<yF || (y===yF && m<=mF)){
+    out.push(y+"-"+("0"+m).slice(-2));
+    if(++m>12){m=1;y++;}
+    if(out.length>240)break;
+  }
+  return out;
+}
+
+function barrasHTML(filas){
+  var max=filas.reduce(function(a,f){return Math.max(a,f.valor);},0)||1;
+  return '<div style="padding:2px 0 6px 0">'+filas.map(function(f){
+    var pct=Math.round(f.valor*1000/max)/10;
+    return '<div title="'+escAttr(f.detalle||"")+'" style="display:grid;grid-template-columns:62px 1fr auto;'
+      +'align-items:center;gap:9px;padding:2px 0">'
+      +'<span style="font-size:12px;color:var(--txt3);white-space:nowrap">'+esc(f.label)+'</span>'
+      +'<span style="display:block;height:15px;background:var(--bg2);border-radius:2px;overflow:hidden">'
+        +'<span style="display:block;height:100%;width:'+(f.valor?Math.max(pct,1.2):0)+'%;'
+        +'background:var(--barra);border-radius:0 4px 4px 0"></span></span>'
+      +'<span style="font-size:12px;color:'+(f.valor?'var(--txt2)':'var(--txt3)')+';white-space:nowrap;min-width:62px;text-align:right">'
+        +(f.valor?fmt(f.valor):"—")+'</span>'
+      +'</div>';
+  }).join("")+'</div>';
+}
+
+function graficosVentasHTML(NOMBRES_MES){
+  var vendidas=REG_LIST.filter(function(r){return r.estado==="Aceptada" && fechaISO(r.fecha);});
+  if(!vendidas.length)return "";
+
+  var porMes=ventasAgrupadas(false), porAnio=ventasAgrupadas(true);
+  var claves=Object.keys(porMes).sort();
+  var hoy=hoyISO().substring(0,7);
+  var linea=mesesSeguidos(claves[0], hoy>claves[claves.length-1]?hoy:claves[claves.length-1]);
+  if(linea.length>12)linea=linea.slice(-12);
+
+  var abrev={"01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun",
+             "07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic"};
+
+  var filasMes=linea.map(function(k){
+    var d=porMes[k]||{neto:0,conIva:0,n:0,liq:0,margen:0};
+    return {label:abrev[k.substring(5,7)]+" "+k.substring(2,4), valor:d.neto,
+      detalle:d.n?(d.n+" trabajo"+(d.n>1?"s":"")+" · "+fmt(d.conIva)+" con IVA"
+        +(d.liq?(" · te quedaron "+fmt(d.margen)+" de "+d.liq+" liquidado"+(d.liq>1?"s":"")):" · sin liquidar"))
+        :"sin ventas"};
+  });
+
+  var html='<div class="gl">Ventas por mes</div>'
+    +'<div style="font-size:12.5px;color:var(--txt3);margin:-2px 0 6px 0">Neto, sin IVA. '
+    +(linea.length>=12?'Últimos 12 meses.':'Desde tu primera venta.')+'</div>'
+    +barrasHTML(filasMes);
+
+  var anios=Object.keys(porAnio).sort();
+  html+='<div class="gl">Ventas por año</div>';
+  if(anios.length<2){
+    var a=porAnio[anios[0]];
+    html+='<div style="font-size:13px;color:var(--txt2);padding:2px 0 12px 0">'
+      +'<b style="color:var(--txt);font-size:16px">'+fmt(a.neto)+'</b> en '+anios[0]
+      +' <span style="color:var(--txt3)">('+a.n+' trabajo'+(a.n>1?"s":"")+')</span>'
+      +'<div style="font-size:12.5px;color:var(--txt3);margin-top:3px">El año que viene esto se convierte en barras y vas a poder comparar temporada con temporada.</div>'
+      +'</div>';
+  }else{
+    html+=barrasHTML(anios.map(function(k){
+      var d=porAnio[k];
+      return {label:k, valor:d.neto,
+        detalle:d.n+" trabajo"+(d.n>1?"s":"")+" · "+fmt(d.conIva)+" con IVA"};
+    }));
+    var ult=porAnio[anios[anios.length-1]], pen=porAnio[anios[anios.length-2]];
+    if(pen.neto){
+      var dif=Math.round((ult.neto-pen.neto)*100/pen.neto);
+      html+='<div style="font-size:13px;color:var(--txt2);padding:0 0 12px 0">'
+        +anios[anios.length-1]+' va <b style="color:'+(dif>=0?'var(--grn)':'#e74c3c')+'">'
+        +(dif>=0?"+":"")+dif+'%</b> contra '+anios[anios.length-2]+'.</div>';
+    }
+  }
+  return html;
+}
+
 function renderStatsAdmin(){
   var el=document.getElementById("statslista");
   if(!el)return;
@@ -4408,6 +4515,8 @@ function renderStatsAdmin(){
     });
     html+='</div>';
   }
+
+  html+=graficosVentasHTML(NOMBRES_MES);
 
   html+='<div class="gl">Cotizaciones de '+labelMes(selMes)+'</div>';
   var ordenadas=delMes.slice().reverse();
