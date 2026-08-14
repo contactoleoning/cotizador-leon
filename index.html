@@ -3753,36 +3753,105 @@ function claveClienteReg(r){
   return n?("n"+n):"";
 }
 
-// Cotizaciones pendientes del mismo cliente que todavia no estan agrupadas.
+// Cotizaciones del mismo cliente que pueden ser un solo trabajo.
+//
+// Mira las cerradas tambien, no solo las pendientes. El caso de Ana Moya: se
+// cotizo, aparecio trabajo adicional, se hizo una nueva por mas plata y la
+// primera quedo sin efecto. Si alcanzo a marcarse la primera como perdida
+// antes de agrupar, la sugerencia desaparecia y esa plata quedaba para siempre
+// como venta perdida. No lo era: nunca hubo dos oportunidades.
+//
+// Se agrupa por cercania en el tiempo. Un cliente que vuelve a los tres meses
+// es un cliente que vuelve -- dato que Isaac mide aparte -- y no una
+// alternativa del mismo trabajo. El corte esta en 30 dias.
+var DIAS_MISMO_TRABAJO=30;
+
 function candidatosAAgrupar(){
-  var porClave={};
+  var porCliente={};
   REG_LIST.forEach(function(r){
-    if((r.estado||"Pendiente")!=="Pendiente")return;
     if(r.grupo)return;
     var k=claveClienteReg(r);
     if(!k)return;
-    (porClave[k]=porClave[k]||[]).push(r);
+    (porCliente[k]=porCliente[k]||[]).push(r);
   });
-  return Object.keys(porClave)
-    .filter(function(k){return porClave[k].length>1;})
-    .map(function(k){return porClave[k];});
+
+  var grupos=[];
+  Object.keys(porCliente).forEach(function(k){
+    var lista=porCliente[k].slice().sort(function(a,b){
+      return String(fechaISO(a.fecha)).localeCompare(String(fechaISO(b.fecha)));
+    });
+    var actual=[lista[0]];
+    for(var i=1;i<lista.length;i++){
+      var d=diasEntre(fechaISO(lista[i-1].fecha), fechaISO(lista[i].fecha));
+      if(d!==null && d<=DIAS_MISMO_TRABAJO) actual.push(lista[i]);
+      else { if(actual.length>1)grupos.push(actual); actual=[lista[i]]; }
+    }
+    if(actual.length>1)grupos.push(actual);
+  });
+
+  // Si ya esta resuelto de forma coherente -- una aceptada y el resto
+  // descartadas -- no hay nada que sugerir.
+  return grupos.filter(function(g){
+    return g.some(function(r){return (r.estado||"Pendiente")!=="Descartada";})
+        && !(g.filter(function(r){return r.estado==="Aceptada";}).length===1
+             && g.filter(function(r){return r.estado==="Descartada";}).length===g.length-1);
+  });
 }
 
 function agruparAlternativas(clave){
+  var g=candidatosAAgrupar().filter(function(x){return claveClienteReg(x[0])===clave;})[0];
+  if(!g)return;
+
+  var ganadora=g.filter(function(r){return r.estado==="Aceptada";});
+  var perdedoras=g.filter(function(r){return r.estado!=="Aceptada" && r.estado!=="Descartada";});
+
+  var msg="N°"+g.map(function(r){return r.nro;}).join(", N°")+" pasan a ser un solo trabajo.\n\n"
+    +"En «plata en juego» cuentan como una oportunidad, no como "+g.length+".";
+
+  if(ganadora.length===1 && perdedoras.length){
+    msg+="\n\nComo la N°"+ganadora[0].nro+" ya cerró, "
+      +(perdedoras.length>1?"las N°":"la N°")+perdedoras.map(function(r){return r.nro;}).join(", N°")
+      +" queda"+(perdedoras.length>1?"n":"")+" descartada"+(perdedoras.length>1?"s":"")+".\n\n"
+      +"No cuenta"+(perdedoras.length>1?"n":"")+" como venta perdida: nunca hubo dos oportunidades.";
+  }
+  if(!confirm(msg))return;
+
   var grupo="g"+Date.now();
-  var n=0;
-  REG_LIST.forEach(function(r){
-    if((r.estado||"Pendiente")!=="Pendiente"||r.grupo)return;
-    if(claveClienteReg(r)!==clave)return;
-    r.grupo=grupo; n++;
-  });
-  if(n){saveRegList();renderSeguimiento();}
+  g.forEach(function(r){ r.grupo=grupo; });
+  if(ganadora.length===1){
+    perdedoras.forEach(function(r){
+      r.estado="Descartada";
+      r.motivo="Reemplazada por la N°"+ganadora[0].nro;
+      r.fechaCierre=r.fechaCierre||hoyISO();
+    });
+  }
+  saveRegList();
+  renderSeguimiento();
+  try{renderStatsAdmin();}catch(e){}
 }
 
 function desagrupar(grupo){
   REG_LIST.forEach(function(r){ if(r.grupo===grupo)delete r.grupo; });
   saveRegList();
   renderSeguimiento();
+}
+
+// El aviso tiene que decir la verdad de lo que hay: no es lo mismo "tres
+// pendientes" que "una cerro y las otras dos siguen colgando".
+function avisoAlternativasHTML(){
+  return candidatosAAgrupar().map(function(g){
+    var cerrada=g.filter(function(r){return r.estado==="Aceptada";})[0];
+    var detalle=cerrada
+      ? ('tiene '+g.length+' cotizaciones de esos días y la N°'+esc(String(cerrada.nro))+' ya cerró')
+      : ('tiene '+g.length+' cotizaciones pendientes');
+    return '<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;'
+      +'border:1px dashed var(--brd2);border-radius:var(--rs);padding:9px 12px">'
+      +'<span><b style="color:var(--txt)">'+esc(g[0].nombre||"Este cliente")+'</b> '+detalle
+      +': N°'+g.map(function(r){return esc(String(r.nro));}).join(", N°")+'.</span>'
+      +'<button class="seg-btn" onclick="agruparAlternativas(\''+escAttr(claveClienteReg(g[0]))+'\')">'
+      +'Son alternativas del mismo trabajo</button>'
+      +'</div>';
+  }).join("");
 }
 
 function renderSeguimiento(){
@@ -3828,7 +3897,8 @@ function renderSeguimiento(){
   }
 
   if(!pendientes.length){
-    cont.innerHTML='<div class="seg-vacio">No hay cotizaciones pendientes de respuesta.<br>'
+    cont.innerHTML=avisoAlternativasHTML()
+      +'<div class="seg-vacio">No hay cotizaciones pendientes de respuesta.<br>'
       +'<span style="font-size:12.5px">Las cotizaciones que generes aparecen aquí hasta que las marques como cerradas o perdidas.</span></div>';
     return;
   }
@@ -3849,15 +3919,7 @@ function renderSeguimiento(){
       +'<button class="seg-btn" onclick="corregirDesdeLaPlanilla()">Revisar contra la planilla</button>'
       +' <span style="margin-left:6px">deja el registro igual a la planilla: corrige lo distinto y elimina lo que sobra</span>'
       +'</div>'
-    +candidatosAAgrupar().map(function(g){
-      return '<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;'
-        +'border:1px dashed var(--brd2);border-radius:var(--rs);padding:9px 12px">'
-        +'<span><b style="color:var(--txt)">'+esc(g[0].nombre||"Este cliente")+'</b> tiene '+g.length
-        +' cotizaciones pendientes: N°'+g.map(function(r){return esc(String(r.nro));}).join(", N°")+'.</span>'
-        +'<button class="seg-btn" onclick="agruparAlternativas(\''+escAttr(claveClienteReg(g[0]))+'\')">'
-        +'Son alternativas del mismo trabajo</button>'
-        +'</div>';
-    }).join("");
+    +avisoAlternativasHTML();
 
   cont.innerHTML=resumen+pendientes.map(function(x){
     var r=x.r, s=x.s;
