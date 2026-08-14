@@ -3798,33 +3798,61 @@ function candidatosAAgrupar(){
   });
 }
 
-function agruparAlternativas(clave){
+// Dos cosas distintas que se veian iguales:
+//
+//   OPCIONES  -- al cliente se le dieron varias y va a elegir una. Las tres de
+//                Andres. Todas siguen vivas hasta que conteste, y en juego pesa
+//                la mas alta porque cualquiera puede ser la que cierre.
+//
+//   REEMPLAZO -- aparecio trabajo adicional y se rehizo la cotizacion incluyendo
+//                lo anterior, para que el cliente vea un solo numero. Ana Moya.
+//                Las viejas no estan esperando respuesta: estan anuladas. Se
+//                descartan al tiro y salen de la lista de seguimiento, porque
+//                perseguir al cliente por una cotizacion que ya no existe es
+//                trabajo perdido y ademas queda mal.
+function agruparAlternativas(clave, tipo){
   var g=candidatosAAgrupar().filter(function(x){return claveClienteReg(x[0])===clave;})[0];
   if(!g)return;
 
-  var ganadora=g.filter(function(r){return r.estado==="Aceptada";});
-  var perdedoras=g.filter(function(r){return r.estado!=="Aceptada" && r.estado!=="Descartada";});
+  var nros=g.map(function(r){return r.nro;});
+  var aceptada=g.filter(function(r){return r.estado==="Aceptada";})[0];
+  var msg, vigente, salen;
 
-  var msg="N°"+g.map(function(r){return r.nro;}).join(", N°")+" pasan a ser un solo trabajo.\n\n"
-    +"En «plata en juego» cuentan como una oportunidad, no como "+g.length+".";
-
-  if(ganadora.length===1 && perdedoras.length){
-    msg+="\n\nComo la N°"+ganadora[0].nro+" ya cerró, "
-      +(perdedoras.length>1?"las N°":"la N°")+perdedoras.map(function(r){return r.nro;}).join(", N°")
-      +" queda"+(perdedoras.length>1?"n":"")+" descartada"+(perdedoras.length>1?"s":"")+".\n\n"
-      +"No cuenta"+(perdedoras.length>1?"n":"")+" como venta perdida: nunca hubo dos oportunidades.";
+  if(tipo==="reemplazo"){
+    // La ultima manda, salvo que una anterior ya haya cerrado: si cerro, esa es
+    // la que vale y no la reemplaza nada.
+    vigente=aceptada||g.slice().sort(function(a,b){
+      return String(fechaISO(a.fecha)).localeCompare(String(fechaISO(b.fecha)));
+    })[g.length-1];
+    salen=g.filter(function(r){return r!==vigente && r.estado!=="Descartada";});
+    msg="La N°"+vigente.nro+" incluye lo cotizado en "
+      +(salen.length>1?"las N°":"la N°")+salen.map(function(r){return r.nro;}).join(", N°")+".\n\n"
+      +(salen.length>1?"Esas quedan":"Esa queda")+" anulada"+(salen.length>1?"s":"")
+      +" y sale"+(salen.length>1?"n":"")+" del seguimiento: no "
+      +(salen.length>1?"están":"está")+" esperando respuesta.\n\n"
+      +"En juego queda "+fmt(vigente.total||0)+", no la suma.";
+  }else{
+    vigente=null;
+    salen=aceptada?g.filter(function(r){
+      return r!==aceptada && r.estado!=="Descartada" && r.estado!=="Aceptada";}):[];
+    msg="N°"+nros.join(", N°")+" son opciones del mismo trabajo: el cliente elige una.\n\n"
+      +"En «plata en juego» cuentan como una oportunidad, no como "+g.length+"."
+      +(salen.length?("\n\nComo la N°"+aceptada.nro+" ya cerró, "
+          +(salen.length>1?"las N°":"la N°")+salen.map(function(r){return r.nro;}).join(", N°")
+          +" queda"+(salen.length>1?"n":"")+" descartada"+(salen.length>1?"s":"")
+          +". No cuenta"+(salen.length>1?"n":"")+" como venta perdida."):"");
   }
   if(!confirm(msg))return;
 
   var grupo="g"+Date.now();
-  g.forEach(function(r){ r.grupo=grupo; });
-  if(ganadora.length===1){
-    perdedoras.forEach(function(r){
-      r.estado="Descartada";
-      r.motivo="Reemplazada por la N°"+ganadora[0].nro;
-      r.fechaCierre=r.fechaCierre||hoyISO();
-    });
-  }
+  g.forEach(function(r){ r.grupo=grupo; r.grupoTipo=(tipo==="reemplazo")?"reemplazo":"opciones"; });
+  salen.forEach(function(r){
+    r.estado="Descartada";
+    r.motivo=(tipo==="reemplazo")
+      ? ("Incluida en la N°"+vigente.nro)
+      : ("Eligió otra alternativa");
+    r.fechaCierre=r.fechaCierre||hoyISO();
+  });
   saveRegList();
   renderSeguimiento();
   try{renderStatsAdmin();}catch(e){}
@@ -3848,8 +3876,10 @@ function avisoAlternativasHTML(){
       +'border:1px dashed var(--brd2);border-radius:var(--rs);padding:9px 12px">'
       +'<span><b style="color:var(--txt)">'+esc(g[0].nombre||"Este cliente")+'</b> '+detalle
       +': N°'+g.map(function(r){return esc(String(r.nro));}).join(", N°")+'.</span>'
-      +'<button class="seg-btn" onclick="agruparAlternativas(\''+escAttr(claveClienteReg(g[0]))+'\')">'
-      +'Son alternativas del mismo trabajo</button>'
+      +'<button class="seg-btn" onclick="agruparAlternativas(\''+escAttr(claveClienteReg(g[0]))+'\',\'opciones\')">'
+      +'Son opciones para elegir</button>'
+      +'<button class="seg-btn" onclick="agruparAlternativas(\''+escAttr(claveClienteReg(g[0]))+'\',\'reemplazo\')">'
+      +'La última incluye a las anteriores</button>'
       +'</div>';
   }).join("");
 }
@@ -3908,7 +3938,7 @@ function renderSeguimiento(){
   var resumen='<div class="seg-resumen">'
     +'<span><b>'+tocan+'</b> por contactar hoy</span>'
     +'<span><b>'+pendientes.length+'</b> esperando respuesta'
-      +(nGrupos?(' <span style="color:var(--txt3)">('+nOportunidades+' oportunidades)</span>'):'')+'</span>'
+      +((nOportunidades<pendientes.length)?(' <span style="color:var(--txt3)">('+nOportunidades+' oportunidades)</span>'):'')+'</span>'
     +'<span><b>'+fmt(montoEnJuego)+'</b> en juego</span>'
     +'</div>'
     +((sinTel||sinRut)?('<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
