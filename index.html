@@ -3299,6 +3299,93 @@ function eliminarCotizacionReg(nro){
   renderStatsAdmin();
   renderSeguimiento();
 }
+// SEGUNDA DIMENSION: lo facturado no es lo ganado.
+//
+// De cada peso que entra hay que pagar equipos, materiales y al ayudante, y
+// ademas el 19% del IVA nunca fue plata de Isaac: la cobra por el fisco. Un mes
+// de $3.000.000 facturados puede dejar menos al bolsillo que uno de $2.000.000,
+// y hasta ahora no habia forma de saberlo.
+//
+// El costo de los equipos si lo sabe el sistema -- el catalogo lo tiene -- asi
+// que ese viene pre-llenado. Materiales y ayudante solo los sabe Isaac, y solo
+// cuando el trabajo termino: por eso se preguntan despues de cerrar, no al
+// cerrar. Al cerrar todavia no compro nada.
+function costoEquiposDelCarrito(){
+  if(typeof carrito==="undefined")return 0;
+  return carrito.reduce(function(a,it){
+    if(!it.esEquipo)return a;
+    var p=CAT.find(function(x){return x.id===it.cod;});
+    return a+((p&&p.costo?p.costo:0)*(it.cant||1));
+  },0);
+}
+
+// El IVA no es ingreso. Lo que entra de verdad es el neto.
+function netoDe(r){
+  if(r.neto)return r.neto;
+  return Math.round((r.total||0)/(1+IVA));
+}
+function gastoDe(r){
+  var x=r.real; if(!x)return null;
+  return (x.eq||0)+(x.mat||0)+(x.ayu||0)+(x.otros||0);
+}
+function margenDe(r){
+  var g=gastoDe(r); if(g===null)return null;
+  return netoDe(r)-g;
+}
+
+function trabajosPorLiquidar(){
+  return REG_LIST.filter(function(r){return r.estado==="Aceptada" && !r.real;})
+    .sort(function(a,b){return String(fechaISO(b.fecha)).localeCompare(String(fechaISO(a.fecha)));});
+}
+
+function liquidarHTML(){
+  var lista=trabajosPorLiquidar();
+  if(!lista.length)return "";
+  return '<div style="border:1px solid var(--brd2);border-radius:var(--rs);padding:11px 13px;margin-bottom:12px">'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:3px">Trabajos por liquidar ('+lista.length+')</div>'
+    +'<div style="font-size:12.5px;color:var(--txt3);margin-bottom:9px">Cuando termines la obra, anota lo que gastaste de verdad. El IVA ya está descontado: lo que ves es lo que entró.</div>'
+    +lista.map(function(r){
+      var inp=function(k,ph,val){
+        return '<input id="liq-'+k+'-'+escAttr(String(r.nro))+'" type="number" min="0" step="1000" placeholder="'+ph+'" '
+          +'value="'+(val||"")+'" style="width:96px;padding:6px 8px;border:1px solid var(--brd);border-radius:var(--rs);'
+          +'background:var(--bg);color:var(--txt);font-size:13px">';
+      };
+      return '<div style="border-top:1px solid var(--brd);padding-top:9px;margin-top:9px">'
+        +'<div style="font-size:13px;margin-bottom:6px"><b>N°'+esc(String(r.nro))+' '+esc(r.nombre||"")+'</b>'
+        +' <span style="color:var(--txt3)">entró '+fmt(netoDe(r))+' neto</span></div>'
+        +'<div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">'
+        +inp("eq","equipos",r.costoEq||"")+inp("mat","materiales","")
+        +inp("ayu","ayudante","")+inp("otros","otros","")
+        +'<button class="seg-btn" onclick="guardarLiquidacion(\''+escAttr(String(r.nro))+'\')">Guardar</button>'
+        +'</div></div>';
+    }).join("")
+    +'</div>';
+}
+
+function guardarLiquidacion(nro){
+  var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
+  if(!r)return;
+  function val(k){
+    var e=document.getElementById("liq-"+k+"-"+nro);
+    return e?(parseInt(e.value,10)||0):0;
+  }
+  var real={eq:val("eq"),mat:val("mat"),ayu:val("ayu"),otros:val("otros"),fecha:hoyISO()};
+  var gasto=real.eq+real.mat+real.ayu+real.otros;
+  if(!gasto){
+    if(!confirm("No anotaste ningún gasto en la N°"+nro+".\n\n¿El trabajo no te costó nada?"))return;
+  }
+  var margen=netoDe(r)-gasto;
+  if(!confirm("N°"+nro+" — "+(r.nombre||"")+"\n\n"
+    +"Entró:      "+fmt(netoDe(r))+" (neto, sin IVA)\n"
+    +"Gastaste:   "+fmt(gasto)+"\n"
+    +"─────────────────────\n"
+    +"Al bolsillo: "+fmt(margen)+"   ("+(netoDe(r)?Math.round(margen*100/netoDe(r)):0)+"%)"))return;
+  r.real=real;
+  saveRegList();
+  renderSeguimiento();
+  try{renderStatsAdmin();}catch(e){}
+}
+
 function registrarCotizacion(P){
   var servicios=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"—";
   var ya=REG_LIST.find(function(r){return String(r.nro)===String(P.nro);});
@@ -3308,6 +3395,8 @@ function registrarCotizacion(P){
   // otro lado, que es exactamente lo que hace que el seguimiento no se haga.
   REG_LIST.push({
     nro:P.nro, fecha:P.fecha, nombre:P.nombre||"", total:P.tot, serv:servicios,
+    neto:P.neto||Math.round((P.tot||0)/(1+IVA)),
+    costoEq:costoEquiposDelCarrito(),
     estado:"Pendiente",
     tel:P.tel||"", comuna:P.comuna||"", rut:P.rut||"",
     canal:(document.getElementById("ccanal")||{value:""}).value||"",
@@ -3997,7 +4086,7 @@ function renderSeguimiento(){
   }
 
   if(!pendientes.length){
-    cont.innerHTML=avisoAlternativasHTML()
+    cont.innerHTML=liquidarHTML()+avisoAlternativasHTML()
       +'<div class="seg-vacio">No hay cotizaciones pendientes de respuesta.<br>'
       +'<span style="font-size:12.5px">Las cotizaciones que generes aparecen aquí hasta que las marques como cerradas o perdidas.</span></div>';
     return;
@@ -4019,6 +4108,7 @@ function renderSeguimiento(){
       +'<button class="seg-btn" onclick="corregirDesdeLaPlanilla()">Revisar contra la planilla</button>'
       +' <span style="margin-left:6px">deja el registro igual a la planilla: corrige lo distinto y elimina lo que sobra</span>'
       +'</div>'
+    +liquidarHTML()
     +avisoAlternativasHTML();
 
   cont.innerHTML=resumen+pendientes.map(function(x){
@@ -4342,6 +4432,37 @@ function renderStatsAdmin(){
       +'</div>'
       +'</div>';
   });
+
+  // La segunda dimension: de lo vendido, cuanto quedo. Solo se puede afirmar
+  // sobre los trabajos ya liquidados, asi que se dice cuantos faltan en vez de
+  // mezclar liquidados con no liquidados y dar un margen que no significa nada.
+  var aceptadasMes=delMes.filter(function(r){return r.estado==="Aceptada";});
+  var liq=aceptadasMes.filter(function(r){return r.real;});
+  var faltan=aceptadasMes.length-liq.length;
+  if(aceptadasMes.length){
+    var netoLiq=liq.reduce(function(a,r){return a+netoDe(r);},0);
+    var gastoLiq=liq.reduce(function(a,r){return a+gastoDe(r);},0);
+    var margenLiq=netoLiq-gastoLiq;
+    var pct=netoLiq?Math.round(margenLiq*100/netoLiq):0;
+    var fila=function(t,v,fuerte){
+      return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0'
+        +(fuerte?';border-top:1px solid var(--brd);margin-top:4px;padding-top:8px':'')+'">'
+        +'<span style="color:var(--txt2)'+(fuerte?';font-weight:800;color:var(--txt)':'')+'">'+t+'</span>'
+        +'<span style="font-weight:'+(fuerte?"800":"700")+';white-space:nowrap">'+v+'</span></div>';
+    };
+    html+='<div style="margin-top:18px;border:1px solid var(--brd2);border-radius:var(--rs);padding:12px 14px">'
+      +'<div style="font-weight:800;margin-bottom:2px">Al bolsillo</div>'
+      +'<div style="font-size:12.5px;color:var(--txt3);margin-bottom:8px">'
+        +'Sobre '+liq.length+' de '+aceptadasMes.length+' trabajo'+(aceptadasMes.length>1?"s":"")+' cerrado'+(aceptadasMes.length>1?"s":"")+' este mes. '
+        +'Sin IVA: ese 19% nunca fue tuyo.</div>'
+      +(liq.length?(
+          fila("Entró (neto)",fmt(netoLiq))
+         +fila("Equipos, materiales, ayudante","− "+fmt(gastoLiq))
+         +fila("Te quedó",fmt(margenLiq)+"  ("+pct+"%)",true)
+        ):'<div style="font-size:13px;color:var(--txt2)">Todavía no anotas gastos de ningún trabajo de este mes.</div>')
+      +(faltan?('<div style="font-size:12.5px;color:var(--txt3);margin-top:8px">Falta'+(faltan>1?"n":"")+' liquidar '+faltan+'. Los anotas en Seguimiento, en «Trabajos por liquidar».</div>'):'')
+      +'</div>';
+  }
 
   el.innerHTML=html;
 }
