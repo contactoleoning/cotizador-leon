@@ -3314,8 +3314,49 @@ function registrarCotizacion(P){
     contactos:[]
   });
   saveRegList();
+  preguntarSiEsAlternativa(P.nro);
   renderStatsAdmin();
   renderSeguimiento();
+}
+
+// Preguntar al generar, no solo despues. Si el cliente ya tiene una cotizacion
+// viva de estos dias, lo mas probable es que la nueva sea del mismo trabajo, y
+// es ahora -- con el trabajo fresco en la cabeza -- cuando Isaac sabe la
+// respuesta. Descubrirlo en dos semanas mirando numeros es mucho mas dificil.
+function preguntarSiEsAlternativa(nro){
+  var nueva=REG_LIST.find(function(r){return String(r.nro)===String(nro);});
+  if(!nueva||nueva.grupo)return;
+  var clave=claveClienteReg(nueva);
+  if(!clave)return;
+
+  var previas=REG_LIST.filter(function(r){
+    if(String(r.nro)===String(nro))return false;
+    if((r.estado||"Pendiente")!=="Pendiente")return false;
+    if(claveClienteReg(r)!==clave)return false;
+    var d=diasEntre(fechaISO(r.fecha), fechaISO(nueva.fecha));
+    return d!==null && Math.abs(d)<=DIAS_MISMO_TRABAJO;
+  });
+  if(!previas.length)return;
+
+  var lista="N°"+previas.map(function(r){return r.nro;}).join(", N°");
+  if(!confirm((nueva.nombre||"Este cliente")+" ya tiene "+lista+" esperando respuesta.\n\n"
+      +"¿La N°"+nro+" es del mismo trabajo?\n\n"
+      +"Aceptar = sí, es el mismo trabajo\nCancelar = es un trabajo aparte"))return;
+
+  var incluye=confirm("¿La N°"+nro+" incluye lo que ya estaba cotizado en "+lista+"?\n\n"
+    +"Aceptar = sí, la nueva reemplaza a "+(previas.length>1?"las anteriores":"la anterior")
+    +"\nCancelar = no, son opciones para que el cliente elija");
+
+  var grupo="g"+Date.now(), tipo=incluye?"reemplazo":"opciones";
+  previas.concat([nueva]).forEach(function(r){ r.grupo=grupo; r.grupoTipo=tipo; });
+  if(incluye){
+    previas.forEach(function(r){
+      r.estado="Descartada";
+      r.fechaCierre=hoyISO();
+      r.motivo="Incluida en la N°"+nro;
+    });
+  }
+  saveRegList();
 }
 
 // ═══════════════════════════════════════
@@ -3467,6 +3508,35 @@ function cerrarCotizacion(nro, estado){
         x.fechaCierre=hoyISO();
         x.motivo="Eligió otra alternativa";
       });
+    }
+  }
+
+  // Paola: dos alternativas y no contesto por ninguna. Marcar las dos como
+  // perdidas contaria dos derrotas donde hubo una sola oportunidad que no
+  // cerro, y hundiria la tasa de cierre inventando un fracaso que no existio.
+  if(estado==="Rechazada" && r.grupo){
+    var vivas=REG_LIST.filter(function(x){
+      return x.grupo===r.grupo && String(x.nro)!==String(nro) && (x.estado||"Pendiente")==="Pendiente";
+    });
+    if(vivas.length){
+      if(!confirm("Se pierde la N°"+nro+".\n\n"
+        +(vivas.length>1?("Las otras "+vivas.length+" de este mismo trabajo (N°"):"La otra de este mismo trabajo (N°")
+        +vivas.map(function(x){return x.nro;}).join(", N°")+") también queda"+(vivas.length>1?"n":"")+" cerrada"+(vivas.length>1?"s":"")+".\n\n"
+        +"Cuenta como UNA oportunidad perdida, no como "+(vivas.length+1)+"."))return;
+      var motivoG=prompt("¿Por qué no cerró?\n\nPrecio · Plazo · No contestó · Compró a otro · Otro","No contestó");
+      if(motivoG===null)return;
+      r.motivo=motivoG.trim();
+      vivas.forEach(function(x){
+        x.estado="Descartada";
+        x.fechaCierre=hoyISO();
+        x.motivo="Se perdió el trabajo (N°"+nro+")";
+      });
+      r.estado=estado;
+      r.fechaCierre=hoyISO();
+      saveRegList();
+      renderStatsAdmin();
+      renderSeguimiento();
+      return;
     }
   }
 
