@@ -2982,25 +2982,13 @@ function loadCloudData(){
       updateTrasSelect();
       renderTrasAdmin();
     }
-    // registro de cotizaciones (estadísticas)
-    if(rec.reg_list&&rec.reg_list.length){
-      // Antes esto tomaba la version del Apps Script como base y solo sumaba
-      // lo local que no existiera alla. Con Firebase escribiendo en paralelo
-      // eso borraba marcas: si el Apps Script contestaba despues de la
-      // fusion con Firebase, devolvia la cotizacion como pendiente y se
-      // perdia el cierre hecho desde otro equipo.
-      var porNro={};
-      REG_LIST.forEach(function(r){ if(r&&r.nro!=null)porNro[String(r.nro)]=r; });
-      rec.reg_list.forEach(function(r){
-        if(!r||r.nro==null)return;
-        var k=String(r.nro);
-        porNro[k]=mejorRegistro(porNro[k], r);
-      });
-      REG_LIST=Object.keys(porNro).map(function(k){return porNro[k];})
-        .filter(function(r){return REG_DELETED.indexOf(String(r.nro))===-1;});
-      try{localStorage.setItem("reg_list",JSON.stringify(REG_LIST));}catch(e){}
-      renderStatsAdmin();
-    }
+    // El registro de cotizaciones ya NO se lee del Apps Script: vive en
+    // Firebase, donde lo cubren las reglas de seguridad y el respaldo diario.
+    // Se dejo de leer de aqui despues de confirmar que la migracion subio los
+    // 14 registros reales y que la fusion entre equipos funciona.
+    //
+    // El Apps Script sigue guardando el historial de PDFs y los catalogos:
+    // eso no se toco.
     setSyncStatus(true);
     filtrar();
   })
@@ -3083,14 +3071,15 @@ function saveCloudData(){
           extra_list:mergeById(EXTRA_LIST,rec.extra_list),
           pack_list:mergeById(PACK_LIST,rec.pack_list),
           tras_list:mergeById(TRAS_LIST,rec.tras_list),
-          reg_list:mergeReg(REG_LIST,rec.reg_list)},
+          // reg_list ya no viaja: el registro vive en Firebase.
+          },
         function(){setSyncStatus(true);},
         function(){setSyncStatus(false);}
       );
     })
     .catch(function(){
       postToGAS(
-        {action:"saveCloud",nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST,extra_list:EXTRA_LIST,pack_list:PACK_LIST,tras_list:TRAS_LIST,reg_list:REG_LIST},
+        {action:"saveCloud",nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST,extra_list:EXTRA_LIST,pack_list:PACK_LIST,tras_list:TRAS_LIST},
         function(){setSyncStatus(true);},
         function(){setSyncStatus(false);}
       );
