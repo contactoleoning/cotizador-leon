@@ -3447,6 +3447,29 @@ function registrarContacto(nro){
 function cerrarCotizacion(nro, estado){
   var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
   if(!r)return;
+
+  // Si esta cotizacion era una de varias alternativas y se cierra, las
+  // hermanas no se "perdieron": el cliente eligio otra. Se marcan como
+  // Descartada, que no cuenta ni como venta ni como derrota. Contarlas como
+  // rechazadas hundiria la tasa de cierre e inventaria motivos de perdida.
+  if(estado==="Aceptada" && r.grupo){
+    var hermanas=REG_LIST.filter(function(x){
+      return x.grupo===r.grupo && String(x.nro)!==String(nro) && (x.estado||"Pendiente")==="Pendiente";
+    });
+    if(hermanas.length){
+      var ok=confirm("Se cierra la N°"+nro+".\n\n"
+        +"Las otras "+hermanas.length+" alternativas de este mismo trabajo (N°"
+        +hermanas.map(function(x){return x.nro;}).join(", N°")+") quedan descartadas.\n\n"
+        +"No cuentan como perdidas: el cliente eligió otra opción.");
+      if(!ok)return;
+      hermanas.forEach(function(x){
+        x.estado="Descartada";
+        x.fechaCierre=hoyISO();
+        x.motivo="Eligió otra alternativa";
+      });
+    }
+  }
+
   if(estado==="Rechazada"){
     // El motivo es el dato que despues permite saber si se pierde por precio,
     // por plazo o por silencio. Sin eso, "rechazada" no dice nada.
@@ -3591,6 +3614,62 @@ function completarDesdeIndicador(faltan, delHistorial){
   });
 }
 
+// ═══════════════════════════════════════
+// ALTERNATIVAS: VARIAS COTIZACIONES, UNA SOLA OPORTUNIDAD
+// ═══════════════════════════════════════
+// A un cliente se le cotizan tres opciones del mismo trabajo. Contarlas como
+// tres oportunidades infla la plata en juego, y cuando elige una las otras dos
+// caen como "perdidas" -- ensuciando la tasa de cierre y los motivos de
+// perdida con derrotas que nunca existieron.
+//
+// Agrupadas, cuentan como UNA: la plata en juego es la alternativa mas cara
+// (el techo de lo que puede entrar), y al cerrar una las hermanas quedan
+// "Descartada", que no es lo mismo que perdida.
+//
+// No se agrupa solo. Un cliente puede tener dos trabajos de verdad -- la casa
+// y la oficina -- y adivinar mal seria peor que no agrupar. Se detecta el
+// caso, se sugiere, y agrupa quien sabe.
+function claveClienteReg(r){
+  var ru=rutNormalizado(r.rut);
+  if(ru)return "r"+ru;
+  var te=telNormalizado(r.tel);
+  if(te)return "t"+te;
+  var n=nombreClaveCot(r.nombre);
+  return n?("n"+n):"";
+}
+
+// Cotizaciones pendientes del mismo cliente que todavia no estan agrupadas.
+function candidatosAAgrupar(){
+  var porClave={};
+  REG_LIST.forEach(function(r){
+    if((r.estado||"Pendiente")!=="Pendiente")return;
+    if(r.grupo)return;
+    var k=claveClienteReg(r);
+    if(!k)return;
+    (porClave[k]=porClave[k]||[]).push(r);
+  });
+  return Object.keys(porClave)
+    .filter(function(k){return porClave[k].length>1;})
+    .map(function(k){return porClave[k];});
+}
+
+function agruparAlternativas(clave){
+  var grupo="g"+Date.now();
+  var n=0;
+  REG_LIST.forEach(function(r){
+    if((r.estado||"Pendiente")!=="Pendiente"||r.grupo)return;
+    if(claveClienteReg(r)!==clave)return;
+    r.grupo=grupo; n++;
+  });
+  if(n){saveRegList();renderSeguimiento();}
+}
+
+function desagrupar(grupo){
+  REG_LIST.forEach(function(r){ if(r.grupo===grupo)delete r.grupo; });
+  saveRegList();
+  renderSeguimiento();
+}
+
 function renderSeguimiento(){
   var cont=document.getElementById("seg-lista");
   if(!cont)return;
@@ -3615,7 +3694,19 @@ function renderSeguimiento(){
   });
 
   var tocan=pendientes.filter(function(x){return !x.s.agotado && x.s.tocaHoy;}).length;
-  var montoEnJuego=pendientes.reduce(function(a,x){return a+(x.r.total||0);},0);
+
+  // Las alternativas del mismo cliente cuentan una sola vez: la mas cara, que
+  // es el techo de lo que puede entrar. Sumarlas todas dice que hay tres
+  // negocios donde hay uno.
+  var topePorGrupo={}, sueltas=0;
+  pendientes.forEach(function(x){
+    var g=x.r.grupo;
+    if(g)topePorGrupo[g]=Math.max(topePorGrupo[g]||0, x.r.total||0);
+    else sueltas+=(x.r.total||0);
+  });
+  var montoEnJuego=sueltas+Object.keys(topePorGrupo).reduce(function(a,g){return a+topePorGrupo[g];},0);
+  var nGrupos=Object.keys(topePorGrupo).length;
+  var nOportunidades=pendientes.filter(function(x){return !x.r.grupo;}).length+nGrupos;
 
   if(badge){
     badge.textContent=tocan?(tocan+" por contactar hoy"):"";
@@ -3631,13 +3722,23 @@ function renderSeguimiento(){
   var sinRut=REG_LIST.filter(function(r){return !r.rut;}).length;
   var resumen='<div class="seg-resumen">'
     +'<span><b>'+tocan+'</b> por contactar hoy</span>'
-    +'<span><b>'+pendientes.length+'</b> esperando respuesta</span>'
+    +'<span><b>'+pendientes.length+'</b> esperando respuesta'
+      +(nGrupos?(' <span style="color:var(--txt3)">('+nOportunidades+' oportunidades)</span>'):'')+'</span>'
     +'<span><b>'+fmt(montoEnJuego)+'</b> en juego</span>'
     +'</div>'
     +((sinTel||sinRut)?('<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
       +'<span>'+[sinTel?(sinTel+' sin teléfono'):'', sinRut?(sinRut+' sin RUT'):''].filter(Boolean).join(' · ')+'.</span>'
       +'<button class="seg-btn" onclick="completarTelefonos()">Completar desde el historial</button>'
-      +'</div>'):'');
+      +'</div>'):'')
+    +candidatosAAgrupar().map(function(g){
+      return '<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;'
+        +'border:1px dashed var(--brd2);border-radius:var(--rs);padding:9px 12px">'
+        +'<span><b style="color:var(--txt)">'+esc(g[0].nombre||"Este cliente")+'</b> tiene '+g.length
+        +' cotizaciones pendientes: N°'+g.map(function(r){return esc(String(r.nro));}).join(", N°")+'.</span>'
+        +'<button class="seg-btn" onclick="agruparAlternativas(\''+escAttr(claveClienteReg(g[0]))+'\')">'
+        +'Son alternativas del mismo trabajo</button>'
+        +'</div>';
+    }).join("");
 
   cont.innerHTML=resumen+pendientes.map(function(x){
     var r=x.r, s=x.s;
@@ -3654,6 +3755,11 @@ function renderSeguimiento(){
 
     var meta=[];
     meta.push("N°"+esc(String(r.nro)));
+    if(r.grupo){
+      var hermanas=REG_LIST.filter(function(x){return x.grupo===r.grupo;});
+      var esLaCara=(r.total||0)>=Math.max.apply(null,hermanas.map(function(x){return x.total||0;}));
+      meta.push("alternativa de "+hermanas.length+(esLaCara?" · la más alta":""));
+    }
     if(s.diasTotal!=null)meta.push("enviada hace "+s.diasTotal+"d");
     if(r.comuna)meta.push(esc(r.comuna));
     if((r.contactos||[]).length)meta.push((r.contactos||[]).length+" contacto"+((r.contactos||[]).length>1?"s":""));
@@ -3669,6 +3775,7 @@ function renderSeguimiento(){
         +(r.tel?'<button class="seg-btn wa" onclick="waSeguimiento(\''+escAttr(String(r.nro))+'\')">📲 Escribir</button>':'<span style="font-size:12px;color:var(--txt2)">sin teléfono</span>')
         +'<button class="seg-btn ok" onclick="cerrarCotizacion(\''+escAttr(String(r.nro))+'\',\'Aceptada\')">✓ Cerró</button>'
         +'<button class="seg-btn no" onclick="cerrarCotizacion(\''+escAttr(String(r.nro))+'\',\'Rechazada\')">✕ Se perdió</button>'
+        +(r.grupo?('<button class="seg-btn" title="Tratarlas como trabajos separados" onclick="desagrupar(\''+escAttr(r.grupo)+'\')">Separar</button>'):'')
       +'</div>'
     +'</div>';
   }).join("");
@@ -3698,10 +3805,16 @@ function renderStatsAdmin(){
   var nTot=delMes.length;
   var nAcep=delMes.filter(function(r){return r.estado==="Aceptada";}).length;
   var nRech=delMes.filter(function(r){return r.estado==="Rechazada";}).length;
-  var nPend=nTot-nAcep-nRech;
+  // Las descartadas son alternativas que el cliente no eligio: no son ventas
+  // ni derrotas, asi que salen de la cuenta en vez de contar como pendientes.
+  var nDesc=delMes.filter(function(r){return r.estado==="Descartada";}).length;
+  var nPend=nTot-nAcep-nRech-nDesc;
   var totCotizado=delMes.reduce(function(a,r){return a+(r.total||0);},0);
   var totCerrado=delMes.filter(function(r){return r.estado==="Aceptada";}).reduce(function(a,r){return a+(r.total||0);},0);
-  var tasa=nTot?Math.round(nAcep/nTot*100):0;
+  // La tasa se calcula sobre oportunidades reales: las descartadas no
+  // participaron nunca de una decision propia.
+  var nOport=nTot-nDesc;
+  var tasa=nOport?Math.round(nAcep/nOport*100):0;
 
   // Servicios más vendidos (de aceptadas; si no hay, de todas)
   var fuente=nAcep?delMes.filter(function(r){return r.estado==="Aceptada";}):delMes;
