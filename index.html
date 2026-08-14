@@ -3540,6 +3540,96 @@ function completarDesdeHistorial(faltan, listo){
   siguiente();
 }
 
+// Al cortar la sincronizacion con el Apps Script, el registro dejo de leer de
+// la planilla. Eso es lo correcto para el dia a dia -- Firebase es la fuente y
+// no puede venir nadie a pisarla -- pero dejo sin camino una situacion real:
+// arreglar la planilla a mano y que el arreglo llegue a la app.
+//
+// Paso con la 150 de Pilar. Cuando habia dos filas con ese numero, el registro
+// se quedo con la de $60.036; Isaac dejo en la planilla la correcta de $41.650
+// y la app siguio mostrando la vieja.
+//
+// Esto trae de vuelta los datos descriptivos -- nombre, monto, items, comuna,
+// RUT -- y NO toca el seguimiento: estado, contactos, agrupacion y motivo solo
+// existen aca y se conservan.
+function corregirDesdeLaPlanilla(){
+  if(!GAS_URL){alert("No hay conexión con la planilla.");return;}
+  if(!REG_LIST.length){alert("El registro no está cargado.");return;}
+
+  var porRevisar=REG_LIST.slice(), enVuelo=0, MAX=4, difs=[], conflictos=[];
+
+  // Cuando el nombre no coincide no estamos ante un monto mal copiado sino ante
+  // dos cotizaciones distintas peleando el mismo numero -- herencia de la pila
+  // de 148. Pisar ahi borraria una cotizacion real, asi que se avisa y no se
+  // toca: cual sobrevive lo decide Isaac, no este codigo.
+  function aplicar(){
+    if(conflictos.length){
+      alert("Ojo: "+conflictos.length+" número"+(conflictos.length>1?"s apuntan":" apunta")+" a otro cliente en la planilla.\n\n"
+        +conflictos.map(function(c){
+            return "N°"+c.nro+"\n   registro:  "+c.aca+"  "+fmt(c.montoAca)
+                  +"\n   planilla:  "+c.alla+"  "+fmt(c.montoAlla);
+          }).join("\n\n")
+        +"\n\nEso no se corrige solo: son dos cotizaciones distintas con el mismo número. "
+        +"Ninguna de las dos se va a tocar.");
+    }
+    if(!difs.length){
+      if(!conflictos.length)alert("El registro ya coincide con la planilla.\n\nNo hay nada que corregir.");
+      return;
+    }
+    var plata=difs.filter(function(d){return d.clave==="total";});
+    var resumen=(plata.length
+        ? "Montos:\n"+plata.map(function(d){return "   N°"+d.r.nro+"  "+d.antes+" → "+d.ahora;}).join("\n")+"\n\n"
+        : "")
+      +"Y "+(difs.length-plata.length)+" dato"+((difs.length-plata.length)!==1?"s":"")+" de detalle (servicio, comuna, RUT).";
+    if(!confirm("Diferencias con la planilla:\n\n"+resumen
+        +"\n\n¿Corregir el registro?\n\nEl seguimiento —estado, contactos, agrupación— no se toca."))return;
+    difs.forEach(function(d){ d.r[d.clave]=d.valor; });
+    saveRegList();
+    renderSeguimiento();
+    try{renderStatsAdmin();}catch(e){}
+    alert("Listo: "+difs.length+" dato"+(difs.length>1?"s":"")+" corregido"+(difs.length>1?"s":"")+".");
+  }
+
+  function siguiente(){
+    if(!porRevisar.length && enVuelo===0){aplicar();return;}
+    while(porRevisar.length && enVuelo<MAX){
+      (function(r){
+        enVuelo++;
+        fetch(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
+          .then(function(res){return res.json();})
+          .then(function(d){
+            if(!d||d.error)return;
+
+            var aca=nombreClaveCot(r.nombre), alla=nombreClaveCot(d.nombre);
+            if(aca && alla && aca!==alla
+               && aca.indexOf(alla)<0 && alla.indexOf(aca)<0){
+              conflictos.push({nro:r.nro, aca:r.nombre, alla:d.nombre,
+                               montoAca:r.total||0, montoAlla:Number(d.total)||0});
+              return;                       // ni el monto ni nada mas
+            }
+
+            function comparar(clave, valorPlanilla, formato){
+              if(valorPlanilla==null||valorPlanilla==="")return;
+              if(/#ERROR/i.test(String(valorPlanilla)))return;
+              if(String(r[clave]||"")===String(valorPlanilla))return;
+              difs.push({r:r, clave:clave, valor:valorPlanilla,
+                         antes:formato?formato(r[clave]):String(r[clave]||"—"),
+                         ahora:formato?formato(valorPlanilla):String(valorPlanilla)});
+            }
+            comparar("total",Number(d.total)||0,function(v){return fmt(Number(v)||0);});
+            comparar("nombre",d.nombre);
+            comparar("serv",d.items);
+            comparar("comuna",d.comuna);
+            comparar("rut",d.rut);
+          })
+          .catch(function(){})
+          .then(function(){enVuelo--;siguiente();});
+      })(porRevisar.shift());
+    }
+  }
+  siguiente();
+}
+
 function completarTelefonos(){
   // Se traen también los RUT: el Indicador los necesita para completar sus
   // fichas, y el historial los tiene aunque la columna de teléfono esté rota.
@@ -3730,6 +3820,10 @@ function renderSeguimiento(){
       +'<span>'+[sinTel?(sinTel+' sin teléfono'):'', sinRut?(sinRut+' sin RUT'):''].filter(Boolean).join(' · ')+'.</span>'
       +'<button class="seg-btn" onclick="completarTelefonos()">Completar desde el historial</button>'
       +'</div>'):'')
+    +'<div style="font-size:12.5px;color:var(--txt3);margin-bottom:10px">'
+      +'<button class="seg-btn" onclick="corregirDesdeLaPlanilla()">Revisar contra la planilla</button>'
+      +' <span style="margin-left:6px">si corregiste algo en Sheets y aquí sigue distinto</span>'
+      +'</div>'
     +candidatosAAgrupar().map(function(g){
       return '<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;'
         +'border:1px dashed var(--brd2);border-radius:var(--rs);padding:9px 12px">'
