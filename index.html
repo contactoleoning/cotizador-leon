@@ -3556,38 +3556,59 @@ function corregirDesdeLaPlanilla(){
   if(!GAS_URL){alert("No hay conexión con la planilla.");return;}
   if(!REG_LIST.length){alert("El registro no está cargado.");return;}
 
-  var porRevisar=REG_LIST.slice(), enVuelo=0, MAX=4, difs=[], conflictos=[];
+  var porRevisar=REG_LIST.slice(), enVuelo=0, MAX=4, difs=[], sobran=[];
 
-  // Cuando el nombre no coincide no estamos ante un monto mal copiado sino ante
-  // dos cotizaciones distintas peleando el mismo numero -- herencia de la pila
-  // de 148. Pisar ahi borraria una cotizacion real, asi que se avisa y no se
-  // toca: cual sobrevive lo decide Isaac, no este codigo.
-  function aplicar(){
-    if(conflictos.length){
-      alert("Ojo: "+conflictos.length+" número"+(conflictos.length>1?"s apuntan":" apunta")+" a otro cliente en la planilla.\n\n"
-        +conflictos.map(function(c){
-            return "N°"+c.nro+"\n   registro:  "+c.aca+"  "+fmt(c.montoAca)
-                  +"\n   planilla:  "+c.alla+"  "+fmt(c.montoAlla);
-          }).join("\n\n")
-        +"\n\nEso no se corrige solo: son dos cotizaciones distintas con el mismo número. "
-        +"Ninguna de las dos se va a tocar.");
-    }
-    if(!difs.length){
-      if(!conflictos.length)alert("El registro ya coincide con la planilla.\n\nNo hay nada que corregir.");
-      return;
-    }
+  // La planilla es la verdad: es la que Isaac cura a mano. Lo que el registro
+  // tenga y la planilla no, sobra -- sean pruebas que quedaron dando vueltas o
+  // cotizaciones que perdieron su numero cuando se apilaron los 148.
+  //
+  // Solo se borra cuando la planilla dice explicitamente "No encontrada", o
+  // cuando el numero existe pero con otro cliente. Si el fetch falla no se
+  // toca nada: un corte de red no puede leerse como "esto no existe".
+  function limpiar(){
+    if(!sobran.length)return true;
+    var detalle=sobran.map(function(x){
+      return "N°"+x.r.nro+"  "+(x.r.nombre||"sin nombre")
+            +(x.r.total?"  "+fmt(x.r.total):"")+"\n      "+x.motivo;
+    }).join("\n");
+    if(!confirm("Sobran "+sobran.length+" en el registro (no están en la planilla):\n\n"
+        +detalle+"\n\n¿Eliminarlas? Esto no se puede deshacer."))return false;
+    sobran.forEach(function(x){
+      var n=String(x.r.nro);
+      REG_LIST=REG_LIST.filter(function(r){return String(r.nro)!==n;});
+      if(REG_DELETED.indexOf(n)===-1)REG_DELETED.push(n);
+      borrarRegDeFirebase(n);
+    });
+    try{localStorage.setItem("reg_deleted",JSON.stringify(REG_DELETED));}catch(e){}
+    return true;
+  }
+
+  function corregir(){
+    if(!difs.length)return false;
     var plata=difs.filter(function(d){return d.clave==="total";});
     var resumen=(plata.length
         ? "Montos:\n"+plata.map(function(d){return "   N°"+d.r.nro+"  "+d.antes+" → "+d.ahora;}).join("\n")+"\n\n"
         : "")
-      +"Y "+(difs.length-plata.length)+" dato"+((difs.length-plata.length)!==1?"s":"")+" de detalle (servicio, comuna, RUT).";
+      +(difs.length-plata.length)+" dato"+((difs.length-plata.length)!==1?"s":"")+" de detalle (servicio, comuna, RUT).";
     if(!confirm("Diferencias con la planilla:\n\n"+resumen
-        +"\n\n¿Corregir el registro?\n\nEl seguimiento —estado, contactos, agrupación— no se toca."))return;
+        +"\n\n¿Corregir el registro?\n\nEl seguimiento —estado, contactos, agrupación— no se toca."))return false;
     difs.forEach(function(d){ d.r[d.clave]=d.valor; });
+    return true;
+  }
+
+  function aplicar(){
+    if(!difs.length && !sobran.length){
+      alert("El registro ya coincide con la planilla.\n\nNo hay nada que corregir ni que eliminar.");
+      return;
+    }
+    var borro=sobran.length, seLimpio=limpiar(), seCorrigio=corregir();
+    if(!seLimpio && !seCorrigio)return;
     saveRegList();
     renderSeguimiento();
     try{renderStatsAdmin();}catch(e){}
-    alert("Listo: "+difs.length+" dato"+(difs.length>1?"s":"")+" corregido"+(difs.length>1?"s":"")+".");
+    alert("Registro al día con la planilla."
+      +(seLimpio&&borro?"\n\nEliminadas: "+borro:"")
+      +(seCorrigio?"\n\nCorregidos: "+difs.length+" dato"+(difs.length>1?"s":""):""));
   }
 
   function siguiente(){
@@ -3598,14 +3619,18 @@ function corregirDesdeLaPlanilla(){
         fetch(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
           .then(function(res){return res.json();})
           .then(function(d){
-            if(!d||d.error)return;
+            if(!d)return;
+            if(d.error){
+              if(/no encontrada/i.test(String(d.error)))
+                sobran.push({r:r, motivo:"la planilla no tiene ese número"});
+              return;
+            }
 
             var aca=nombreClaveCot(r.nombre), alla=nombreClaveCot(d.nombre);
             if(aca && alla && aca!==alla
                && aca.indexOf(alla)<0 && alla.indexOf(aca)<0){
-              conflictos.push({nro:r.nro, aca:r.nombre, alla:d.nombre,
-                               montoAca:r.total||0, montoAlla:Number(d.total)||0});
-              return;                       // ni el monto ni nada mas
+              sobran.push({r:r, motivo:"en la planilla el N°"+r.nro+" es de "+d.nombre});
+              return;
             }
 
             function comparar(clave, valorPlanilla, formato){
@@ -3622,7 +3647,7 @@ function corregirDesdeLaPlanilla(){
             comparar("comuna",d.comuna);
             comparar("rut",d.rut);
           })
-          .catch(function(){})
+          .catch(function(){})       // red caida: no concluir nada
           .then(function(){enVuelo--;siguiente();});
       })(porRevisar.shift());
     }
@@ -3822,7 +3847,7 @@ function renderSeguimiento(){
       +'</div>'):'')
     +'<div style="font-size:12.5px;color:var(--txt3);margin-bottom:10px">'
       +'<button class="seg-btn" onclick="corregirDesdeLaPlanilla()">Revisar contra la planilla</button>'
-      +' <span style="margin-left:6px">si corregiste algo en Sheets y aquí sigue distinto</span>'
+      +' <span style="margin-left:6px">deja el registro igual a la planilla: corrige lo distinto y elimina lo que sobra</span>'
       +'</div>'
     +candidatosAAgrupar().map(function(g){
       return '<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;'
