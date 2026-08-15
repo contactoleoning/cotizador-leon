@@ -2069,8 +2069,13 @@ function fichasDeLaPersona(clientes, row){
     if(!c)return;
     // El RUT manda: es unico de verdad. El telefono solo se usa si no hay RUT,
     // porque puede repetirse entre marido y mujer o quedar reasignado.
+    // Se compara contra los dos RUT de la ficha: el de la persona y el de su
+    // empresa. Carolina Santa Cruz factura a nombre de Inversiones Punta de
+    // Aguilas, asi que la cotizacion lleva el RUT de la empresa; si solo se
+    // mirara c.rut no encontraria su ficha y crearia una segunda a nombre de
+    // la razon social -- justo lo que se quiso evitar.
     var coincide = rutBuscado
-      ? (rutNormalizado(c.rut)===rutBuscado)
+      ? (rutNormalizado(c.rut)===rutBuscado || rutNormalizado(c.rutEmpresa)===rutBuscado)
       : (telBuscado && telNormalizado(c.telefono)===telBuscado);
     if(coincide)res.push({clave:k, ficha:c});
   });
