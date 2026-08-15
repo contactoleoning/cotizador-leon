@@ -17,7 +17,7 @@
   color-scheme:dark;
   --bg:#0b0b0d;--bg2:#161619;--bg3:#212126;--brd:#2a2a30;--brd2:#3a3a42;
   --txt:#f6f6f8;--txt2:#bdbdc7;--txt3:#82828d;
-  --acc:#d6d9de;--acc2:#a8adb6;--grn:#4fd884;--cy:#ff9f43;--blu:#5b9fd9;--red:#ff6b6b;
+  --acc:#d6d9de;--acc2:#a8adb6;--grn:#4fd884;--barra:#35a862;--cy:#ff9f43;--blu:#5b9fd9;--red:#ff6b6b;
   --r:12px;--rs:8px
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -31,6 +31,9 @@ body{background:var(--bg);color:var(--txt);font-family:"DM Sans",sans-serif;min-
 .hsalir:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .tabs{display:flex;gap:3px;padding:10px 12px 0;background:var(--bg2);border-bottom:2px solid var(--brd);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
+.tabwrap{position:relative}
+.tabwrap::after{content:"";position:absolute;top:0;right:0;width:26px;height:100%;pointer-events:none;
+  background:linear-gradient(to right,transparent,var(--bg2))}
 .tab{padding:10px 16px;border-radius:var(--rs) var(--rs) 0 0;font-size:14px;font-weight:700;cursor:pointer;color:var(--txt2);border:2px solid transparent;border-bottom:none;transition:all .15s;letter-spacing:.02em;white-space:nowrap;flex-shrink:0}
 .tab:hover{color:var(--txt);background:var(--bg3)}
 .tab.act{background:var(--bg);color:var(--acc);border-color:var(--brd)}
@@ -111,7 +114,7 @@ select option{background:#161619;color:var(--txt)}
 .btnrow .btn{margin-top:0}
 @media(max-width:480px){
   .main{padding:12px 10px 100px}
-  .tab{padding:9px 13px;font-size:13px}
+  .tab{padding:9px 11px;font-size:12.5px;letter-spacing:0}
   .tr.TT{font-size:22px}
   .pv{font-size:18px}
   .tipoinm{grid-template-columns:1fr}
@@ -194,18 +197,6 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";}</script>
-<style>
-/* Aviso de version de prueba. position:fixed + pointer-events:none para que
-   no tape ni bloquee ningun control de la app. */
-#beta-flag{position:fixed;left:0;right:0;bottom:0;z-index:100000;pointer-events:none;
-  background:repeating-linear-gradient(45deg,#8a5a00,#8a5a00 12px,#6d4700 12px,#6d4700 24px);
-  color:#fff;font:700 11px/1 -apple-system,system-ui,sans-serif;letter-spacing:.18em;
-  text-transform:uppercase;text-align:center;padding:6px 8px 8px;
-  box-shadow:0 -2px 12px rgba(0,0,0,.45)}
-@media print{#beta-flag{display:none}}
-@media (max-width:430px){#beta-flag{letter-spacing:.04em;font-size:10px;padding:5px 6px 7px}}
-body{padding-bottom:30px}
-</style>
 </head>
 <body>
 <div id="lock-overlay">
@@ -226,11 +217,12 @@ body{padding-bottom:30px}
   </div>
   <button class="hsalir" id="btnsalir" onclick="cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión">Salir</button>
 </header>
-<nav class="tabs">
+<div class="tabwrap"><nav class="tabs">
   <div class="tab act" id="tab-cot" data-tab="cot">CREAR COTIZACIÓN</div>
   <div class="tab" id="tab-info" data-tab="info">INFORMACIÓN</div>
+  <div class="tab" id="tab-fin" data-tab="fin">FINANZAS</div>
   <div class="tab" id="tab-adm" data-tab="adm">ADMINISTRADOR</div>
-</nav>
+</nav></div>
 <main class="main">
 <div id="view-cot">
 <div id="cot-wrap">
@@ -676,6 +668,11 @@ body{padding-bottom:30px}
 
 </div>
 
+<div id="view-fin" style="display:none">
+  <div class="card">
+    <div id="statslista"></div>
+  </div>
+</div>
 <div id="view-adm" style="display:none">
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
     <div onclick="toggleAdmSec('eq')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
@@ -738,15 +735,6 @@ body{padding-bottom:30px}
     </div>
     <div id="adm-tras-body" style="display:none;padding:14px">
       <div id="traslista"></div>
-    </div>
-  </div>
-  <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
-    <div onclick="toggleAdmSec('stats')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
-      <div class="ct" style="margin:0;border:none;padding:0">📊 Estadísticas de Ventas</div>
-      <span id="adm-stats-arrow" style="font-size:18px;color:var(--acc);transition:transform .2s">▶</span>
-    </div>
-    <div id="adm-stats-body" style="display:none;padding:14px">
-      <div id="statslista"></div>
     </div>
   </div>
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
@@ -1182,11 +1170,17 @@ function saveOv(id){
 }
 
 function showTab(t){
-  ["cot","info","adm"].forEach(function(x){
-    document.getElementById("view-"+x).style.display=(x===t)?"":"none";
-    document.getElementById("tab-"+x).className="tab"+(x===t?" act":"");
+  ["cot","info","fin","adm"].forEach(function(x){
+    var v=document.getElementById("view-"+x), b=document.getElementById("tab-"+x);
+    if(v)v.style.display=(x===t)?"":"none";
+    if(b)b.className="tab"+(x===t?" act":"");
   });
+  // Con cuatro pestañas ya no caben todas en un telefono. La barra scrollea,
+  // pero si la activa queda fuera de vista uno cree que no paso nada.
+  var act=document.getElementById("tab-"+t);
+  if(act&&act.scrollIntoView)act.scrollIntoView({block:"nearest",inline:"nearest"});
   if(t==="info"){cargarExtremosCotizaciones();renderSeguimiento();}
+  if(t==="fin"){renderStatsAdmin();}
 }
 
 function toggleKit(){}
@@ -1999,6 +1993,7 @@ function construirRowIndicador(){
       telefono:telefono,
       telefonoFijo:esFijo && !!telefono,
       rut:rut,
+      email:(document.getElementById("cemail").value||"").trim(),
       servicio:servicio,
       inicia:inicia,
       duracion:duracion,
@@ -2074,8 +2069,13 @@ function fichasDeLaPersona(clientes, row){
     if(!c)return;
     // El RUT manda: es unico de verdad. El telefono solo se usa si no hay RUT,
     // porque puede repetirse entre marido y mujer o quedar reasignado.
+    // Se compara contra los dos RUT de la ficha: el de la persona y el de su
+    // empresa. Carolina Santa Cruz factura a nombre de Inversiones Punta de
+    // Aguilas, asi que la cotizacion lleva el RUT de la empresa; si solo se
+    // mirara c.rut no encontraria su ficha y crearia una segunda a nombre de
+    // la razon social -- justo lo que se quiso evitar.
     var coincide = rutBuscado
-      ? (rutNormalizado(c.rut)===rutBuscado)
+      ? (rutNormalizado(c.rut)===rutBuscado || rutNormalizado(c.rutEmpresa)===rutBuscado)
       : (telBuscado && telNormalizado(c.telefono)===telBuscado);
     if(coincide)res.push({clave:k, ficha:c});
   });
@@ -2993,25 +2993,13 @@ function loadCloudData(){
       updateTrasSelect();
       renderTrasAdmin();
     }
-    // registro de cotizaciones (estadísticas)
-    if(rec.reg_list&&rec.reg_list.length){
-      // Antes esto tomaba la version del Apps Script como base y solo sumaba
-      // lo local que no existiera alla. Con Firebase escribiendo en paralelo
-      // eso borraba marcas: si el Apps Script contestaba despues de la
-      // fusion con Firebase, devolvia la cotizacion como pendiente y se
-      // perdia el cierre hecho desde otro equipo.
-      var porNro={};
-      REG_LIST.forEach(function(r){ if(r&&r.nro!=null)porNro[String(r.nro)]=r; });
-      rec.reg_list.forEach(function(r){
-        if(!r||r.nro==null)return;
-        var k=String(r.nro);
-        porNro[k]=mejorRegistro(porNro[k], r);
-      });
-      REG_LIST=Object.keys(porNro).map(function(k){return porNro[k];})
-        .filter(function(r){return REG_DELETED.indexOf(String(r.nro))===-1;});
-      try{localStorage.setItem("reg_list",JSON.stringify(REG_LIST));}catch(e){}
-      renderStatsAdmin();
-    }
+    // El registro de cotizaciones ya NO se lee del Apps Script: vive en
+    // Firebase, donde lo cubren las reglas de seguridad y el respaldo diario.
+    // Se dejo de leer de aqui despues de confirmar que la migracion subio los
+    // 14 registros reales y que la fusion entre equipos funciona.
+    //
+    // El Apps Script sigue guardando el historial de PDFs y los catalogos:
+    // eso no se toco.
     setSyncStatus(true);
     filtrar();
   })
@@ -3034,14 +3022,61 @@ function incrementNro(){
 // avanza el número solo, sin que haga falta acordarse del botón. Si es el
 // mismo cliente (o el número todavía no se ha usado), no toca nada -- eso
 // sigue permitiendo reimprimir/reintentar sin duplicar número.
+// Evita que dos clientes distintos queden con el mismo numero de cotizacion.
+//
+// Esta salvaguarda ya existia y aun asi la planilla terminó con DIEZ
+// cotizaciones numeradas 148, de clientes distintos, entre el 13 y el 24 de
+// julio. Fallaba por tres motivos, y los tres estan corregidos aca:
+//
+//   1. Avanzaba UNA sola vez. Si el 148 y el 149 estaban ocupados, saltaba al
+//      149 -- que tambien lo estaba -- y ahi se quedaba.
+//   2. Lo hacia en silencio. Nadie se enteraba de que el numero habia
+//      cambiado, ni de que se habia quedado repetido.
+//   3. Si REG_LIST venia vacio -- porque la sincronizacion habia fallado --
+//      no encontraba nada con que comparar y dejaba pasar todo. Ese es el
+//      caso que produjo la pila de 148: sin registro cargado, ninguna
+//      cotizacion "sabia" que el numero ya estaba usado.
+function nombreClaveCot(n){
+  return String(n||"").trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/\s+/g," ");
+}
+
 function asegurarNroLibre(){
   var nroActual=document.getElementById("nro").value.trim();
-  var nombreActual=(document.getElementById("cnombre").value||"").trim().toLowerCase();
+  var nombreActual=nombreClaveCot(document.getElementById("cnombre").value);
   if(!nombreActual) return;
-  var yaRegistrado=REG_LIST.find(function(r){return String(r.nro)===String(nroActual);});
-  if(yaRegistrado && (yaRegistrado.nombre||"").trim().toLowerCase()!==nombreActual){
-    incrementNro();
+
+  // Sin registro cargado no hay con que comparar. Antes seguia de largo en
+  // silencio; ahora al menos se avisa, porque es exactamente la situacion en
+  // la que se repiten los numeros.
+  if(!REG_LIST.length){
+    alert("No se pudo verificar el N° de cotización: el registro no está cargado.\n\n"
+      +"Si ya generaste otra cotización hoy, revisa que el N° "+nroActual+" no esté repetido "
+      +"antes de continuar.");
+    return;
   }
+
+  function ocupadoPorOtro(n){
+    var r=REG_LIST.find(function(x){return String(x.nro)===String(n);});
+    return r && nombreClaveCot(r.nombre)!==nombreActual;
+  }
+
+  if(!ocupadoPorOtro(nroActual)) return;   // libre, o es la misma cotizacion reimprimiendose
+
+  var deQuien=(REG_LIST.find(function(x){return String(x.nro)===String(nroActual);})||{}).nombre||"otro cliente";
+
+  // Avanzar hasta encontrar uno realmente libre, no solo el siguiente.
+  var n=parseInt(nroActual,10)||1;
+  var tope=n+500;
+  while(ocupadoPorOtro(n) && n<tope) n++;
+
+  alert("El N° "+nroActual+" ya está usado por «"+deQuien+"».\n\n"
+    +"Esta cotización pasa al N° "+n+".");
+
+  localStorage.setItem("cot_nro",String(n));
+  setNroUI(n);
+  saveCloudData();
 }
 
 // Botón "Iniciar Cotización Nueva" — recién acá avanza el número de cotización.
@@ -3094,14 +3129,15 @@ function saveCloudData(){
           extra_list:mergeById(EXTRA_LIST,rec.extra_list),
           pack_list:mergeById(PACK_LIST,rec.pack_list),
           tras_list:mergeById(TRAS_LIST,rec.tras_list),
-          reg_list:mergeReg(REG_LIST,rec.reg_list)},
+          // reg_list ya no viaja: el registro vive en Firebase.
+          },
         function(){setSyncStatus(true);},
         function(){setSyncStatus(false);}
       );
     })
     .catch(function(){
       postToGAS(
-        {action:"saveCloud",nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST,extra_list:EXTRA_LIST,pack_list:PACK_LIST,tras_list:TRAS_LIST,reg_list:REG_LIST},
+        {action:"saveCloud",nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST,extra_list:EXTRA_LIST,pack_list:PACK_LIST,tras_list:TRAS_LIST},
         function(){setSyncStatus(true);},
         function(){setSyncStatus(false);}
       );
@@ -3274,6 +3310,107 @@ function eliminarCotizacionReg(nro){
   renderStatsAdmin();
   renderSeguimiento();
 }
+// SEGUNDA DIMENSION: lo facturado no es lo ganado.
+//
+// De cada peso que entra hay que pagar equipos, materiales y al ayudante, y
+// ademas el 19% del IVA nunca fue plata de Isaac: la cobra por el fisco. Un mes
+// de $3.000.000 facturados puede dejar menos al bolsillo que uno de $2.000.000,
+// y hasta ahora no habia forma de saberlo.
+//
+// El costo de los equipos si lo sabe el sistema -- el catalogo lo tiene -- asi
+// que ese viene pre-llenado. Materiales y ayudante solo los sabe Isaac, y solo
+// cuando el trabajo termino: por eso se preguntan despues de cerrar, no al
+// cerrar. Al cerrar todavia no compro nada.
+function costoEquiposDelCarrito(){
+  if(typeof carrito==="undefined")return 0;
+  return carrito.reduce(function(a,it){
+    if(!it.esEquipo)return a;
+    var p=CAT.find(function(x){return x.id===it.cod;});
+    return a+((p&&p.costo?p.costo:0)*(it.cant||1));
+  },0);
+}
+
+// El IVA no es ingreso. Lo que entra de verdad es el neto.
+function netoDe(r){
+  if(r.neto)return r.neto;
+  return Math.round((r.total||0)/(1+IVA));
+}
+function gastoDe(r){
+  var x=r.real; if(!x)return null;
+  return (x.eq||0)+(x.mat||0)+(x.ayu||0)+(x.otros||0);
+}
+function margenDe(r){
+  var g=gastoDe(r); if(g===null)return null;
+  return netoDe(r)-g;
+}
+
+function trabajosPorLiquidar(){
+  return REG_LIST.filter(function(r){return r.estado==="Aceptada" && !r.real;})
+    .sort(function(a,b){return String(fechaISO(b.fecha)).localeCompare(String(fechaISO(a.fecha)));});
+}
+
+// En Seguimiento va solo el recordatorio, no el formulario: esta pantalla es
+// para perseguir respuestas, no para hacer numeros. Pero sin el aviso los
+// trabajos se quedan sin liquidar para siempre y la mitad del sistema no sirve.
+function avisoPorLiquidarHTML(){
+  var n=trabajosPorLiquidar().length;
+  if(!n)return "";
+  return '<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;'
+    +'border:1px dashed var(--brd2);border-radius:var(--rs);padding:9px 12px">'
+    +'<span><b style="color:var(--txt)">'+n+' trabajo'+(n>1?'s':'')+'</b> sin anotar cuánto '
+    +(n>1?'costaron':'costó')+'.</span>'
+    +'<button class="seg-btn" onclick="showTab(\'fin\')">Ir a Finanzas</button>'
+    +'</div>';
+}
+
+function liquidarHTML(){
+  var lista=trabajosPorLiquidar();
+  if(!lista.length)return "";
+  return '<div style="border:1px solid var(--brd2);border-radius:var(--rs);padding:11px 13px;margin-bottom:12px">'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:3px">Trabajos por liquidar ('+lista.length+')</div>'
+    +'<div style="font-size:12.5px;color:var(--txt3);margin-bottom:9px">Cuando termines la obra, anota lo que gastaste de verdad. El IVA ya está descontado: lo que ves es lo que entró.</div>'
+    +lista.map(function(r){
+      var inp=function(k,ph,val){
+        return '<input id="liq-'+k+'-'+escAttr(String(r.nro))+'" type="number" min="0" step="1000" placeholder="'+ph+'" '
+          +'value="'+(val||"")+'" style="width:96px;padding:6px 8px;border:1px solid var(--brd);border-radius:var(--rs);'
+          +'background:var(--bg);color:var(--txt);font-size:13px">';
+      };
+      return '<div style="border-top:1px solid var(--brd);padding-top:9px;margin-top:9px">'
+        +'<div style="font-size:13px;margin-bottom:6px"><b>N°'+esc(String(r.nro))+' '+esc(r.nombre||"")+'</b>'
+        +' <span style="color:var(--txt3)">entró '+fmt(netoDe(r))+' neto</span></div>'
+        +'<div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">'
+        +inp("eq","equipos",r.costoEq||"")+inp("mat","materiales","")
+        +inp("ayu","ayudante","")+inp("otros","otros","")
+        +'<button class="seg-btn" onclick="guardarLiquidacion(\''+escAttr(String(r.nro))+'\')">Guardar</button>'
+        +'</div></div>';
+    }).join("")
+    +'</div>';
+}
+
+function guardarLiquidacion(nro){
+  var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
+  if(!r)return;
+  function val(k){
+    var e=document.getElementById("liq-"+k+"-"+nro);
+    return e?(parseInt(e.value,10)||0):0;
+  }
+  var real={eq:val("eq"),mat:val("mat"),ayu:val("ayu"),otros:val("otros"),fecha:hoyISO()};
+  var gasto=real.eq+real.mat+real.ayu+real.otros;
+  if(!gasto){
+    if(!confirm("No anotaste ningún gasto en la N°"+nro+".\n\n¿El trabajo no te costó nada?"))return;
+  }
+  var margen=netoDe(r)-gasto;
+  if(!confirm("N°"+nro+" — "+(r.nombre||"")+"\n\n"
+    +"Entró:      "+fmt(netoDe(r))+" (neto, sin IVA)\n"
+    +"Gastaste:   "+fmt(gasto)+"\n"
+    +"─────────────────────\n"
+    +"Al bolsillo: "+fmt(margen)+"   ("+(netoDe(r)?Math.round(margen*100/netoDe(r)):0)+"%)"))return;
+  r.real=real;
+  saveRegList();
+  renderSeguimiento();
+  try{renderStatsAdmin();}catch(e){}
+}
+
 function registrarCotizacion(P){
   var servicios=carrito.map(function(p){return p.tipo;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).join(" + ")||"—";
   var ya=REG_LIST.find(function(r){return String(r.nro)===String(P.nro);});
@@ -3283,14 +3420,57 @@ function registrarCotizacion(P){
   // otro lado, que es exactamente lo que hace que el seguimiento no se haga.
   REG_LIST.push({
     nro:P.nro, fecha:P.fecha, nombre:P.nombre||"", total:P.tot, serv:servicios,
+    neto:P.neto||Math.round((P.tot||0)/(1+IVA)),
+    costoEq:costoEquiposDelCarrito(),
     estado:"Pendiente",
     tel:P.tel||"", comuna:P.comuna||"", rut:P.rut||"",
     canal:(document.getElementById("ccanal")||{value:""}).value||"",
     contactos:[]
   });
   saveRegList();
+  preguntarSiEsAlternativa(P.nro);
   renderStatsAdmin();
   renderSeguimiento();
+}
+
+// Preguntar al generar, no solo despues. Si el cliente ya tiene una cotizacion
+// viva de estos dias, lo mas probable es que la nueva sea del mismo trabajo, y
+// es ahora -- con el trabajo fresco en la cabeza -- cuando Isaac sabe la
+// respuesta. Descubrirlo en dos semanas mirando numeros es mucho mas dificil.
+function preguntarSiEsAlternativa(nro){
+  var nueva=REG_LIST.find(function(r){return String(r.nro)===String(nro);});
+  if(!nueva||nueva.grupo)return;
+  var clave=claveClienteReg(nueva);
+  if(!clave)return;
+
+  var previas=REG_LIST.filter(function(r){
+    if(String(r.nro)===String(nro))return false;
+    if((r.estado||"Pendiente")!=="Pendiente")return false;
+    if(claveClienteReg(r)!==clave)return false;
+    var d=diasEntre(fechaISO(r.fecha), fechaISO(nueva.fecha));
+    return d!==null && Math.abs(d)<=DIAS_MISMO_TRABAJO;
+  });
+  if(!previas.length)return;
+
+  var lista="N°"+previas.map(function(r){return r.nro;}).join(", N°");
+  if(!confirm((nueva.nombre||"Este cliente")+" ya tiene "+lista+" esperando respuesta.\n\n"
+      +"¿La N°"+nro+" es del mismo trabajo?\n\n"
+      +"Aceptar = sí, es el mismo trabajo\nCancelar = es un trabajo aparte"))return;
+
+  var incluye=confirm("¿La N°"+nro+" incluye lo que ya estaba cotizado en "+lista+"?\n\n"
+    +"Aceptar = sí, la nueva reemplaza a "+(previas.length>1?"las anteriores":"la anterior")
+    +"\nCancelar = no, son opciones para que el cliente elija");
+
+  var grupo="g"+Date.now(), tipo=incluye?"reemplazo":"opciones";
+  previas.concat([nueva]).forEach(function(r){ r.grupo=grupo; r.grupoTipo=tipo; });
+  if(incluye){
+    previas.forEach(function(r){
+      r.estado="Descartada";
+      r.fechaCierre=hoyISO();
+      r.motivo="Incluida en la N°"+nro;
+    });
+  }
+  saveRegList();
 }
 
 // ═══════════════════════════════════════
@@ -3422,6 +3602,58 @@ function registrarContacto(nro){
 function cerrarCotizacion(nro, estado){
   var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
   if(!r)return;
+
+  // Si esta cotizacion era una de varias alternativas y se cierra, las
+  // hermanas no se "perdieron": el cliente eligio otra. Se marcan como
+  // Descartada, que no cuenta ni como venta ni como derrota. Contarlas como
+  // rechazadas hundiria la tasa de cierre e inventaria motivos de perdida.
+  if(estado==="Aceptada" && r.grupo){
+    var hermanas=REG_LIST.filter(function(x){
+      return x.grupo===r.grupo && String(x.nro)!==String(nro) && (x.estado||"Pendiente")==="Pendiente";
+    });
+    if(hermanas.length){
+      var ok=confirm("Se cierra la N°"+nro+".\n\n"
+        +"Las otras "+hermanas.length+" alternativas de este mismo trabajo (N°"
+        +hermanas.map(function(x){return x.nro;}).join(", N°")+") quedan descartadas.\n\n"
+        +"No cuentan como perdidas: el cliente eligió otra opción.");
+      if(!ok)return;
+      hermanas.forEach(function(x){
+        x.estado="Descartada";
+        x.fechaCierre=hoyISO();
+        x.motivo="Eligió otra alternativa";
+      });
+    }
+  }
+
+  // Paola: dos alternativas y no contesto por ninguna. Marcar las dos como
+  // perdidas contaria dos derrotas donde hubo una sola oportunidad que no
+  // cerro, y hundiria la tasa de cierre inventando un fracaso que no existio.
+  if(estado==="Rechazada" && r.grupo){
+    var vivas=REG_LIST.filter(function(x){
+      return x.grupo===r.grupo && String(x.nro)!==String(nro) && (x.estado||"Pendiente")==="Pendiente";
+    });
+    if(vivas.length){
+      if(!confirm("Se pierde la N°"+nro+".\n\n"
+        +(vivas.length>1?("Las otras "+vivas.length+" de este mismo trabajo (N°"):"La otra de este mismo trabajo (N°")
+        +vivas.map(function(x){return x.nro;}).join(", N°")+") también queda"+(vivas.length>1?"n":"")+" cerrada"+(vivas.length>1?"s":"")+".\n\n"
+        +"Cuenta como UNA oportunidad perdida, no como "+(vivas.length+1)+"."))return;
+      var motivoG=prompt("¿Por qué no cerró?\n\nPrecio · Plazo · No contestó · Compró a otro · Otro","No contestó");
+      if(motivoG===null)return;
+      r.motivo=motivoG.trim();
+      vivas.forEach(function(x){
+        x.estado="Descartada";
+        x.fechaCierre=hoyISO();
+        x.motivo="Se perdió el trabajo (N°"+nro+")";
+      });
+      r.estado=estado;
+      r.fechaCierre=hoyISO();
+      saveRegList();
+      renderStatsAdmin();
+      renderSeguimiento();
+      return;
+    }
+  }
+
   if(estado==="Rechazada"){
     // El motivo es el dato que despues permite saber si se pierde por precio,
     // por plazo o por silencio. Sin eso, "rechazada" no dice nada.
@@ -3487,6 +3719,121 @@ function completarDesdeHistorial(faltan, listo){
           .catch(function(){})
           .then(function(){enVuelo--;siguiente();});
       })(pendientes.shift());
+    }
+  }
+  siguiente();
+}
+
+// Al cortar la sincronizacion con el Apps Script, el registro dejo de leer de
+// la planilla. Eso es lo correcto para el dia a dia -- Firebase es la fuente y
+// no puede venir nadie a pisarla -- pero dejo sin camino una situacion real:
+// arreglar la planilla a mano y que el arreglo llegue a la app.
+//
+// Paso con la 150 de Pilar. Cuando habia dos filas con ese numero, el registro
+// se quedo con la de $60.036; Isaac dejo en la planilla la correcta de $41.650
+// y la app siguio mostrando la vieja.
+//
+// Esto trae de vuelta los datos descriptivos -- nombre, monto, items, comuna,
+// RUT -- y NO toca el seguimiento: estado, contactos, agrupacion y motivo solo
+// existen aca y se conservan.
+function corregirDesdeLaPlanilla(){
+  if(!GAS_URL){alert("No hay conexión con la planilla.");return;}
+  if(!REG_LIST.length){alert("El registro no está cargado.");return;}
+
+  var porRevisar=REG_LIST.slice(), enVuelo=0, MAX=4, difs=[], sobran=[];
+
+  // La planilla es la verdad: es la que Isaac cura a mano. Lo que el registro
+  // tenga y la planilla no, sobra -- sean pruebas que quedaron dando vueltas o
+  // cotizaciones que perdieron su numero cuando se apilaron los 148.
+  //
+  // Solo se borra cuando la planilla dice explicitamente "No encontrada", o
+  // cuando el numero existe pero con otro cliente. Si el fetch falla no se
+  // toca nada: un corte de red no puede leerse como "esto no existe".
+  function limpiar(){
+    if(!sobran.length)return true;
+    var detalle=sobran.map(function(x){
+      return "N°"+x.r.nro+"  "+(x.r.nombre||"sin nombre")
+            +(x.r.total?"  "+fmt(x.r.total):"")+"\n      "+x.motivo;
+    }).join("\n");
+    if(!confirm("Sobran "+sobran.length+" en el registro (no están en la planilla):\n\n"
+        +detalle+"\n\n¿Eliminarlas? Esto no se puede deshacer."))return false;
+    sobran.forEach(function(x){
+      var n=String(x.r.nro);
+      REG_LIST=REG_LIST.filter(function(r){return String(r.nro)!==n;});
+      if(REG_DELETED.indexOf(n)===-1)REG_DELETED.push(n);
+      borrarRegDeFirebase(n);
+    });
+    try{localStorage.setItem("reg_deleted",JSON.stringify(REG_DELETED));}catch(e){}
+    return true;
+  }
+
+  function corregir(){
+    if(!difs.length)return false;
+    var plata=difs.filter(function(d){return d.clave==="total";});
+    var resumen=(plata.length
+        ? "Montos:\n"+plata.map(function(d){return "   N°"+d.r.nro+"  "+d.antes+" → "+d.ahora;}).join("\n")+"\n\n"
+        : "")
+      +(difs.length-plata.length)+" dato"+((difs.length-plata.length)!==1?"s":"")+" de detalle (servicio, comuna, RUT).";
+    if(!confirm("Diferencias con la planilla:\n\n"+resumen
+        +"\n\n¿Corregir el registro?\n\nEl seguimiento —estado, contactos, agrupación— no se toca."))return false;
+    difs.forEach(function(d){ d.r[d.clave]=d.valor; });
+    return true;
+  }
+
+  function aplicar(){
+    if(!difs.length && !sobran.length){
+      alert("El registro ya coincide con la planilla.\n\nNo hay nada que corregir ni que eliminar.");
+      return;
+    }
+    var borro=sobran.length, seLimpio=limpiar(), seCorrigio=corregir();
+    if(!seLimpio && !seCorrigio)return;
+    saveRegList();
+    renderSeguimiento();
+    try{renderStatsAdmin();}catch(e){}
+    alert("Registro al día con la planilla."
+      +(seLimpio&&borro?"\n\nEliminadas: "+borro:"")
+      +(seCorrigio?"\n\nCorregidos: "+difs.length+" dato"+(difs.length>1?"s":""):""));
+  }
+
+  function siguiente(){
+    if(!porRevisar.length && enVuelo===0){aplicar();return;}
+    while(porRevisar.length && enVuelo<MAX){
+      (function(r){
+        enVuelo++;
+        fetch(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
+          .then(function(res){return res.json();})
+          .then(function(d){
+            if(!d)return;
+            if(d.error){
+              if(/no encontrada/i.test(String(d.error)))
+                sobran.push({r:r, motivo:"la planilla no tiene ese número"});
+              return;
+            }
+
+            var aca=nombreClaveCot(r.nombre), alla=nombreClaveCot(d.nombre);
+            if(aca && alla && aca!==alla
+               && aca.indexOf(alla)<0 && alla.indexOf(aca)<0){
+              sobran.push({r:r, motivo:"en la planilla el N°"+r.nro+" es de "+d.nombre});
+              return;
+            }
+
+            function comparar(clave, valorPlanilla, formato){
+              if(valorPlanilla==null||valorPlanilla==="")return;
+              if(/#ERROR/i.test(String(valorPlanilla)))return;
+              if(String(r[clave]||"")===String(valorPlanilla))return;
+              difs.push({r:r, clave:clave, valor:valorPlanilla,
+                         antes:formato?formato(r[clave]):String(r[clave]||"—"),
+                         ahora:formato?formato(valorPlanilla):String(valorPlanilla)});
+            }
+            comparar("total",Number(d.total)||0,function(v){return fmt(Number(v)||0);});
+            comparar("nombre",d.nombre);
+            comparar("serv",d.items);
+            comparar("comuna",d.comuna);
+            comparar("rut",d.rut);
+          })
+          .catch(function(){})       // red caida: no concluir nada
+          .then(function(){enVuelo--;siguiente();});
+      })(porRevisar.shift());
     }
   }
   siguiente();
@@ -3566,6 +3913,161 @@ function completarDesdeIndicador(faltan, delHistorial){
   });
 }
 
+// ═══════════════════════════════════════
+// ALTERNATIVAS: VARIAS COTIZACIONES, UNA SOLA OPORTUNIDAD
+// ═══════════════════════════════════════
+// A un cliente se le cotizan tres opciones del mismo trabajo. Contarlas como
+// tres oportunidades infla la plata en juego, y cuando elige una las otras dos
+// caen como "perdidas" -- ensuciando la tasa de cierre y los motivos de
+// perdida con derrotas que nunca existieron.
+//
+// Agrupadas, cuentan como UNA: la plata en juego es la alternativa mas cara
+// (el techo de lo que puede entrar), y al cerrar una las hermanas quedan
+// "Descartada", que no es lo mismo que perdida.
+//
+// No se agrupa solo. Un cliente puede tener dos trabajos de verdad -- la casa
+// y la oficina -- y adivinar mal seria peor que no agrupar. Se detecta el
+// caso, se sugiere, y agrupa quien sabe.
+function claveClienteReg(r){
+  var ru=rutNormalizado(r.rut);
+  if(ru)return "r"+ru;
+  var te=telNormalizado(r.tel);
+  if(te)return "t"+te;
+  var n=nombreClaveCot(r.nombre);
+  return n?("n"+n):"";
+}
+
+// Cotizaciones del mismo cliente que pueden ser un solo trabajo.
+//
+// Mira las cerradas tambien, no solo las pendientes. El caso de Ana Moya: se
+// cotizo, aparecio trabajo adicional, se hizo una nueva por mas plata y la
+// primera quedo sin efecto. Si alcanzo a marcarse la primera como perdida
+// antes de agrupar, la sugerencia desaparecia y esa plata quedaba para siempre
+// como venta perdida. No lo era: nunca hubo dos oportunidades.
+//
+// Se agrupa por cercania en el tiempo. Un cliente que vuelve a los tres meses
+// es un cliente que vuelve -- dato que Isaac mide aparte -- y no una
+// alternativa del mismo trabajo. El corte esta en 30 dias.
+var DIAS_MISMO_TRABAJO=30;
+
+function candidatosAAgrupar(){
+  var porCliente={};
+  REG_LIST.forEach(function(r){
+    if(r.grupo)return;
+    var k=claveClienteReg(r);
+    if(!k)return;
+    (porCliente[k]=porCliente[k]||[]).push(r);
+  });
+
+  var grupos=[];
+  Object.keys(porCliente).forEach(function(k){
+    var lista=porCliente[k].slice().sort(function(a,b){
+      return String(fechaISO(a.fecha)).localeCompare(String(fechaISO(b.fecha)));
+    });
+    var actual=[lista[0]];
+    for(var i=1;i<lista.length;i++){
+      var d=diasEntre(fechaISO(lista[i-1].fecha), fechaISO(lista[i].fecha));
+      if(d!==null && d<=DIAS_MISMO_TRABAJO) actual.push(lista[i]);
+      else { if(actual.length>1)grupos.push(actual); actual=[lista[i]]; }
+    }
+    if(actual.length>1)grupos.push(actual);
+  });
+
+  // Si ya esta resuelto de forma coherente -- una aceptada y el resto
+  // descartadas -- no hay nada que sugerir.
+  return grupos.filter(function(g){
+    return g.some(function(r){return (r.estado||"Pendiente")!=="Descartada";})
+        && !(g.filter(function(r){return r.estado==="Aceptada";}).length===1
+             && g.filter(function(r){return r.estado==="Descartada";}).length===g.length-1);
+  });
+}
+
+// Dos cosas distintas que se veian iguales:
+//
+//   OPCIONES  -- al cliente se le dieron varias y va a elegir una. Las tres de
+//                Andres. Todas siguen vivas hasta que conteste, y en juego pesa
+//                la mas alta porque cualquiera puede ser la que cierre.
+//
+//   REEMPLAZO -- aparecio trabajo adicional y se rehizo la cotizacion incluyendo
+//                lo anterior, para que el cliente vea un solo numero. Ana Moya.
+//                Las viejas no estan esperando respuesta: estan anuladas. Se
+//                descartan al tiro y salen de la lista de seguimiento, porque
+//                perseguir al cliente por una cotizacion que ya no existe es
+//                trabajo perdido y ademas queda mal.
+function agruparAlternativas(clave, tipo){
+  var g=candidatosAAgrupar().filter(function(x){return claveClienteReg(x[0])===clave;})[0];
+  if(!g)return;
+
+  var nros=g.map(function(r){return r.nro;});
+  var aceptada=g.filter(function(r){return r.estado==="Aceptada";})[0];
+  var msg, vigente, salen;
+
+  if(tipo==="reemplazo"){
+    // La ultima manda, salvo que una anterior ya haya cerrado: si cerro, esa es
+    // la que vale y no la reemplaza nada.
+    vigente=aceptada||g.slice().sort(function(a,b){
+      return String(fechaISO(a.fecha)).localeCompare(String(fechaISO(b.fecha)));
+    })[g.length-1];
+    salen=g.filter(function(r){return r!==vigente && r.estado!=="Descartada";});
+    msg="La N°"+vigente.nro+" incluye lo cotizado en "
+      +(salen.length>1?"las N°":"la N°")+salen.map(function(r){return r.nro;}).join(", N°")+".\n\n"
+      +(salen.length>1?"Esas quedan":"Esa queda")+" anulada"+(salen.length>1?"s":"")
+      +" y sale"+(salen.length>1?"n":"")+" del seguimiento: no "
+      +(salen.length>1?"están":"está")+" esperando respuesta.\n\n"
+      +"En juego queda "+fmt(vigente.total||0)+", no la suma.";
+  }else{
+    vigente=null;
+    salen=aceptada?g.filter(function(r){
+      return r!==aceptada && r.estado!=="Descartada" && r.estado!=="Aceptada";}):[];
+    msg="N°"+nros.join(", N°")+" son opciones del mismo trabajo: el cliente elige una.\n\n"
+      +"En «plata en juego» cuentan como una oportunidad, no como "+g.length+"."
+      +(salen.length?("\n\nComo la N°"+aceptada.nro+" ya cerró, "
+          +(salen.length>1?"las N°":"la N°")+salen.map(function(r){return r.nro;}).join(", N°")
+          +" queda"+(salen.length>1?"n":"")+" descartada"+(salen.length>1?"s":"")
+          +". No cuenta"+(salen.length>1?"n":"")+" como venta perdida."):"");
+  }
+  if(!confirm(msg))return;
+
+  var grupo="g"+Date.now();
+  g.forEach(function(r){ r.grupo=grupo; r.grupoTipo=(tipo==="reemplazo")?"reemplazo":"opciones"; });
+  salen.forEach(function(r){
+    r.estado="Descartada";
+    r.motivo=(tipo==="reemplazo")
+      ? ("Incluida en la N°"+vigente.nro)
+      : ("Eligió otra alternativa");
+    r.fechaCierre=r.fechaCierre||hoyISO();
+  });
+  saveRegList();
+  renderSeguimiento();
+  try{renderStatsAdmin();}catch(e){}
+}
+
+function desagrupar(grupo){
+  REG_LIST.forEach(function(r){ if(r.grupo===grupo)delete r.grupo; });
+  saveRegList();
+  renderSeguimiento();
+}
+
+// El aviso tiene que decir la verdad de lo que hay: no es lo mismo "tres
+// pendientes" que "una cerro y las otras dos siguen colgando".
+function avisoAlternativasHTML(){
+  return candidatosAAgrupar().map(function(g){
+    var cerrada=g.filter(function(r){return r.estado==="Aceptada";})[0];
+    var detalle=cerrada
+      ? ('tiene '+g.length+' cotizaciones de esos días y la N°'+esc(String(cerrada.nro))+' ya cerró')
+      : ('tiene '+g.length+' cotizaciones pendientes');
+    return '<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;'
+      +'border:1px dashed var(--brd2);border-radius:var(--rs);padding:9px 12px">'
+      +'<span><b style="color:var(--txt)">'+esc(g[0].nombre||"Este cliente")+'</b> '+detalle
+      +': N°'+g.map(function(r){return esc(String(r.nro));}).join(", N°")+'.</span>'
+      +'<button class="seg-btn" onclick="agruparAlternativas(\''+escAttr(claveClienteReg(g[0]))+'\',\'opciones\')">'
+      +'Son opciones para elegir</button>'
+      +'<button class="seg-btn" onclick="agruparAlternativas(\''+escAttr(claveClienteReg(g[0]))+'\',\'reemplazo\')">'
+      +'La última incluye a las anteriores</button>'
+      +'</div>';
+  }).join("");
+}
+
 function renderSeguimiento(){
   var cont=document.getElementById("seg-lista");
   if(!cont)return;
@@ -3590,14 +4092,27 @@ function renderSeguimiento(){
   });
 
   var tocan=pendientes.filter(function(x){return !x.s.agotado && x.s.tocaHoy;}).length;
-  var montoEnJuego=pendientes.reduce(function(a,x){return a+(x.r.total||0);},0);
+
+  // Las alternativas del mismo cliente cuentan una sola vez: la mas cara, que
+  // es el techo de lo que puede entrar. Sumarlas todas dice que hay tres
+  // negocios donde hay uno.
+  var topePorGrupo={}, sueltas=0;
+  pendientes.forEach(function(x){
+    var g=x.r.grupo;
+    if(g)topePorGrupo[g]=Math.max(topePorGrupo[g]||0, x.r.total||0);
+    else sueltas+=(x.r.total||0);
+  });
+  var montoEnJuego=sueltas+Object.keys(topePorGrupo).reduce(function(a,g){return a+topePorGrupo[g];},0);
+  var nGrupos=Object.keys(topePorGrupo).length;
+  var nOportunidades=pendientes.filter(function(x){return !x.r.grupo;}).length+nGrupos;
 
   if(badge){
     badge.textContent=tocan?(tocan+" por contactar hoy"):"";
   }
 
   if(!pendientes.length){
-    cont.innerHTML='<div class="seg-vacio">No hay cotizaciones pendientes de respuesta.<br>'
+    cont.innerHTML=avisoPorLiquidarHTML()+avisoAlternativasHTML()
+      +'<div class="seg-vacio">No hay cotizaciones pendientes de respuesta.<br>'
       +'<span style="font-size:12.5px">Las cotizaciones que generes aparecen aquí hasta que las marques como cerradas o perdidas.</span></div>';
     return;
   }
@@ -3606,13 +4121,20 @@ function renderSeguimiento(){
   var sinRut=REG_LIST.filter(function(r){return !r.rut;}).length;
   var resumen='<div class="seg-resumen">'
     +'<span><b>'+tocan+'</b> por contactar hoy</span>'
-    +'<span><b>'+pendientes.length+'</b> esperando respuesta</span>'
+    +'<span><b>'+pendientes.length+'</b> esperando respuesta'
+      +((nOportunidades<pendientes.length)?(' <span style="color:var(--txt3)">('+nOportunidades+' oportunidades)</span>'):'')+'</span>'
     +'<span><b>'+fmt(montoEnJuego)+'</b> en juego</span>'
     +'</div>'
     +((sinTel||sinRut)?('<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
       +'<span>'+[sinTel?(sinTel+' sin teléfono'):'', sinRut?(sinRut+' sin RUT'):''].filter(Boolean).join(' · ')+'.</span>'
       +'<button class="seg-btn" onclick="completarTelefonos()">Completar desde el historial</button>'
-      +'</div>'):'');
+      +'</div>'):'')
+    +'<div style="font-size:12.5px;color:var(--txt3);margin-bottom:10px">'
+      +'<button class="seg-btn" onclick="corregirDesdeLaPlanilla()">Revisar contra la planilla</button>'
+      +' <span style="margin-left:6px">deja el registro igual a la planilla: corrige lo distinto y elimina lo que sobra</span>'
+      +'</div>'
+    +avisoPorLiquidarHTML()
+    +avisoAlternativasHTML();
 
   cont.innerHTML=resumen+pendientes.map(function(x){
     var r=x.r, s=x.s;
@@ -3629,6 +4151,11 @@ function renderSeguimiento(){
 
     var meta=[];
     meta.push("N°"+esc(String(r.nro)));
+    if(r.grupo){
+      var hermanas=REG_LIST.filter(function(x){return x.grupo===r.grupo;});
+      var esLaCara=(r.total||0)>=Math.max.apply(null,hermanas.map(function(x){return x.total||0;}));
+      meta.push("alternativa de "+hermanas.length+(esLaCara?" · la más alta":""));
+    }
     if(s.diasTotal!=null)meta.push("enviada hace "+s.diasTotal+"d");
     if(r.comuna)meta.push(esc(r.comuna));
     if((r.contactos||[]).length)meta.push((r.contactos||[]).length+" contacto"+((r.contactos||[]).length>1?"s":""));
@@ -3644,9 +4171,117 @@ function renderSeguimiento(){
         +(r.tel?'<button class="seg-btn wa" onclick="waSeguimiento(\''+escAttr(String(r.nro))+'\')">📲 Escribir</button>':'<span style="font-size:12px;color:var(--txt2)">sin teléfono</span>')
         +'<button class="seg-btn ok" onclick="cerrarCotizacion(\''+escAttr(String(r.nro))+'\',\'Aceptada\')">✓ Cerró</button>'
         +'<button class="seg-btn no" onclick="cerrarCotizacion(\''+escAttr(String(r.nro))+'\',\'Rechazada\')">✕ Se perdió</button>'
+        +(r.grupo?('<button class="seg-btn" title="Tratarlas como trabajos separados" onclick="desagrupar(\''+escAttr(r.grupo)+'\')">Separar</button>'):'')
       +'</div>'
     +'</div>';
   }).join("");
+}
+
+// VENTAS POR MES Y POR AÑO
+//
+// Una sola serie por grafico: cuanto se vendio. Nada de dos escalas en el mismo
+// eje -- si algun dia se quiere ver margen en el tiempo, va en su propio
+// grafico, no montado sobre este.
+//
+// Barras horizontales y no verticales: esto se mira en el telefono, en terreno,
+// y con doce meses en vertical las etiquetas quedan de canto e ilegibles.
+//
+// El verde de las barras (#35a862) no es el --grn de los botones. Un relleno
+// grande necesita menos luz que un acento chico: el --grn quedaba fuera de la
+// banda de luminosidad contra el fondo del panel. El contraste de los dos pasa.
+function ventasAgrupadas(porAnio){
+  var acc={};
+  REG_LIST.forEach(function(r){
+    if(r.estado!=="Aceptada")return;
+    var iso=fechaISO(r.fecha); if(!iso)return;
+    var k=porAnio?iso.substring(0,4):iso.substring(0,7);
+    var a=acc[k]||(acc[k]={neto:0,conIva:0,n:0,liq:0,margen:0});
+    a.neto+=netoDe(r); a.conIva+=(r.total||0); a.n++;
+    if(r.real){a.liq++; a.margen+=margenDe(r);}
+  });
+  return acc;
+}
+
+// La linea de tiempo se rellena mes a mes aunque no haya ventas. Un mes en cero
+// es informacion -- saltarselo haria ver una temporada pareja donde hubo un
+// hoyo.
+function mesesSeguidos(desde, hasta){
+  var out=[], y=+desde.substring(0,4), m=+desde.substring(5,7);
+  var yF=+hasta.substring(0,4), mF=+hasta.substring(5,7);
+  while(y<yF || (y===yF && m<=mF)){
+    out.push(y+"-"+("0"+m).slice(-2));
+    if(++m>12){m=1;y++;}
+    if(out.length>240)break;
+  }
+  return out;
+}
+
+function barrasHTML(filas){
+  var max=filas.reduce(function(a,f){return Math.max(a,f.valor);},0)||1;
+  return '<div style="padding:2px 0 6px 0">'+filas.map(function(f){
+    var pct=Math.round(f.valor*1000/max)/10;
+    return '<div title="'+escAttr(f.detalle||"")+'" style="display:grid;grid-template-columns:62px 1fr auto;'
+      +'align-items:center;gap:9px;padding:2px 0">'
+      +'<span style="font-size:12px;color:var(--txt3);white-space:nowrap">'+esc(f.label)+'</span>'
+      +'<span style="display:block;height:15px;background:var(--bg2);border-radius:2px;overflow:hidden">'
+        +'<span style="display:block;height:100%;width:'+(f.valor?Math.max(pct,1.2):0)+'%;'
+        +'background:var(--barra);border-radius:0 4px 4px 0"></span></span>'
+      +'<span style="font-size:12px;color:'+(f.valor?'var(--txt2)':'var(--txt3)')+';white-space:nowrap;min-width:62px;text-align:right">'
+        +(f.valor?fmt(f.valor):"—")+'</span>'
+      +'</div>';
+  }).join("")+'</div>';
+}
+
+function graficosVentasHTML(NOMBRES_MES){
+  var vendidas=REG_LIST.filter(function(r){return r.estado==="Aceptada" && fechaISO(r.fecha);});
+  if(!vendidas.length)return "";
+
+  var porMes=ventasAgrupadas(false), porAnio=ventasAgrupadas(true);
+  var claves=Object.keys(porMes).sort();
+  var hoy=hoyISO().substring(0,7);
+  var linea=mesesSeguidos(claves[0], hoy>claves[claves.length-1]?hoy:claves[claves.length-1]);
+  if(linea.length>12)linea=linea.slice(-12);
+
+  var abrev={"01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun",
+             "07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic"};
+
+  var filasMes=linea.map(function(k){
+    var d=porMes[k]||{neto:0,conIva:0,n:0,liq:0,margen:0};
+    return {label:abrev[k.substring(5,7)]+" "+k.substring(2,4), valor:d.neto,
+      detalle:d.n?(d.n+" trabajo"+(d.n>1?"s":"")+" · "+fmt(d.conIva)+" con IVA"
+        +(d.liq?(" · te quedaron "+fmt(d.margen)+" de "+d.liq+" liquidado"+(d.liq>1?"s":"")):" · sin liquidar"))
+        :"sin ventas"};
+  });
+
+  var html='<div class="gl">Ventas por mes</div>'
+    +'<div style="font-size:12.5px;color:var(--txt3);margin:-2px 0 6px 0">Neto, sin IVA. '
+    +(linea.length>=12?'Últimos 12 meses.':'Desde tu primera venta.')+'</div>'
+    +barrasHTML(filasMes);
+
+  var anios=Object.keys(porAnio).sort();
+  html+='<div class="gl">Ventas por año</div>';
+  if(anios.length<2){
+    var a=porAnio[anios[0]];
+    html+='<div style="font-size:13px;color:var(--txt2);padding:2px 0 12px 0">'
+      +'<b style="color:var(--txt);font-size:16px">'+fmt(a.neto)+'</b> en '+anios[0]
+      +' <span style="color:var(--txt3)">('+a.n+' trabajo'+(a.n>1?"s":"")+')</span>'
+      +'<div style="font-size:12.5px;color:var(--txt3);margin-top:3px">El año que viene esto se convierte en barras y vas a poder comparar temporada con temporada.</div>'
+      +'</div>';
+  }else{
+    html+=barrasHTML(anios.map(function(k){
+      var d=porAnio[k];
+      return {label:k, valor:d.neto,
+        detalle:d.n+" trabajo"+(d.n>1?"s":"")+" · "+fmt(d.conIva)+" con IVA"};
+    }));
+    var ult=porAnio[anios[anios.length-1]], pen=porAnio[anios[anios.length-2]];
+    if(pen.neto){
+      var dif=Math.round((ult.neto-pen.neto)*100/pen.neto);
+      html+='<div style="font-size:13px;color:var(--txt2);padding:0 0 12px 0">'
+        +anios[anios.length-1]+' va <b style="color:'+(dif>=0?'var(--grn)':'#e74c3c')+'">'
+        +(dif>=0?"+":"")+dif+'%</b> contra '+anios[anios.length-2]+'.</div>';
+    }
+  }
+  return html;
 }
 
 function renderStatsAdmin(){
@@ -3673,10 +4308,16 @@ function renderStatsAdmin(){
   var nTot=delMes.length;
   var nAcep=delMes.filter(function(r){return r.estado==="Aceptada";}).length;
   var nRech=delMes.filter(function(r){return r.estado==="Rechazada";}).length;
-  var nPend=nTot-nAcep-nRech;
+  // Las descartadas son alternativas que el cliente no eligio: no son ventas
+  // ni derrotas, asi que salen de la cuenta en vez de contar como pendientes.
+  var nDesc=delMes.filter(function(r){return r.estado==="Descartada";}).length;
+  var nPend=nTot-nAcep-nRech-nDesc;
   var totCotizado=delMes.reduce(function(a,r){return a+(r.total||0);},0);
   var totCerrado=delMes.filter(function(r){return r.estado==="Aceptada";}).reduce(function(a,r){return a+(r.total||0);},0);
-  var tasa=nTot?Math.round(nAcep/nTot*100):0;
+  // La tasa se calcula sobre oportunidades reales: las descartadas no
+  // participaron nunca de una decision propia.
+  var nOport=nTot-nDesc;
+  var tasa=nOport?Math.round(nAcep/nOport*100):0;
 
   // Servicios más vendidos (de aceptadas; si no hay, de todas)
   var fuente=nAcep?delMes.filter(function(r){return r.estado==="Aceptada";}):delMes;
@@ -3730,7 +4371,9 @@ function renderStatsAdmin(){
       +'cotizaciones · tasa de cierre · vendido</div></div>';
   }
 
-  var html=tendencia+selHtml
+  // El grafico primero: es lo que Isaac viene a ver cuando abre Finanzas. El
+  // detalle de un mes en particular va despues, para quien lo quiera revisar.
+  var html=graficosVentasHTML(NOMBRES_MES)+liquidarHTML()+tendencia+selHtml
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
     +'<div style="'+box+'"><div style="'+big+';color:var(--txt)">'+nTot+'</div><div style="'+sm+'">Cotizaciones</div></div>'
     +'<div style="'+box+'"><div style="'+big+';color:var(--acc)">'+tasa+'%</div><div style="'+sm+'">Tasa de cierre</div></div>'
@@ -3899,6 +4542,38 @@ function renderStatsAdmin(){
     });
     html+='</div>';
   }
+
+  // La segunda dimension: de lo vendido, cuanto quedo. Solo se puede afirmar
+  // sobre los trabajos ya liquidados, asi que se dice cuantos faltan en vez de
+  // mezclar liquidados con no liquidados y dar un margen que no significa nada.
+  var aceptadasMes=delMes.filter(function(r){return r.estado==="Aceptada";});
+  var liq=aceptadasMes.filter(function(r){return r.real;});
+  var faltan=aceptadasMes.length-liq.length;
+  if(aceptadasMes.length){
+    var netoLiq=liq.reduce(function(a,r){return a+netoDe(r);},0);
+    var gastoLiq=liq.reduce(function(a,r){return a+gastoDe(r);},0);
+    var margenLiq=netoLiq-gastoLiq;
+    var pct=netoLiq?Math.round(margenLiq*100/netoLiq):0;
+    var fila=function(t,v,fuerte){
+      return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0'
+        +(fuerte?';border-top:1px solid var(--brd);margin-top:4px;padding-top:8px':'')+'">'
+        +'<span style="color:var(--txt2)'+(fuerte?';font-weight:800;color:var(--txt)':'')+'">'+t+'</span>'
+        +'<span style="font-weight:'+(fuerte?"800":"700")+';white-space:nowrap">'+v+'</span></div>';
+    };
+    html+='<div style="margin-top:18px;border:1px solid var(--brd2);border-radius:var(--rs);padding:12px 14px">'
+      +'<div style="font-weight:800;margin-bottom:2px">Al bolsillo</div>'
+      +'<div style="font-size:12.5px;color:var(--txt3);margin-bottom:8px">'
+        +'Sobre '+liq.length+' de '+aceptadasMes.length+' trabajo'+(aceptadasMes.length>1?"s":"")+' cerrado'+(aceptadasMes.length>1?"s":"")+' este mes. '
+        +'Sin IVA: ese 19% nunca fue tuyo.</div>'
+      +(liq.length?(
+          fila("Entró (neto)",fmt(netoLiq))
+         +fila("Equipos, materiales, ayudante","− "+fmt(gastoLiq))
+         +fila("Te quedó",fmt(margenLiq)+"  ("+pct+"%)",true)
+        ):'<div style="font-size:13px;color:var(--txt2)">Todavía no anotas gastos de ningún trabajo de este mes.</div>')
+      +(faltan?('<div style="font-size:12.5px;color:var(--txt3);margin-top:8px">Falta'+(faltan>1?"n":"")+' liquidar '+faltan+'. Los anotas más arriba, en «Trabajos por liquidar».</div>'):'')
+      +'</div>';
+  }
+
 
   html+='<div class="gl">Cotizaciones de '+labelMes(selMes)+'</div>';
   var ordenadas=delMes.slice().reverse();
@@ -4775,10 +5450,16 @@ function cargarRolUsuario(user,listo){
 // partir del costo, asi que el costo igual viaja. Esconderlo de verdad
 // requiere calcular el precio en el servidor (fase 2, ver SEGURIDAD.md).
 function aplicarRolEnUI(){
-  var tabAdm=document.getElementById('tab-adm');
-  if(tabAdm)tabAdm.style.display=esAdmin()?'':'none';
-  if(!esAdmin()&&document.getElementById('view-adm')&&document.getElementById('view-adm').style.display!=='none'){
-    showTab('cot');
+  // Finanzas muestra margenes y costos reales: un vendedor tampoco los ve.
+  ['tab-adm','tab-fin'].forEach(function(id){
+    var b=document.getElementById(id);
+    if(b)b.style.display=esAdmin()?'':'none';
+  });
+  if(!esAdmin()){
+    ['view-adm','view-fin'].forEach(function(id){
+      var v=document.getElementById(id);
+      if(v&&v.style.display!=='none')showTab('cot');
+    });
   }
   var v=document.getElementById('cvendedor');
   if(v&&LEON_USUARIO&&!v.value)v.value=LEON_USUARIO.nombre;
@@ -4833,6 +5514,5 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<div id="beta-flag">Versión de prueba — no usar para trabajo real</div>
 </body>
 </html>
