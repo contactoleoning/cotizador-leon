@@ -1809,12 +1809,47 @@ function getAppCheckToken(){
   return firebase.appCheck().getToken(false).then(function(r){return r.token;}).catch(function(){return null;});
 }
 
+// ── Topes de tiempo para todo lo que sale a la red ──────────────────────────
+// Una conexion que se queda colgada (no responde pero tampoco corta) no dispara
+// readyState 4 ni onerror ni el rechazo del fetch. Sin tope, el que espera la
+// respuesta espera para siempre: pasa desde una etiqueta que nunca se llena
+// hasta la app que no termina de cargar. Ya ocurrio el 2026-08-18 con el envio
+// al Apps Script, que dejo el cargador girando toda la tarde.
+var TOPE_RED_MS = 30000;   // consultas normales
+var TOPE_SUBIDA_MS = 90000; // subidas pesadas (PDF en base64)
+
+// Le pone tope a un XHR y garantiza que 'alFallar' se llame una sola vez.
+function ponerTopeXHR(xhr, alFallar, ms){
+  xhr.timeout = ms || TOPE_RED_MS;
+  xhr.ontimeout = function(){ if(alFallar) alFallar(); };
+  return xhr;
+}
+
+// fetch con tope real: sin AbortController, un fetch colgado no se resuelve
+// jamas y deja la promesa (y a quien la espera) en el aire.
+function fetchConTope(url, ms){
+  if(typeof AbortController === "undefined") return fetch(url);
+  var ctrl = new AbortController();
+  var t = setTimeout(function(){ ctrl.abort(); }, ms || TOPE_RED_MS);
+  return fetch(url, {signal: ctrl.signal}).then(function(res){
+    clearTimeout(t); return res;
+  }, function(err){
+    clearTimeout(t); throw err;
+  });
+}
+
 // Ejecuta una peticion XHR a Firebase adjuntando el token de App Check
 // (si esta disponible) antes de enviarla. 'configure' recibe el xhr ya
 // creado: debe llamar a xhr.open(...), setRequestHeader, onreadystatechange
 // y onerror, y devolver el body a enviar (o nada/undefined para un GET).
 function withAppCheckHeader(configure){
   var xhr=new XMLHttpRequest();
+  // Tope para que una escritura a Firebase que se cuelgue no quede en el aire
+  // sin avisar. 'configure' ya deja puesto su propio onreadystatechange; aca
+  // solo se corta la espera y se deja constancia en la consola.
+  ponerTopeXHR(xhr, function(){
+    console.error("Firebase no respondio a tiempo; la escritura no se completo.");
+  });
   getAppCheckToken().then(function(token){
     var body=configure(xhr);
     if(token){try{xhr.setRequestHeader("X-Firebase-AppCheck",token);}catch(e){}}
@@ -1843,6 +1878,11 @@ function buscarCotizacion(){
   res.innerHTML="<div style=\'color:var(--txt2);font-size:14px\'>Buscando...</div>";
 
   var xhr=new XMLHttpRequest();
+  // Sin tope, si la planilla no responde el cuadro se queda en "Buscando..."
+  // para siempre y parece que la cotizacion no existe.
+  ponerTopeXHR(xhr, function(){
+    res.innerHTML="<div style='color:#e67e22;font-size:14px'>La planilla no respondió a tiempo. Revisa tu conexión e intenta de nuevo.</div>";
+  });
   xhr.open("GET", GAS_URL+"?nro="+encodeURIComponent(nro)+"&key="+encodeURIComponent(GAS_KEY), true);
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
@@ -1886,6 +1926,7 @@ function cargarExtremosCotizaciones(){
   var el=document.getElementById("extremos-cot");
   if(!el||!GAS_URL)return;
   var xhr=new XMLHttpRequest();
+  ponerTopeXHR(xhr, function(){ el.textContent=""; });
   xhr.open("GET", GAS_URL+"?action=extremos&key="+encodeURIComponent(GAS_KEY), true);
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
@@ -2937,7 +2978,7 @@ function loadCloudData(){
     document.getElementById("sync-lbl").textContent="sin configurar";
     return;
   }
-  fetch(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY))
+  fetchConTope(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY))
   .then(function(r){return r.json();})
   .then(function(data){
     var rec=data.record;
@@ -3126,7 +3167,7 @@ function saveCloudData(){
   // Antes de guardar, se trae la última versión de la nube y se fusiona por id.
   // Así, si otra pestaña/sesión agregó algo a un catálogo mientras esta pestaña
   // tenía una copia más vieja en memoria, esta escritura no la borra.
-  fetch(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY))
+  fetchConTope(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY))
     .then(function(r){return r.json();})
     .then(function(data){
       var rec=(data&&data.record)||{};
@@ -3725,7 +3766,7 @@ function completarDesdeHistorial(faltan, listo){
     while(pendientes.length && enVuelo<MAX){
       (function(r){
         enVuelo++;
-        fetch(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
+        fetchConTope(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
           .then(function(res){return res.json();})
           .then(function(d){
             if(d&&!d.error){
@@ -3823,7 +3864,7 @@ function corregirDesdeLaPlanilla(){
     while(porRevisar.length && enVuelo<MAX){
       (function(r){
         enVuelo++;
-        fetch(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
+        fetchConTope(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
           .then(function(res){return res.json();})
           .then(function(d){
             if(!d)return;
@@ -5445,8 +5486,15 @@ function cerrarSesion(){
 // a la vista.
 function cargarRolUsuario(user,listo){
   var perfil={uid:user.uid,email:user.email,nombre:(user.email||'').split('@')[0],rol:'vendedor'};
+  // 'listo' tiene que llamarse SI O SI: es lo que deja entrar a la app. Si la
+  // consulta del rol se cuelga sin tope, no hay readyState 4 ni onerror y la
+  // app se queda cargando para siempre. Con tope se entra igual, con el perfil
+  // por defecto (vendedor), que es el permiso mas acotado.
+  var yaEntro=false;
+  function entrar(){ if(yaEntro)return; yaEntro=true; LEON_USUARIO=perfil;aplicarRolEnUI();listo(); }
   user.getIdToken().then(function(token){
     var xhr=new XMLHttpRequest();
+    ponerTopeXHR(xhr, entrar);
     xhr.open('GET',FIREBASE_DB_URL+'/usuarios/'+user.uid+'.json?auth='+token,true);
     xhr.onreadystatechange=function(){
       if(xhr.readyState!==4)return;
@@ -5460,11 +5508,11 @@ function cargarRolUsuario(user,listo){
           if(v&&(v.rol||v.Rol)==='admin')perfil.rol='admin';
         }catch(e){}
       }
-      LEON_USUARIO=perfil;aplicarRolEnUI();listo();
+      entrar();
     };
-    xhr.onerror=function(){LEON_USUARIO=perfil;aplicarRolEnUI();listo();};
+    xhr.onerror=entrar;
     xhr.send();
-  }).catch(function(){LEON_USUARIO=perfil;aplicarRolEnUI();listo();});
+  }).catch(entrar);
 }
 
 // La pestaña ADMINISTRADOR muestra costos, margenes y estadisticas. Un
