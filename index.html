@@ -2622,9 +2622,20 @@ function genPDF(){
   // reabrible desde "Reabrir Cotización". Si la subida falla, igual queda
   // registrada localmente (sin link), como antes.
   if(typeof html2pdf!=="undefined"&&GAS_URL){
-    generarYSubirPDF(P, function(){}, function(){
+    // Las dos vueltas TIENEN que apagar el cargador. generarYSubirPDF muestra
+    // "Subiendo a Drive..." por dentro, y antes la vuelta de éxito era una
+    // función vacía: la subida terminaba bien y la pantalla quedaba tapada por
+    // el cargador girando para siempre. Pasó el 2026-08-18 -- quedó pegado toda
+    // la tarde despues de apretar "Generar PDF Formal".
+    generarYSubirPDF(P, function(){
+      hideLoader();
+    }, function(){
+      hideLoader();
       saveQuoteRecord(pdfRecord(P));
       registrarCotizacion(P);
+      // Si no se avisa, el cargador desaparece y parece que subió bien. La
+      // cotización quedó registrada igual, pero sin PDF en Drive.
+      alert("La cotización N° "+P.nro+" quedó registrada, pero el PDF no se pudo subir a Drive. La ventana para imprimir ya está abierta; puedes reintentar con \"Enviar PDF por WhatsApp\".");
     });
   }else{
     saveQuoteRecord(pdfRecord(P));
@@ -3149,13 +3160,25 @@ function postToGAS(payload, onDone, onError){
   var xhr=new XMLHttpRequest();
   xhr.open("POST", GAS_URL, true);
   xhr.setRequestHeader("Content-Type","text/plain;charset=utf-8");
+  // Sin tope de tiempo, si la conexión con el Apps Script se queda colgada no
+  // llega nunca readyState 4 ni salta onerror: no se llama ninguna de las dos
+  // vueltas y quien esté esperando se queda esperando para siempre. Con el PDF
+  // en base64 el envío es pesado y esto deja de ser hipotético. 90 s es de
+  // sobra para una subida normal.
+  xhr.timeout=90000;
+  // Una sola salida: pase lo que pase se llama exactamente una vuelta.
+  var listo=false;
+  function terminar(ok, texto){
+    if(listo)return; listo=true;
+    if(ok){ if(onDone)onDone(texto||""); } else { if(onError)onError(); }
+  }
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
-      if(xhr.status>=200&&xhr.status<400){ if(onDone)onDone(xhr.responseText||""); }
-      else{ if(onError)onError(); }
+      terminar(xhr.status>=200&&xhr.status<400, xhr.responseText);
     }
   };
-  xhr.onerror=function(){ if(onError)onError(); };
+  xhr.onerror=function(){ terminar(false); };
+  xhr.ontimeout=function(){ terminar(false); };
   xhr.send(JSON.stringify(Object.assign({},payload,{key:GAS_KEY})));
 }
 
