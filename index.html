@@ -2998,8 +2998,15 @@ function loadCloudData(intento){
   })
   .then(function(data){
     var rec=data.record;
-    // nro
-    var n=rec.nro||1;
+    // nro -- gana SIEMPRE el mayor, nunca retrocede.
+    // Esta respuesta puede llegar 48 s tarde. Si en ese rato el usuario apretó
+    // "Iniciar Cotización Nueva", el número local ya avanzó, y escribir encima
+    // el de la nube lo hacía retroceder: la siguiente cotización salía con un
+    // número ya usado. Tampoco sirve que gane siempre el local, porque entonces
+    // dos equipos dejan de converger y cada uno lleva su propio correlativo.
+    var nRemoto=parseInt(rec.nro,10)||1;
+    var nLocal=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+    var n=Math.max(nRemoto, nLocal);
     localStorage.setItem("cot_nro",String(n));
     setNroUI(n);
     // overrides de precios
@@ -3135,12 +3142,19 @@ function asegurarNroLibre(){
   var nombreActual=nombreClaveCot(document.getElementById("cnombre").value);
   if(!nombreActual) return;
 
-  // Sin registro cargado no hay con que comparar. Antes seguia de largo en
-  // silencio; ahora al menos se avisa, porque es exactamente la situacion en
-  // la que se repiten los numeros.
-  if(!REG_LIST.length){
-    alert("No se pudo verificar el N° de cotización: el registro no está cargado.\n\n"
-      +"Si ya generaste otra cotización hoy, revisa que el N° "+nroActual+" no esté repetido "
+  // Sin registro COMPARTIDO cargado no hay con que comparar de verdad.
+  //
+  // Ojo con la condicion: antes era solo `!REG_LIST.length`, y eso casi nunca
+  // se cumple porque loadRegList() llena REG_LIST desde localStorage en el
+  // arranque. El registro compartido llega despues, desde Firebase, en
+  // cargarRegDeFirebase(). En esa ventana REG_LIST tiene datos -- los viejos de
+  // este equipo-- asi que el aviso no saltaba, y un numero que otro equipo ya
+  // habia usado se veia libre. Ese es el mecanismo de las diez cotizaciones
+  // N° 148 de julio. REG_FB_LISTO es la bandera que dice si Firebase ya
+  // respondio; ya la usan guardarRegEnFirebase() y borrarRegDeFirebase().
+  if(!REG_FB_LISTO || !REG_LIST.length){
+    alert("No se pudo verificar el N° de cotización: el registro compartido todavía no termina de cargar.\n\n"
+      +"Espera unos segundos y reintenta, o revisa que el N° "+nroActual+" no esté repetido "
       +"antes de continuar.");
     return;
   }
@@ -3196,15 +3210,24 @@ function mergeReg(local,remote){
     .map(function(k){return byNro[k];});
 }
 
-function saveCloudData(){
+function saveCloudData(intento){
   if(!GAS_URL){return;}
+  intento = intento || 0;
   var nro=parseInt(localStorage.getItem("cot_nro")||"1")||1;
   var catExtra=CAT.filter(function(p){return p._nuevo;});
   // Antes de guardar, se trae la última versión de la nube y se fusiona por id.
   // Así, si otra pestaña/sesión agregó algo a un catálogo mientras esta pestaña
   // tenía una copia más vieja en memoria, esta escritura no la borra.
-  fetchConTope(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY))
-    .then(function(r){return r.json();})
+  // Tope largo (60 s) y no el generico: esta es la misma llamada lenta de
+  // loadCloudData, medida entre 10 y 48 s.
+  fetchConTope(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY), 60000)
+    .then(function(r){
+      // Sin este control, la pagina 404 de Google llegaba a r.json(), reventaba
+      // al parsear y caia en el catch de abajo -- que antes escribia la nube
+      // SIN fusionar. Ver el comentario del catch.
+      if(!r.ok) throw new Error("El servidor de Google respondio "+r.status);
+      return r.json();
+    })
     .then(function(data){
       var rec=(data&&data.record)||{};
       postToGAS(
@@ -3224,11 +3247,22 @@ function saveCloudData(){
       );
     })
     .catch(function(){
-      postToGAS(
-        {action:"saveCloud",nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST,extra_list:EXTRA_LIST,pack_list:PACK_LIST,tras_list:TRAS_LIST},
-        function(){setSyncStatus(true);},
-        function(){setSyncStatus(false);}
-      );
+      // ANTES aca se posteaba la configuracion local SIN FUSIONAR, y eso pisaba
+      // la nube: lo que otro equipo hubiera agregado al catalogo mientras tanto
+      // se borraba. Y como igual llamaba setSyncStatus(true), un guardado que
+      // habia perdido la fusion se veia identico a uno bueno. Con el 404
+      // intermitente de Google (~1 de cada 5) y los 48 s de esta llamada, eso
+      // pasaba seguido.
+      //
+      // Ahora se reintenta, y si no se logra leer la nube NO SE ESCRIBE. Perder
+      // este guardado es reversible -- los cambios siguen en localStorage y el
+      // proximo guardado los sube-- pero pisar el catalogo de otro equipo no.
+      if(intento < 3){
+        setTimeout(function(){ saveCloudData(intento+1); }, (intento+1)*3000);
+        return;
+      }
+      setSyncStatus(false);
+      console.error("No se pudo leer la nube para fusionar: no se guardo, para no pisar lo que hayan agregado otros equipos. Se reintenta en el proximo guardado.");
     });
 }
 
