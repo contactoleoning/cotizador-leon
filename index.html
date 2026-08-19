@@ -2970,7 +2970,8 @@ function setSyncStatus(ok){
 }
 
 function loadNro(){loadCloudData();}
-function loadCloudData(){
+function loadCloudData(intento){
+  intento = intento || 0;
   var local=parseInt(localStorage.getItem("cot_nro")||"1")||1;
   setNroUI(local);
   if(!GAS_URL){
@@ -2978,7 +2979,13 @@ function loadCloudData(){
     document.getElementById("sync-lbl").textContent="sin configurar";
     return;
   }
-  fetchConTope(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY))
+  // Esta carga despierta al Apps Script y le hace leer la planilla entera: es
+  // la llamada mas lenta de la app, mucho mas que una consulta normal. Con el
+  // tope generico de 30 s se abortaba una sincronizacion que igual iba a
+  // terminar bien, y quedaba "sin conexión" con la red perfecta. Ademas corre
+  // UNA sola vez al cargar y no se reintentaba nunca: un tropiezo puntual
+  // dejaba el punto rojo hasta recargar la pagina a mano.
+  fetchConTope(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY), 60000)
   .then(function(r){return r.json();})
   .then(function(data){
     var rec=data.record;
@@ -3057,9 +3064,26 @@ function loadCloudData(){
   })
   .catch(function(){
     setNroUI(local);
+    // Antes de declarar "sin conexión" se reintenta un par de veces con espera
+    // creciente: el Apps Script suele responder al segundo intento cuando
+    // estaba dormido, y decir "sin conexión" con la red buena hace desconfiar
+    // de la app entera.
+    if (intento < 2) {
+      var lbl=document.getElementById("sync-lbl");
+      if(lbl) lbl.textContent = "reintentando…";
+      setTimeout(function(){ loadCloudData(intento+1); }, (intento+1)*4000);
+      return;
+    }
     setSyncStatus(false);
   });
 }
+
+// Si el punto quedo rojo y despues vuelve la red, se reintenta solo: antes
+// quedaba rojo hasta recargar a mano, aunque la conexion ya estuviera bien.
+window.addEventListener("online", function(){
+  var lbl=document.getElementById("sync-lbl");
+  if(lbl && lbl.textContent==="sin conexión") loadCloudData();
+});
 
 function incrementNro(){
   var n=parseInt(localStorage.getItem("cot_nro")||"1")||1;
