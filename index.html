@@ -2986,7 +2986,16 @@ function loadCloudData(intento){
   // UNA sola vez al cargar y no se reintentaba nunca: un tropiezo puntual
   // dejaba el punto rojo hasta recargar la pagina a mano.
   fetchConTope(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY), 60000)
-  .then(function(r){return r.json();})
+  .then(function(r){
+    // Google devuelve intermitentemente una pagina HTML de error 404 en vez de
+    // la respuesta del Apps Script -- medido el 2026-08-19: 1 de cada 5
+    // llamadas. Sin este control, ese HTML llegaba igual a r.json(), que
+    // reventaba al parsear y caia en el .catch por accidente. Mejor decirlo
+    // claro: es un fallo de ruteo de Google, no un problema de datos, y se
+    // resuelve reintentando.
+    if(!r.ok) throw new Error("El servidor de Google respondio "+r.status);
+    return r.json();
+  })
   .then(function(data){
     var rec=data.record;
     // nro
@@ -3068,10 +3077,13 @@ function loadCloudData(intento){
     // creciente: el Apps Script suele responder al segundo intento cuando
     // estaba dormido, y decir "sin conexión" con la red buena hace desconfiar
     // de la app entera.
-    if (intento < 2) {
+    // Tres reintentos y no dos: con una tasa de fallo medida de ~20% por
+    // llamada, dos intentos dejan 4% de arranques en rojo sin motivo real;
+    // cuatro lo bajan a menos del 1%.
+    if (intento < 3) {
       var lbl=document.getElementById("sync-lbl");
       if(lbl) lbl.textContent = "reintentando…";
-      setTimeout(function(){ loadCloudData(intento+1); }, (intento+1)*4000);
+      setTimeout(function(){ loadCloudData(intento+1); }, (intento+1)*3000);
       return;
     }
     setSyncStatus(false);
@@ -3220,8 +3232,9 @@ function saveCloudData(){
     });
 }
 
-function postToGAS(payload, onDone, onError){
+function postToGAS(payload, onDone, onError, intento){
   if(!GAS_URL){if(onError)onError();return;}
+  intento = intento || 0;
   var xhr=new XMLHttpRequest();
   xhr.open("POST", GAS_URL, true);
   xhr.setRequestHeader("Content-Type","text/plain;charset=utf-8");
@@ -3237,12 +3250,32 @@ function postToGAS(payload, onDone, onError){
     if(listo)return; listo=true;
     if(ok){ if(onDone)onDone(texto||""); } else { if(onError)onError(); }
   }
+  // Reintento acotado y SOLO cuando consta que el Apps Script nunca corrio.
+  // Google devuelve por su cuenta una pagina 404 (u otro error de su frontend)
+  // en ~1 de cada 5 llamadas -- medido el 2026-08-19. En ese caso la peticion
+  // ni siquiera llego al script, asi que repetirla es seguro y es la diferencia
+  // entre que el PDF suba a Drive o no.
+  //
+  // OJO: un vencimiento de tiempo NO se reintenta a proposito. Ahi no se sabe
+  // si el script alcanzo a correr, y repetir un guardado que si se ejecuto
+  // dejaria dos PDF y dos filas para la misma cotizacion.
+  function fallo(status){
+    var seguroReintentar = (status===404 || status===0 || (status>=500 && status<600));
+    if(seguroReintentar && intento<2){
+      setTimeout(function(){ postToGAS(payload, onDone, onError, intento+1); }, (intento+1)*2000);
+      listo=true;   // esta vuelta ya se cedio al reintento
+      return;
+    }
+    terminar(false);
+  }
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
-      terminar(xhr.status>=200&&xhr.status<400, xhr.responseText);
+      if(listo)return;
+      if(xhr.status>=200&&xhr.status<400) terminar(true, xhr.responseText);
+      else fallo(xhr.status);
     }
   };
-  xhr.onerror=function(){ terminar(false); };
+  xhr.onerror=function(){ if(!listo) fallo(0); };
   xhr.ontimeout=function(){ terminar(false); };
   xhr.send(JSON.stringify(Object.assign({},payload,{key:GAS_KEY})));
 }
