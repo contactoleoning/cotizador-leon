@@ -5181,11 +5181,14 @@ function renderAdmin(){
       }).join(', ');
       var isOpen=!!EQ_OPEN_GROUPS[key];
       var keyEsc=key.replace(/'/g,"\\'");
+      var idsAttr=items.map(function(p){return p.id;}).join(',');
+      var tituloInput='background:transparent;border:none;border-bottom:1px dashed var(--brd2);font-family:\'DM Sans\',sans-serif;font-size:15px;padding:2px 2px;outline:none';
 
       html+='<div style="border-bottom:1px solid var(--brd)">'
-        +'<div onclick="toggleEqGroup(\''+keyEsc+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 4px;cursor:pointer;user-select:none">'
-        +'<div style="min-width:0"><span style="font-weight:700;color:var(--txt);font-size:15px">'+marca+'</span> '
-        +'<span style="color:var(--txt2);font-size:15px">'+modelo+'</span> '
+        +'<div onclick="toggleEqGroup(\''+keyEsc+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 4px;cursor:pointer;user-select:none;gap:8px">'
+        +'<div style="min-width:0;flex:1;display:flex;align-items:center;flex-wrap:wrap;gap:4px">'
+        +'<input type="text" value="'+marca+'" data-ids="'+idsAttr+'" data-campo="marca" size="'+Math.max(marca.length,4)+'" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';font-weight:700;color:var(--txt)">'
+        +'<input type="text" value="'+modelo+'" data-ids="'+idsAttr+'" data-campo="modelo" size="'+Math.max(modelo.length,4)+'" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';color:var(--txt2);margin-right:6px">'
         +'<span style="font-size:12px;color:var(--txt3)">— '+items.length+' BTU: '+btus+'</span></div>'
         +'<span style="color:var(--acc);font-size:16px;transition:transform .2s;flex-shrink:0;margin-left:8px;'+(isOpen?'transform:rotate(180deg)':'')+'">▼</span>'
         +'</div>';
@@ -5307,6 +5310,26 @@ function setOv(id,campo,val){
   updateTiposelOptions();updateBtuselOptions();
   renderAdmin();
   filtrar();
+}
+
+// Cambia marca o modelo en todas las capacidades BTU de un mismo equipo a la
+// vez (el título del grupo en el admin), en vez de tener que editar cada BTU
+// por separado. Un solo guardado en la nube al final, no uno por id.
+function renombrarGrupo(ids,campo,val){
+  ids.forEach(function(id){
+    if(!ov[id])ov[id]={};
+    ov[id][campo]=val;
+    var p=CAT.find(function(x){return x.id===id;});
+    if(p)p[campo]=val;
+    try{localStorage.setItem("ov_"+id,JSON.stringify(ov[id]));}catch(e){}
+  });
+  var m=document.getElementById("savedmsg");
+  m.textContent="Guardado";
+  setTimeout(function(){m.textContent="";},2000);
+  updateTiposelOptions();updateBtuselOptions();
+  renderAdmin();
+  filtrar();
+  saveCloudData();
 }
 
 document.addEventListener("DOMContentLoaded", function(){
