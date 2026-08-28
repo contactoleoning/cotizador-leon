@@ -58,7 +58,7 @@ select option{background:#161619;color:var(--txt)}
 .pn{font-size:18px;font-weight:700}
 .pm{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 9px}
 .badge,.bdg{font-size:14px;padding:4px 11px;border-radius:20px;font-weight:700}
-.bb{background:#1e4575;color:#a8d0ff}.bp{background:#1a6e4a;color:#a0f0c8}.bt{background:var(--bg2);color:var(--txt2);border:1px solid var(--brd)}
+.bb{background:#1e4575;color:#a8d0ff}.bp{background:#1a6e4a;color:#a0f0c8}.bt{background:var(--bg2);color:var(--txt2);border:1px solid var(--brd)}.bu{background:#2d3f52;color:var(--blu);border:1px solid #3a5570}
 .pp{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .pv{font-size:22px;font-weight:700;color:var(--grn)}
 .pcy{font-size:18px;font-weight:700;color:var(--cy)}
@@ -913,6 +913,7 @@ function updateImaterialesSelect(){
 function eliminarMat(id){
   if(!confirm("¿Eliminar este material?"))return;
   MAT_LIST=MAT_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("mat",id);
   saveMatList();
   renderMatAdmin();
 }
@@ -1048,18 +1049,37 @@ function updateTiposelOptions(){
 }
 
 var BTU_LABELS={9:"9.000 BTU — 15 a 18 m²",12:"12.000 BTU — 20 a 25 m²",18:"18.000 BTU — 30 a 35 m²",22:"22.000 BTU — 40 a 50 m²",24:"24.000 BTU — 40 a 50 m²",36:"36.000 BTU — 60 m² o más"};
+function fmtBtu(b){
+  // Compat: datos antiguos guardan el BTU abreviado (9 = 9.000); el catálogo
+  // de equipos lo guarda completo (9000). Se normaliza siempre a completo.
+  var n=parseFloat(b)||0;
+  if(n>0&&n<1000)n=n*1000;
+  return Math.round(n).toLocaleString("es-CL")+" BTU";
+}
 function updateBtuselOptions(){
   var sel=document.getElementById("btusel");
   if(!sel)return;
   var cur=sel.value;
   var tipo=(document.getElementById("tiposel")?document.getElementById("tiposel").value:"").trim().toLowerCase();
-  var btus=[];
-  CAT.forEach(function(p){if((!tipo||(p.tipo||"").trim().toLowerCase()===tipo)&&btus.indexOf(p.btu)===-1)btus.push(p.btu);});
-  btus.sort(function(a,b){return a-b;});
+  var esMultisplit=tipo==="multisplit";
+  var vistos={},opciones=[];
+  CAT.forEach(function(p){
+    if(tipo&&(p.tipo||"").trim().toLowerCase()!==tipo)return;
+    var ubic=esMultisplit?(p.ubicacion||""):"";
+    var key=p.btu+"|"+ubic;
+    if(vistos[key])return;
+    vistos[key]=true;
+    opciones.push({btu:p.btu,ubic:ubic,val:key});
+  });
+  opciones.sort(function(a,b){return a.btu-b.btu||a.ubic.localeCompare(b.ubic);});
   var html='<option value="">— Selecciona —</option>';
-  btus.forEach(function(b){html+='<option value="'+b+'">'+(BTU_LABELS[b]||(b+".000 BTU"))+'</option>';});
+  opciones.forEach(function(o){
+    var label=BTU_LABELS[o.btu]||fmtBtu(o.btu);
+    if(o.ubic)label+=" — "+o.ubic;
+    html+='<option value="'+o.val+'">'+label+'</option>';
+  });
   sel.innerHTML=html;
-  if(btus.indexOf(parseInt(cur))!==-1)sel.value=cur;
+  if(opciones.some(function(o){return o.val===cur;}))sel.value=cur;
 }
 
 function toggleAdmSec(sec){
@@ -1073,8 +1093,10 @@ function toggleAdmSec(sec){
 function eliminarInst(id){
   if(!confirm("¿Eliminar esta instalación?"))return;
   INST_LIST=INST_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("inst",id);
   saveInstList();
   renderInstAdmin();
+  saveCloudData();
 }
 
 function moverInst(id,dir){
@@ -1201,8 +1223,9 @@ function filtrar(){
     var n=pvN(p);
     return '<div class="pc" id="pc-'+p.id+'" data-pid="'+p.id+'">'
       +'<div class="pn">'+p.marca+' - '+p.modelo+'</div>'
-      +'<div class="pm"><span class="bdg bb">'+p.btu+'.000 BTU</span>'
+      +'<div class="pm"><span class="bdg bb">'+fmtBtu(p.btu)+'</span>'
       +'<span class="bdg bt">'+p.tipo+'</span>'
+      +(p.ubicacion?'<span class="bdg bu">'+p.ubicacion+'</span>':'')
       +'<span class="bdg bp">'+p.prov+'</span></div>'
       +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span>'
       +'<span class="piv">c/IVA</span></div></div>';
@@ -1233,7 +1256,7 @@ function agregar(){
   // equipos del cliente, y sacarlos de vuelta partiendo el texto de desc es
   // fragil (hay modelos con espacios).
   carrito.push({id:selProd.id+"_"+Date.now(),cod:selProd.id,
-    desc:selProd.marca+" "+selProd.modelo+" "+selProd.btu+".000 BTU",
+    desc:selProd.marca+" "+selProd.modelo+" "+fmtBtu(selProd.btu),
     marca:selProd.marca,modelo:selProd.modelo,btu:selProd.btu,esEquipo:true,
     tipo:selProd.tipo,neto:neto,total:wIVA(neto),esCyber:false,disc:0,cant:cant});
   selProd=null;
@@ -1352,11 +1375,13 @@ function updateTrasSelect(){
 function eliminarPack(id){
   if(!confirm("¿Eliminar este pack?"))return;
   PACK_LIST=PACK_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("pack",id);
   savePackList();renderPackAdmin();
 }
 function eliminarTras(id){
   if(!confirm("¿Eliminar este traslado?"))return;
   TRAS_LIST=TRAS_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("tras",id);
   saveTrasList();renderTrasAdmin();
 }
 
@@ -1500,6 +1525,7 @@ function updateMantencionSelect(){
 function eliminarMant(id){
   if(!confirm("¿Eliminar esta mantención?"))return;
   MANT_LIST=MANT_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("mant",id);
   saveMantList();
   renderMantAdmin();
 }
@@ -1670,6 +1696,7 @@ function updateIExtraSelect(){
 function eliminarExtra(id){
   if(!confirm("¿Eliminar este extra?"))return;
   EXTRA_LIST=EXTRA_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("extra",id);
   saveExtraList();
   renderExtraAdmin();
 }
@@ -2721,7 +2748,7 @@ function armarCatalogoPDF(){
       rowsHtml+="<tr>"
         +"<td style='"+TL+"'>"+p.marca+"</td>"
         +"<td style='"+TL+"'>"+p.modelo+"</td>"
-        +"<td style='"+TC+"'>"+p.btu+".000 BTU</td>"
+        +"<td style='"+TC+"'>"+fmtBtu(p.btu)+(p.ubicacion?" ("+p.ubicacion+")":"")+"</td>"
         +"<td style='"+TC+";font-weight:700'>$ "+precio.toLocaleString("es-CL")+"</td>"
         +"</tr>";
     });
@@ -3020,13 +3047,15 @@ function loadCloudData(intento){
     }
     // productos personalizados
     if(rec.cat_extra&&rec.cat_extra.length){
-      rec.cat_extra.forEach(function(e){if(!CAT.find(function(x){return x.id===e.id;}))CAT.push(e);});
-      try{localStorage.setItem("cat_extra",JSON.stringify(rec.cat_extra));}catch(e){}
+      var catExtraVivo=rec.cat_extra.filter(function(e){return CAT_DELETED.indexOf(e.id)===-1;});
+      catExtraVivo.forEach(function(e){if(!CAT.find(function(x){return x.id===e.id;}))CAT.push(e);});
+      CAT=CAT.filter(function(p){return CAT_DELETED.indexOf(p.id)===-1;});
+      try{localStorage.setItem("cat_extra",JSON.stringify(catExtraVivo));}catch(e){}
       updateTiposelOptions();updateBtuselOptions();
     }
     // lista de instalaciones
     if(rec.inst_list&&rec.inst_list.length){
-      INST_LIST=mergeById(INST_LIST,rec.inst_list);
+      INST_LIST=filtrarVivos("inst",mergeById(INST_LIST,rec.inst_list));
       try{localStorage.setItem("inst_list",JSON.stringify(INST_LIST));}catch(e){}
       updateItipoGrupoSelect();
       updateItipoSelect();
@@ -3034,14 +3063,14 @@ function loadCloudData(intento){
     }
     // lista de mantenciones
     if(rec.mant_list&&rec.mant_list.length){
-      MANT_LIST=mergeById(MANT_LIST,rec.mant_list);
+      MANT_LIST=filtrarVivos("mant",mergeById(MANT_LIST,rec.mant_list));
       try{localStorage.setItem("mant_list",JSON.stringify(MANT_LIST));}catch(e){}
       updateMantencionSelect();
       renderMantAdmin();
     }
     // lista de materiales
     if(rec.mat_list&&rec.mat_list.length){
-      MAT_LIST=mergeById(MAT_LIST,rec.mat_list);
+      MAT_LIST=filtrarVivos("mat",mergeById(MAT_LIST,rec.mat_list));
       MAT_LIST.forEach(function(it){if(!it.tipo)it.tipo="Materiales Estándar";});
       try{localStorage.setItem("mat_list",JSON.stringify(MAT_LIST));}catch(e){}
       updateImaterialesSelect();
@@ -3049,21 +3078,21 @@ function loadCloudData(intento){
     }
     // lista de extras
     if(rec.extra_list&&rec.extra_list.length){
-      EXTRA_LIST=mergeById(EXTRA_LIST,rec.extra_list);
+      EXTRA_LIST=filtrarVivos("extra",mergeById(EXTRA_LIST,rec.extra_list));
       try{localStorage.setItem("extra_list",JSON.stringify(EXTRA_LIST));}catch(e){}
       updateIExtraSelect();
       renderExtraAdmin();
     }
     // packs promocionales
     if(rec.pack_list&&rec.pack_list.length){
-      PACK_LIST=mergeById(PACK_LIST,rec.pack_list);
+      PACK_LIST=filtrarVivos("pack",mergeById(PACK_LIST,rec.pack_list));
       try{localStorage.setItem("pack_list",JSON.stringify(PACK_LIST));}catch(e){}
       updatePackSelect();
       renderPackAdmin();
     }
     // traslados
     if(rec.tras_list&&rec.tras_list.length){
-      TRAS_LIST=mergeById(TRAS_LIST,rec.tras_list);
+      TRAS_LIST=filtrarVivos("tras",mergeById(TRAS_LIST,rec.tras_list));
       try{localStorage.setItem("tras_list",JSON.stringify(TRAS_LIST));}catch(e){}
       updateTrasSelect();
       renderTrasAdmin();
@@ -3233,13 +3262,13 @@ function saveCloudData(intento){
       postToGAS(
         {action:"saveCloud",nro:nro,
           ov:Object.assign({},rec.ov||{},ov),
-          cat_extra:mergeById(catExtra,rec.cat_extra),
-          inst_list:mergeById(INST_LIST,rec.inst_list),
-          mat_list:mergeById(MAT_LIST,rec.mat_list),
-          mant_list:mergeById(MANT_LIST,rec.mant_list),
-          extra_list:mergeById(EXTRA_LIST,rec.extra_list),
-          pack_list:mergeById(PACK_LIST,rec.pack_list),
-          tras_list:mergeById(TRAS_LIST,rec.tras_list),
+          cat_extra:mergeById(catExtra,rec.cat_extra).filter(function(it){return CAT_DELETED.indexOf(it.id)===-1;}),
+          inst_list:filtrarVivos("inst",mergeById(INST_LIST,rec.inst_list)),
+          mat_list:filtrarVivos("mat",mergeById(MAT_LIST,rec.mat_list)),
+          mant_list:filtrarVivos("mant",mergeById(MANT_LIST,rec.mant_list)),
+          extra_list:filtrarVivos("extra",mergeById(EXTRA_LIST,rec.extra_list)),
+          pack_list:filtrarVivos("pack",mergeById(PACK_LIST,rec.pack_list)),
+          tras_list:filtrarVivos("tras",mergeById(TRAS_LIST,rec.tras_list)),
           // reg_list ya no viaja: el registro vive en Firebase.
           },
         function(){setSyncStatus(true);},
@@ -3326,6 +3355,33 @@ var REG_DELETED=[];
 function loadRegList(){
   try{var s=localStorage.getItem("reg_list");if(s){REG_LIST=JSON.parse(s);}}catch(e){REG_LIST=[];}
   try{var d=localStorage.getItem("reg_deleted");if(d){REG_DELETED=JSON.parse(d);}}catch(e){REG_DELETED=[];}
+}
+// Ids de equipos personalizados eliminados explícitamente: mismo problema que
+// REG_DELETED arriba. mergeById en saveCloudData/loadCloudData es una unión
+// pura por id, así que sin esta lista un equipo borrado localmente reaparecía
+// en el próximo guardado porque la nube todavía lo tenía.
+var CAT_DELETED=[];
+function loadCatDeleted(){
+  try{var d=localStorage.getItem("cat_deleted");if(d){CAT_DELETED=JSON.parse(d);}}catch(e){CAT_DELETED=[];}
+}
+// Mismo problema que CAT_DELETED, para las otras 6 listas de catálogo que
+// también se fusionan por mergeById (mat/inst/pack/tras/mant/extra): sin
+// tumba, un ítem borrado localmente revive en el próximo guardado porque la
+// nube todavía lo tiene.
+var LIST_DELETED={mat:[],inst:[],pack:[],tras:[],mant:[],extra:[]};
+function loadListDeleted(){
+  Object.keys(LIST_DELETED).forEach(function(k){
+    try{var d=localStorage.getItem(k+"_deleted");if(d){LIST_DELETED[k]=JSON.parse(d);}}catch(e){LIST_DELETED[k]=[];}
+  });
+}
+function marcarListaEliminada(key,id){
+  var arr=LIST_DELETED[key];
+  if(arr.indexOf(id)===-1)arr.push(id);
+  try{localStorage.setItem(key+"_deleted",JSON.stringify(arr));}catch(e){}
+}
+function filtrarVivos(key,list){
+  var muertos=LIST_DELETED[key];
+  return (list||[]).filter(function(it){return muertos.indexOf(it.id)===-1;});
 }
 // ═══════════════════════════════════════
 // REGISTRO DE COTIZACIONES EN FIREBASE
@@ -4953,7 +5009,7 @@ function renderPdfPreciosReview(){
       +'<option value="">— Selecciona el equipo —</option>'
       +opciones.map(function(p){
         var sel=p.id===seleccionId?" selected":"";
-        return '<option value="'+p.id+'"'+sel+'>'+p.marca+' — '+p.modelo+' — '+p.btu+'.000 BTU (actual: $'+getCosto(p).toLocaleString("es-CL")+')</option>';
+        return '<option value="'+p.id+'"'+sel+'>'+p.marca+' — '+p.modelo+' — '+fmtBtu(p.btu)+(p.ubicacion?' — '+p.ubicacion:'')+' (actual: $'+getCosto(p).toLocaleString("es-CL")+')</option>';
       }).join("")
       +'</select></div>'
       +'<div><div style="'+lbl+'">Precio Neto Detectado $</div>'
@@ -5116,10 +5172,13 @@ function renderAdmin(){
       sub[key].push(p);
     });
 
+    var esMulti=clave==='multisplit';
     subOrder.forEach(function(key){
       var items=sub[key];
       var marca=items[0].marca,modelo=items[0].modelo;
-      var btus=items.map(function(p){return p.btu;}).sort(function(a,b){return a-b;}).join(', ');
+      var btus=items.slice().sort(function(a,b){return a.btu-b.btu;}).map(function(p){
+        return fmtBtu(p.btu)+(esMulti&&p.ubicacion?" ("+p.ubicacion+")":"");
+      }).join(', ');
       var isOpen=!!EQ_OPEN_GROUPS[key];
       var keyEsc=key.replace(/'/g,"\\'");
 
@@ -5143,9 +5202,14 @@ function renderAdmin(){
             +'<div><div style="'+lbl+'">Modelo</div><input type="text" style="'+si+'" value="'+p.modelo+'" data-id="'+p.id+'" data-campo="modelo" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
             +'</div>'
 
-            // Fila 2: BTU + Tipo + Proveedor
-            +'<div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:8px">'
+            // Fila 2: BTU + (Interior/Exterior si es Multisplit) + Tipo + Proveedor
+            +'<div style="display:grid;grid-template-columns:'+(esMulti?'1fr 1.2fr 1fr 1.6fr':'1fr 1fr 2fr')+';gap:8px">'
             +'<div><div style="'+lbl+'">BTU</div><input type="number" style="'+si+'" value="'+p.btu+'" data-id="'+p.id+'" data-campo="btu" onchange="setOv(this.dataset.id,this.dataset.campo,parseFloat(this.value))"></div>'
+            +(esMulti?(
+              '<div><div style="'+lbl+'">Interior/Exterior</div><select style="'+si+'" data-id="'+p.id+'" data-campo="ubicacion" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)">'
+              +['','Interior','Exterior'].map(function(u){return '<option value="'+u+'"'+(p.ubicacion===u?' selected':'')+'>'+(u||'— Selecciona —')+'</option>';}).join('')
+              +'</select></div>'
+            ):'')
             +'<div><div style="'+lbl+'">Tipo</div><input type="text" style="'+si+'" value="'+p.tipo+'" data-id="'+p.id+'" data-campo="tipo" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
             +'<div><div style="'+lbl+'">Proveedor</div><input type="text" style="'+si+'" value="'+p.prov+'" data-id="'+p.id+'" data-campo="prov" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
             +'</div>'
@@ -5188,6 +5252,9 @@ function renderAdmin(){
     +'<div><div style="'+lbl+'">Proveedor</div><input type="text" id="new-prov" placeholder="Ej: Mar del Sur" style="'+sa+'"></div>'
     +'</div>'
 
+    +'<div><div style="'+lbl+'">Interior/Exterior (solo Multisplit)</div>'
+    +'<select id="new-ubicacion" style="'+sa+'"><option value="">— Selecciona —</option><option value="Interior">Interior</option><option value="Exterior">Exterior</option></select></div>'
+
     +'<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px">'
     +'<div><div style="'+lbl+'">Costo $ Neto</div><input type="number" id="new-costo" placeholder="250000" style="'+sa+'"></div>'
     +'<div><div style="'+lbl+'">% Ganancia</div><input type="number" id="new-pct" value="25" style="'+sa+'"></div>'
@@ -5205,6 +5272,8 @@ function eliminarEquipo(id){
   CAT=CAT.filter(function(p){return p.id!==id;});
   try{localStorage.removeItem("ov_"+id);}catch(e){}
   try{localStorage.setItem("cat_extra",JSON.stringify(CAT.filter(function(p){return p._nuevo;})));}catch(e){}
+  if(CAT_DELETED.indexOf(id)===-1)CAT_DELETED.push(id);
+  try{localStorage.setItem("cat_deleted",JSON.stringify(CAT_DELETED));}catch(e){}
   updateTiposelOptions();updateBtuselOptions();
   renderAdmin();filtrar();saveCloudData();
 }
@@ -5217,9 +5286,11 @@ function agregarEquipoNuevo(){
   var prov=(document.getElementById("new-prov").value||"").trim()||"-";
   var costo=parseInt(document.getElementById("new-costo").value)||0;
   var pct=parseInt(document.getElementById("new-pct").value)||0;
+  var ubicacion=(document.getElementById("new-ubicacion").value||"").trim();
   if(!marca||!modelo||!btu||!costo||!tipo){alert("Completa Marca, Modelo, BTU, Tipo y Costo.");return;}
   var id="CUSTOM_"+Date.now();
   var nuevo={id:id,tipo:tipo,btu:btu,marca:marca,modelo:modelo,prov:prov,costo:costo,pct:pct,cyber:0,_nuevo:true};
+  if(ubicacion)nuevo.ubicacion=ubicacion;
   CAT.push(nuevo);
   try{var ex=JSON.parse(localStorage.getItem("cat_extra")||"[]");ex.push(nuevo);localStorage.setItem("cat_extra",JSON.stringify(ex));}catch(e){}
   updateTiposelOptions();updateBtuselOptions();
@@ -5304,6 +5375,8 @@ document.addEventListener("DOMContentLoaded", function(){
   });
   // Init
   loadRegList();
+  loadCatDeleted();
+  loadListDeleted();
   loadNro();
   (function(){var h=new Date();document.getElementById("fecha").value=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");})();
   try{document.getElementById("cvendedor").value=localStorage.getItem("vendedor_nombre")||"";}catch(e){}
