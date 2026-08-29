@@ -1049,6 +1049,12 @@ function updateTiposelOptions(){
 }
 
 var BTU_LABELS={9:"9.000 BTU — 15 a 18 m²",12:"12.000 BTU — 20 a 25 m²",18:"18.000 BTU — 30 a 35 m²",22:"22.000 BTU — 40 a 50 m²",24:"24.000 BTU — 40 a 50 m²",36:"36.000 BTU — 60 m² o más"};
+// El título del tipo "Multisplit" ahora es editable en el admin; si alguien lo
+// escribe con espacio ("Multi Split") esta comparación no debe dejar de
+// reconocerlo, o el selector Interior/Exterior desaparece silenciosamente.
+function esTipoMultisplit(tipoStr){
+  return (tipoStr||"").trim().toLowerCase().replace(/\s+/g,"")==="multisplit";
+}
 function fmtBtu(b){
   // Compat: datos antiguos guardan el BTU abreviado (9 = 9.000); el catálogo
   // de equipos lo guarda completo (9000). Se normaliza siempre a completo.
@@ -1061,7 +1067,7 @@ function updateBtuselOptions(){
   if(!sel)return;
   var cur=sel.value;
   var tipo=(document.getElementById("tiposel")?document.getElementById("tiposel").value:"").trim().toLowerCase();
-  var esMultisplit=tipo==="multisplit";
+  var esMultisplit=esTipoMultisplit(tipo);
   var vistos={},opciones=[];
   CAT.forEach(function(p){
     if(tipo&&(p.tipo||"").trim().toLowerCase()!==tipo)return;
@@ -5162,7 +5168,8 @@ function renderAdmin(){
 
   agrEq.orden.forEach(function(clave){
     var tipo=agrEq.display[clave];
-    html+='<div class="gl">'+tipo+'</div>';
+    var idsTipo=grupos[clave].map(function(p){return p.id;}).join(',');
+    html+='<div class="gl"><input type="text" value="'+tipo+'" data-ids="'+idsTipo+'" data-campo="tipo" size="'+Math.max(tipo.length,4)+'" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="background:transparent;border:none;outline:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;width:auto;max-width:100%"></div>';
 
     // Sub-agrupar por marca + modelo dentro de cada tipo
     var sub={},subOrder=[];
@@ -5172,7 +5179,7 @@ function renderAdmin(){
       sub[key].push(p);
     });
 
-    var esMulti=clave==='multisplit';
+    var esMulti=esTipoMultisplit(clave);
     subOrder.forEach(function(key){
       var items=sub[key];
       var marca=items[0].marca,modelo=items[0].modelo;
