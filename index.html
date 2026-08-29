@@ -5169,7 +5169,7 @@ function renderAdmin(){
   agrEq.orden.forEach(function(clave){
     var tipo=agrEq.display[clave];
     var idsTipo=grupos[clave].map(function(p){return p.id;}).join(',');
-    html+='<div class="gl"><input type="text" value="'+tipo+'" data-ids="'+idsTipo+'" data-campo="tipo" size="'+Math.max(tipo.length,4)+'" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="background:transparent;border:none;outline:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;width:auto;max-width:100%"></div>';
+    html+='<div class="gl"><input type="text" value="'+tipo+'" data-ids="'+idsTipo+'" data-campo="tipo" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="background:transparent;border:none;outline:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;width:'+(tipo.length+4)+'ch;max-width:100%"></div>';
 
     // Sub-agrupar por marca + modelo dentro de cada tipo
     var sub={},subOrder=[];
@@ -5194,8 +5194,8 @@ function renderAdmin(){
       html+='<div style="border-bottom:1px solid var(--brd)">'
         +'<div onclick="toggleEqGroup(\''+keyEsc+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 4px;cursor:pointer;user-select:none;gap:8px">'
         +'<div style="min-width:0;flex:1;display:flex;align-items:center;flex-wrap:wrap;gap:4px">'
-        +'<input type="text" value="'+marca+'" data-ids="'+idsAttr+'" data-campo="marca" size="'+Math.max(marca.length,4)+'" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';font-weight:700;color:var(--txt)">'
-        +'<input type="text" value="'+modelo+'" data-ids="'+idsAttr+'" data-campo="modelo" size="'+Math.max(modelo.length,4)+'" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';color:var(--txt2);margin-right:6px">'
+        +'<input type="text" value="'+marca+'" data-ids="'+idsAttr+'" data-campo="marca" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';font-weight:700;color:var(--txt);width:'+(marca.length+3)+'ch;max-width:100%">'
+        +'<input type="text" value="'+modelo+'" data-ids="'+idsAttr+'" data-campo="modelo" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';color:var(--txt2);margin-right:6px;width:'+(modelo.length+3)+'ch;max-width:100%">'
         +'<span style="font-size:12px;color:var(--txt3)">— '+items.length+' BTU: '+btus+'</span></div>'
         +'<span style="color:var(--acc);font-size:16px;transition:transform .2s;flex-shrink:0;margin-left:8px;'+(isOpen?'transform:rotate(180deg)':'')+'">▼</span>'
         +'</div>';
