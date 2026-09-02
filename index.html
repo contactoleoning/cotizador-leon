@@ -675,6 +675,15 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
 </div>
 <div id="view-adm" style="display:none">
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+    <div onclick="toggleAdmSec('empresa')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
+      <div class="ct" style="margin:0;border:none;padding:0">🏢 Datos de la Empresa (PDF)</div>
+      <span id="adm-empresa-arrow" style="font-size:18px;color:var(--acc);transition:transform .2s">▶</span>
+    </div>
+    <div id="adm-empresa-body" style="display:none;padding:14px">
+      <div id="empresalista"></div>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
     <div onclick="toggleAdmSec('eq')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
       <div class="ct" style="margin:0;border:none;padding:0">Equipos</div>
       <span id="adm-eq-arrow" style="font-size:18px;color:var(--acc);transition:transform .2s">▶</span>
@@ -1046,6 +1055,57 @@ function updateTiposelOptions(){
   tipos.forEach(function(t){html+='<option value="'+t+'">'+t+'</option>';});
   sel.innerHTML=html;
   if(tipos.indexOf(cur)!==-1)sel.value=cur;
+}
+
+// Datos de la empresa que aparecen en el encabezado y el pie de página (banco)
+// del PDF de cotización. Editables en Administrador → Datos de la Empresa;
+// se guardan en el mismo mecanismo genérico de overrides (ov) usando un id
+// reservado que no corresponde a ningún producto real, así no hace falta
+// tocar el Apps Script para sincronizarlos.
+var EMPRESA_PDF_ID="_EMPRESA_PDF";
+var EMPRESA_PDF_DEFAULT={
+  nombre:"LEÓN INGENIERÍA Y PROYECTOS SPA",
+  giro:"Construcción Climatización Y Transporte",
+  direccion:"Islas Guaitecas #936 MZ E 1",
+  ciudad:"Santiago",
+  comuna:"Las Condes",
+  telOficina:"+569 6371 0820",
+  email:"contactoleoning@gmail.com",
+  banco:"Falabella",
+  tipoCuenta:"Cuenta Corriente",
+  numCuenta:"0-1983-154-6787",
+  rutEmpresa:"18.245.550-4",
+  titular:"Isaac León",
+  emailConfirmacion:"contactoleoning@gmail.com"
+};
+function getEmpresaPDF(){
+  return Object.assign({},EMPRESA_PDF_DEFAULT,ov[EMPRESA_PDF_ID]||{});
+}
+function renderEmpresaAdmin(){
+  var el=document.getElementById("empresalista");
+  if(!el)return;
+  var e=getEmpresaPDF();
+  var sa='width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:10px;font-size:14px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
+  var lbl='font-size:11px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;font-weight:600';
+  function campo(campoKey,label,val){
+    return '<div style="margin-bottom:10px"><div style="'+lbl+'">'+label+'</div><input type="text" style="'+sa+'" value="'+val+'" data-campo="'+campoKey+'" onchange="setOv(\''+EMPRESA_PDF_ID+'\',this.dataset.campo,this.value)"></div>';
+  }
+  el.innerHTML='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Estos datos aparecen en el encabezado y el pie de página (transferencias) de todas las cotizaciones en PDF. No tocan los datos del cliente, los equipos ni los montos: esos se siguen llenando solos.</div>'
+    +'<div class="ss" style="margin-top:0;padding-top:0;border-top:none">Encabezado — tu empresa</div>'
+    +campo('nombre','Nombre empresa',e.nombre)
+    +campo('giro','Giro',e.giro)
+    +campo('direccion','Dirección',e.direccion)
+    +campo('ciudad','Ciudad',e.ciudad)
+    +campo('comuna','Comuna',e.comuna)
+    +campo('telOficina','Teléfono oficina',e.telOficina)
+    +campo('email','Email',e.email)
+    +'<div class="ss">Pie de página — transferencias a</div>'
+    +campo('banco','Banco',e.banco)
+    +campo('tipoCuenta','Tipo de cuenta',e.tipoCuenta)
+    +campo('numCuenta','N° Cuenta',e.numCuenta)
+    +campo('rutEmpresa','RUT',e.rutEmpresa)
+    +campo('titular','Nombre titular',e.titular)
+    +campo('emailConfirmacion','Email confirmación',e.emailConfirmacion);
 }
 
 var BTU_LABELS={9:"9.000 BTU — 15 a 18 m²",12:"12.000 BTU — 20 a 25 m²",18:"18.000 BTU — 30 a 35 m²",22:"22.000 BTU — 40 a 50 m²",24:"24.000 BTU — 40 a 50 m²",36:"36.000 BTU — 60 m² o más"};
@@ -2549,32 +2609,33 @@ function armarPDF(){
   var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='format-detection' content='telephone=no'><title>Cotizacion "+nro+"</title><style>"+css+"</style></head><body><div class='wrap'>";
 
   // TÍTULO + EMPRESA + LOGO
+  var emp=getEmpresaPDF();
   h+="<table style='width:100%;margin-bottom:6px'><tr>"
     +"<td style='vertical-align:top;padding:0'>"
     +"<div style='font-size:26px;font-weight:800;color:#e8291c;letter-spacing:.02em'>COTIZACIÓN &nbsp; N°: "+nro+"</div>"
-    +"<div style='font-size:15px;font-weight:700;color:#1a1a1a;margin-top:5px'>LEÓN INGENIERÍA Y PROYECTOS SPA</div>"
+    +"<div style='font-size:15px;font-weight:700;color:#1a1a1a;margin-top:5px'>"+esc(emp.nombre)+"</div>"
     +"<table style='border-collapse:collapse;margin-top:3px;font-size:12px;color:#1a1a1a'>"
     +"<tr>"
     +"<td style='width:72px;white-space:nowrap;vertical-align:top;padding:1px 0'>Giro:</td>"
-    +"<td style='padding:1px 30px 1px 6px;width:220px'>Construcción Climatización Y Transporte</td>"
+    +"<td style='padding:1px 30px 1px 6px;width:220px'>"+esc(emp.giro)+"</td>"
     +"<td></td><td></td>"
     +"</tr>"
     +"<tr>"
     +"<td style='white-space:nowrap;vertical-align:top;padding:1px 0'>Dirección:</td>"
-    +"<td style='padding:1px 30px 1px 6px'>Islas Guaitecas #936 MZ E 1</td>"
+    +"<td style='padding:1px 30px 1px 6px'>"+esc(emp.direccion)+"</td>"
     +"<td></td><td></td>"
     +"</tr>"
     +"<tr>"
     +"<td style='white-space:nowrap;vertical-align:top;padding:1px 0'>Ciudad:</td>"
-    +"<td style='padding:1px 30px 1px 6px'>Santiago</td>"
+    +"<td style='padding:1px 30px 1px 6px'>"+esc(emp.ciudad)+"</td>"
     +"<td style='white-space:nowrap;padding:1px 0 1px 0'>E-mail:</td>"
-    +"<td style='padding:1px 0 1px 8px'>contactoleoning@gmail.com</td>"
+    +"<td style='padding:1px 0 1px 8px'>"+esc(emp.email)+"</td>"
     +"</tr>"
     +"<tr>"
     +"<td style='white-space:nowrap;vertical-align:top;padding:1px 0'>Comuna:</td>"
-    +"<td style='padding:1px 30px 1px 6px'>Las Condes</td>"
+    +"<td style='padding:1px 30px 1px 6px'>"+esc(emp.comuna)+"</td>"
     +"<td style='white-space:nowrap;padding:1px 0 1px 0'>Tel. Oficina:</td>"
-    +"<td style='padding:1px 0 1px 8px'>+569 6371 0820</td>"
+    +"<td style='padding:1px 0 1px 8px'>"+esc(emp.telOficina)+"</td>"
     +"</tr>"
     +"</table>"
     +"</td>"
@@ -2632,12 +2693,12 @@ function armarPDF(){
     +"<div style='font-size:9.5px;margin-top:4px;color:#1a1a1a'>"
     +"<div style='font-weight:700;margin-bottom:4px;text-decoration:underline;color:#1a1a1a'>TRANSFERENCIAS A:</div>"
     +"<table style='border-collapse:collapse;font-size:9.5px;color:#1a1a1a'>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Banco:</td><td style='padding:1px 0;color:#1a1a1a'>Falabella</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Tipo:</td><td style='padding:1px 0;color:#1a1a1a'>Cuenta Corriente</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>N° Cuenta:</td><td style='padding:1px 0;color:#1a1a1a'>0-1983-154-6787</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>RUT:</td><td style='padding:1px 0;color:#1a1a1a'>18.245.550-4</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Nombre:</td><td style='padding:1px 0;color:#1a1a1a'>Isaac León</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Confirmación:</td><td style='padding:1px 0;color:#1a1a1a'>contactoleoning@gmail.com</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Banco:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.banco)+"</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Tipo:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.tipoCuenta)+"</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>N° Cuenta:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.numCuenta)+"</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>RUT:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.rutEmpresa)+"</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Nombre:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.titular)+"</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Confirmación:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.emailConfirmacion)+"</td></tr>"
     +"</table>"
     +"</div>"
     +"</td>"
@@ -2769,11 +2830,12 @@ function armarCatalogoPDF(){
     +".th-l{text-align:left}";
 
   var hoy=new Date().toLocaleDateString("es-CL");
-  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Catálogo León Ingeniería</title><style>"+css+"</style></head><body><div class='wrap'>";
+  var emp=getEmpresaPDF();
+  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Catálogo "+esc(emp.nombre)+"</title><style>"+css+"</style></head><body><div class='wrap'>";
   h+="<table style='width:100%;margin-bottom:10px'><tr>"
     +"<td style='vertical-align:top;padding:0'>"
     +"<div style='font-size:24px;font-weight:800;color:#e8291c;letter-spacing:.02em'>CATÁLOGO DE EQUIPOS</div>"
-    +"<div style='font-size:15px;font-weight:700;color:#1a1a1a;margin-top:5px'>LEÓN INGENIERÍA Y PROYECTOS SPA</div>"
+    +"<div style='font-size:15px;font-weight:700;color:#1a1a1a;margin-top:5px'>"+esc(emp.nombre)+"</div>"
     +"<div style='font-size:11px;color:#555;margin-top:4px'>Precios de venta con IVA incluido &middot; Vigente al "+hoy+"</div>"
     +"</td>"
     +"<td style='vertical-align:top;text-align:right;padding:0;width:120px'>"
@@ -2784,7 +2846,7 @@ function armarCatalogoPDF(){
     +"<tr><td class='th th-l'>Marca</td><td class='th th-l'>Modelo</td><td class='th'>BTU</td><td class='th'>Precio c/IVA</td></tr>"
     +rowsHtml
     +"</table>";
-  h+="<div style='margin-top:14px;font-size:9px;color:#777'>Precios sujetos a cambio sin previo aviso. Instalación cotizada por separado según tipo de trabajo. León Ingeniería y Proyectos SpA &middot; +569 6371 0820 &middot; contactoleoning@gmail.com</div>";
+  h+="<div style='margin-top:14px;font-size:9px;color:#777'>Precios sujetos a cambio sin previo aviso. Instalación cotizada por separado según tipo de trabajo. "+esc(emp.nombre)+" &middot; "+esc(emp.telOficina)+" &middot; "+esc(emp.email)+"</div>";
   h+="</div></body></html>";
   return h;
 }
@@ -3050,6 +3112,11 @@ function loadCloudData(intento){
         if(p){Object.keys(rec.ov[id]).forEach(function(c){p[c]=rec.ov[id][c];});}
         try{localStorage.setItem("ov_"+id,JSON.stringify(rec.ov[id]));}catch(e){}
       });
+      // Los datos de empresa (id reservado EMPRESA_PDF_ID) viven en este mismo
+      // "ov" pero no son de un producto, así que loadOv() (que solo recorre
+      // CAT) no los pinta al cargar la página. Sin este refresco, el admin
+      // mostraba los valores por defecto hasta recargar dos veces.
+      renderEmpresaAdmin();
     }
     // productos personalizados
     if(rec.cat_extra&&rec.cat_extra.length){
@@ -5316,6 +5383,7 @@ function setOv(id,campo,val){
   saveOv(id);
   updateTiposelOptions();updateBtuselOptions();
   renderAdmin();
+  renderEmpresaAdmin();
   filtrar();
 }
 
@@ -5413,6 +5481,11 @@ document.addEventListener("DOMContentLoaded", function(){
   showTab("cot");
   calcInst();
   loadOv();
+  // loadOv() solo recorre CAT (productos), así que no recoge el id reservado
+  // de los datos de empresa; se carga aparte para que pinte al instante en vez
+  // de esperar la sincronización lenta con la nube.
+  try{var _empOv=localStorage.getItem("ov_"+EMPRESA_PDF_ID);if(_empOv)ov[EMPRESA_PDF_ID]=JSON.parse(_empOv);}catch(e){}
+  renderEmpresaAdmin();
   loadInstList();
   updateItipoGrupoSelect();
   updateItipoSelect();
