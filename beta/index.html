@@ -5423,24 +5423,27 @@ function cerrarSesion(){
 function cargarRolUsuario(user,listo){
   var perfil={uid:user.uid,email:user.email,nombre:(user.email||'').split('@')[0],rol:'vendedor'};
   user.getIdToken().then(function(token){
-    var xhr=new XMLHttpRequest();
-    xhr.open('GET',FIREBASE_DB_URL+'/usuarios/'+user.uid+'.json?auth='+token,true);
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState!==4)return;
-      if(xhr.status>=200&&xhr.status<300){
-        try{
-          // Las fichas se escriben a mano en la consola de Firebase, donde
-          // es facil que salga 'Nombre' con mayuscula. Se aceptan ambas.
-          var v=JSON.parse(xhr.responseText);
-          var n=v&&(v.nombre||v.Nombre);
-          if(n)perfil.nombre=n;
-          if(v&&(v.rol||v.Rol)==='admin')perfil.rol='admin';
-        }catch(e){}
-      }
-      LEON_USUARIO=perfil;aplicarRolEnUI();listo();
-    };
-    xhr.onerror=function(){LEON_USUARIO=perfil;aplicarRolEnUI();listo();};
-    xhr.send();
+    getAppCheckToken().then(function(appCheckToken){
+      var xhr=new XMLHttpRequest();
+      xhr.open('GET',FIREBASE_DB_URL+'/usuarios/'+user.uid+'.json?auth='+token,true);
+      if(appCheckToken){try{xhr.setRequestHeader('X-Firebase-AppCheck',appCheckToken);}catch(e){}}
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4)return;
+        if(xhr.status>=200&&xhr.status<300){
+          try{
+            // Las fichas se escriben a mano en la consola de Firebase, donde
+            // es facil que salga 'Nombre' con mayuscula. Se aceptan ambas.
+            var v=JSON.parse(xhr.responseText);
+            var n=v&&(v.nombre||v.Nombre);
+            if(n)perfil.nombre=n;
+            if(v&&(v.rol||v.Rol)==='admin')perfil.rol='admin';
+          }catch(e){}
+        }
+        LEON_USUARIO=perfil;aplicarRolEnUI();listo();
+      };
+      xhr.onerror=function(){LEON_USUARIO=perfil;aplicarRolEnUI();listo();};
+      xhr.send();
+    });
   }).catch(function(){LEON_USUARIO=perfil;aplicarRolEnUI();listo();});
 }
 

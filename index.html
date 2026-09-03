@@ -5760,25 +5760,28 @@ function cargarRolUsuario(user,listo){
   var yaEntro=false;
   function entrar(){ if(yaEntro)return; yaEntro=true; LEON_USUARIO=perfil;aplicarRolEnUI();listo(); }
   user.getIdToken().then(function(token){
-    var xhr=new XMLHttpRequest();
-    ponerTopeXHR(xhr, entrar);
-    xhr.open('GET',FIREBASE_DB_URL+'/usuarios/'+user.uid+'.json?auth='+token,true);
-    xhr.onreadystatechange=function(){
-      if(xhr.readyState!==4)return;
-      if(xhr.status>=200&&xhr.status<300){
-        try{
-          // Las fichas se escriben a mano en la consola de Firebase, donde
-          // es facil que salga 'Nombre' con mayuscula. Se aceptan ambas.
-          var v=JSON.parse(xhr.responseText);
-          var n=v&&(v.nombre||v.Nombre);
-          if(n)perfil.nombre=n;
-          if(v&&(v.rol||v.Rol)==='admin')perfil.rol='admin';
-        }catch(e){}
-      }
-      entrar();
-    };
-    xhr.onerror=entrar;
-    xhr.send();
+    getAppCheckToken().then(function(appCheckToken){
+      var xhr=new XMLHttpRequest();
+      ponerTopeXHR(xhr, entrar);
+      xhr.open('GET',FIREBASE_DB_URL+'/usuarios/'+user.uid+'.json?auth='+token,true);
+      if(appCheckToken){try{xhr.setRequestHeader('X-Firebase-AppCheck',appCheckToken);}catch(e){}}
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4)return;
+        if(xhr.status>=200&&xhr.status<300){
+          try{
+            // Las fichas se escriben a mano en la consola de Firebase, donde
+            // es facil que salga 'Nombre' con mayuscula. Se aceptan ambas.
+            var v=JSON.parse(xhr.responseText);
+            var n=v&&(v.nombre||v.Nombre);
+            if(n)perfil.nombre=n;
+            if(v&&(v.rol||v.Rol)==='admin')perfil.rol='admin';
+          }catch(e){}
+        }
+        entrar();
+      };
+      xhr.onerror=entrar;
+      xhr.send();
+    });
   }).catch(entrar);
 }
 
