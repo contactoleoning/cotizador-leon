@@ -1997,7 +1997,11 @@ function buscarCotizacion(){
           "<a href='"+esc(data.link)+"' target='_blank' style='display:inline-block;background:var(--acc);color:#1a1a1a;font-weight:700;padding:9px 18px;border-radius:6px;text-decoration:none;font-size:14px;margin-right:8px'>📄 Ver PDF</a>":"";
         var waBtn="";
         if(data.link){
-          var msg="Hola"+(data.nombre?" "+data.nombre:"")+", aquí está tu cotización N° "+data.nro+" de León Ingeniería. 💧❄️\n\nPuedes verla y descargarla aquí:\n"+data.link;
+          var msg=mensajeCotizacionWA({
+            nombre:data.nombre, empresa:false, nro:data.nro, total:parseFloat(data.total)||0, link:data.link,
+            servicios:data.items, vendedor:data.vendedor,
+            descPct:(parseFloat(data.subtotal)>0&&parseFloat(data.descuento)>0)?Math.round(parseFloat(data.descuento)*100/parseFloat(data.subtotal)):0
+          });
           waBtn="<a href='https://wa.me/?text="+encodeURIComponent(msg)+"' target='_blank' style='display:inline-block;background:#25d366;color:#073b22;font-weight:700;padding:9px 18px;border-radius:6px;text-decoration:none;font-size:14px'>📲 Reenviar por WhatsApp</a>";
         }
         res.innerHTML="<div style='background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:14px 16px'>"
@@ -3004,6 +3008,30 @@ function generarYSubirPDF(P, onDone, onError){
   setTimeout(capturar,350);
 }
 
+// Mensaje con que se manda la cotizacion por WhatsApp: personalizado, de usted,
+// sin emojis (en el WhatsApp de Isaac salian como "?"), con el total y la
+// vigencia a la vista, y cerrando con el paso siguiente (coordinar la visita).
+// o = {nombre, empresa(bool), nro, total, link, validez, servicios, vendedor, descPct}
+function mensajeCotizacionWA(o){
+  var h=new Date().getHours();
+  var saludo=h<12?"Buenos días":(h<20?"Buenas tardes":"Buenas noches");
+  var nom=String(o.nombre||"").replace(/\(.*\)/,"").trim();
+  var quien=o.empresa?(nom?"equipo de "+nom:"estimado cliente"):(nom?nom.split(/\s+/)[0]:"estimado cliente");
+  var firma=String(o.vendedor||"").trim().split(/\s+/)[0]||"Isaac";
+  var t=String(o.servicios||"").toLowerCase(), tipos=[];
+  if(/mantenc/.test(t))tipos.push("mantención");
+  if(/instalaci/.test(t))tipos.push("instalación");
+  if(/reparaci/.test(t))tipos.push("reparación");
+  var trabajo=tipos.length?"los trabajos de "+tipos.join(" e ")+" solicitados":"los trabajos solicitados";
+  var m=saludo+", "+quien+". Le saluda "+firma+" de León Ingeniería.\n\n"
+    +"Le envío la cotización N° "+o.nro+" por "+trabajo
+    +(o.total?", por un total de "+fmt(o.total)+" con IVA incluido"+(o.descPct>0?" (incluye un descuento del "+o.descPct+"%)":""):"")+"."
+    +(o.validez?" Está vigente por "+String(o.validez).toLowerCase()+".":"");
+  if(o.link)m+="\n\nPuede verla y descargarla aquí:\n"+o.link;
+  m+="\n\nSi le parece bien, coordinamos la fecha de la visita; con solo responderme el día que prefiera, le confirmo el horario. Quedo atento a sus consultas.";
+  return m;
+}
+
 function enviarWhatsApp(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
   if(!GAS_URL){alert("Falta configurar el servidor de Google. Avísale a Isaac.");return;}
@@ -3027,8 +3055,12 @@ function enviarWhatsApp(){
     if(pre&&num&&num.value.trim()){
       digits=(pre.value.replace(/[^0-9]/g,"")+num.value.replace(/[^0-9]/g,""));
     }
-    var msg="Hola"+(P.nombre?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
-    if(link)msg+="\n\nPuedes verla y descargarla aquí:\n"+link;
+    var msg=mensajeCotizacionWA({
+      nombre:P.nombre, empresa:(document.getElementById("cnombre").dataset.tipo==="Empresa"),
+      nro:P.nro, total:P.tot, link:link, validez:vs("validez"), servicios:P.items,
+      vendedor:(document.getElementById("cvendedor")||{value:""}).value,
+      descPct:(P.sN>0&&P.dM>0)?Math.round(P.dM*100/P.sN):0
+    });
     var wa=digits?("https://wa.me/"+digits+"?text="+encodeURIComponent(msg)):("https://wa.me/?text="+encodeURIComponent(msg));
     hideLoader();
     if(waWin&&!waWin.closed){ waWin.location.href=wa; }
