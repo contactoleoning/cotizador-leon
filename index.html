@@ -3013,18 +3013,16 @@ function generarYSubirPDF(P, onDone, onError){
 // vigencia a la vista, y cerrando con el paso siguiente (coordinar la visita).
 // o = {nombre, empresa(bool), nro, total, link, validez, servicios, vendedor, descPct}
 function mensajeCotizacionWA(o){
-  var h=new Date().getHours();
-  var saludo=h<12?"Buenos días":(h<20?"Buenas tardes":"Buenas noches");
+  // Sin saludo de entrada: la cotizacion se manda en una conversacion que ya
+  // está en curso con el cliente, así que el mensaje parte directo.
   var nom=String(o.nombre||"").replace(/\(.*\)/,"").trim();
-  var quien=o.empresa?(nom?"equipo de "+nom:"estimado cliente"):(nom?nom.split(/\s+/)[0]:"estimado cliente");
-  var firma=String(o.vendedor||"").trim().split(/\s+/)[0]||"Isaac";
+  var primero=(!o.empresa&&nom)?nom.split(/\s+/)[0]:"";
   var t=String(o.servicios||"").toLowerCase(), tipos=[];
   if(/mantenc/.test(t))tipos.push("mantención");
   if(/instalaci/.test(t))tipos.push("instalación");
   if(/reparaci/.test(t))tipos.push("reparación");
   var trabajo=tipos.length?"los trabajos de "+tipos.join(" e ")+" solicitados":"los trabajos solicitados";
-  var m=saludo+", "+quien+". Le saluda "+firma+" de León Ingeniería.\n\n"
-    +"Le envío la cotización N° "+o.nro+" por "+trabajo
+  var m=(primero?primero+", le envío":"Le envío")+" la cotización N° "+o.nro+" por "+trabajo
     +(o.total?", por un total de "+fmt(o.total)+" con IVA incluido"+(o.descPct>0?" (incluye un descuento del "+o.descPct+"%)":""):"")+"."
     +(o.validez?" Está vigente por "+String(o.validez).toLowerCase()+".":"");
   if(o.link)m+="\n\nPuede verla y descargarla aquí:\n"+o.link;
