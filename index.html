@@ -307,6 +307,12 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
       <span class="sec-arrow">▶</span>
     </div>
     <div class="sec-body" style="max-height:0">
+    <div class="fr" style="position:relative">
+      <span class="fl">Buscar cliente del Indicador</span>
+      <input type="text" id="cli-buscar" placeholder="Nombre, empresa, RUT, teléfono o comuna" autocomplete="off" oninput="cliBuscar()" onfocus="cliBuscar()" onblur="setTimeout(cliCerrarSug,200)">
+      <div id="cli-sug" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:4px;z-index:50;background:var(--card);border:1px solid var(--brd2);border-radius:8px;max-height:300px;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.45)"></div>
+      <div id="cli-msg" style="font-size:12px;color:var(--txt3);margin-top:4px;display:none"></div>
+    </div>
     <div class="fr"><span class="fl">N° Cotización</span><input type="text" id="nro" readonly style="opacity:0.7;cursor:default;font-weight:600;color:var(--acc)"></div>
     <div class="fr"><span class="fl">Fecha</span><input type="date" id="fecha"></div>
     <div class="fr"><span class="fl">Vendedor</span><input type="text" id="cvendedor" placeholder="Nombre del vendedor" oninput="localStorage.setItem('vendedor_nombre',this.value)"></div>
@@ -326,7 +332,7 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
       <button type="button" id="tipo-empresa" class="tipo-cliente-btn" onclick="setTipoCliente('Empresa')" style="flex:1;padding:9px;border-radius:6px;border:2px solid var(--brd);background:var(--inp);color:var(--txt);font-weight:700;cursor:pointer">Empresa</button>
     </div></div>
     <div class="fr"><span class="fl" id="cnombre-label">Nombre Cliente</span><input type="text" id="cnombre" placeholder="Nombre del cliente"></div>
-    <div class="fr"><span class="fl">Teléfono</span><div style="display:flex;gap:6px;flex:1"><select id="ctel-pre" style="width:80px;flex:0 0 80px;background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:9px 6px;font-size:14px"><option value="+569">+569</option><option value="+562">+562</option></select><input type="text" id="ctel-num" placeholder="XXXX XXXX" style="flex:1"></div></div>
+    <div class="fr"><span class="fl">Teléfono</span><div style="display:flex;gap:6px;flex:1"><select id="ctel-pre" style="width:80px;flex:0 0 80px;background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:9px 6px;font-size:14px"><option value="+569">+569</option><option value="+562">+562</option><option value="+">Ext.</option></select><input type="text" id="ctel-num" placeholder="XXXX XXXX" style="flex:1"></div></div>
     <div class="fr"><span class="fl">Dirección</span><input type="text" id="cdir" placeholder="Calle, numero, depto"></div>
     <div class="fr"><span class="fl">Comuna</span>
       <select id="ccom">
@@ -4236,6 +4242,104 @@ function completarTelefonos(){
     }
     completarDesdeIndicador(siguenFaltando, delHistorial);
   });
+}
+
+// ═══════════════════════════════════════
+// BUSCAR CLIENTE DEL INDICADOR (llena el formulario con los datos ya cargados)
+// ═══════════════════════════════════════
+// Los clientes viven en la misma base que usa el Indicador (leon_clientes).
+// Se traen una vez (pesan unos KB) y se guardan 10 minutos en memoria.
+var CLI_IND=null, CLI_IND_T=0, CLI_IND_ESPERA=[];
+function cliNorm(t){return String(t==null?"":t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();}
+function cliCargar(cb){
+  if(CLI_IND&&(Date.now()-CLI_IND_T)<10*60*1000){cb(CLI_IND);return;}
+  CLI_IND_ESPERA.push(cb);
+  if(CLI_IND_ESPERA.length>1)return;
+  function fin(lista){var cbs=CLI_IND_ESPERA;CLI_IND_ESPERA=[];cbs.forEach(function(f){f(lista);});}
+  getFirebaseIdToken(function(token){
+    if(!token){fin(null);return;}
+    withAppCheckHeader(function(xhr){
+      xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4)return;
+        var obj=null;
+        if(xhr.status>=200&&xhr.status<300){try{obj=JSON.parse(xhr.responseText);}catch(e){obj=null;}}
+        if(!obj){fin(null);return;}
+        CLI_IND=Object.keys(obj).map(function(k){return obj[k];}).filter(function(c){return c&&c.cliente;});
+        CLI_IND.forEach(function(c){
+          c._q=cliNorm([c.cliente,c.empresa,c.contacto,c.rut,c.rutEmpresa,c.telefono,c.comuna,c.direccion].join(" "));
+        });
+        CLI_IND_T=Date.now();
+        fin(CLI_IND);
+      };
+      return null;
+    });
+  });
+}
+function cliCerrarSug(){var b=document.getElementById("cli-sug");if(b)b.style.display="none";}
+function cliBuscar(){
+  var inp=document.getElementById("cli-buscar"), box=document.getElementById("cli-sug");
+  if(!inp||!box)return;
+  var q=cliNorm(inp.value);
+  if(q.length<2){box.style.display="none";return;}
+  box.style.display="block";
+  box.innerHTML='<div style="padding:10px 12px;color:var(--txt3);font-size:13px">Buscando…</div>';
+  cliCargar(function(lista){
+    if(cliNorm(inp.value)!==q)return; // ya escribio otra cosa
+    if(!lista){box.innerHTML='<div style="padding:10px 12px;color:#e67e22;font-size:13px">No se pudo leer el Indicador. Revisa tu sesión y conexión.</div>';return;}
+    var palabras=q.split(" ");
+    var res=lista.filter(function(c){return palabras.every(function(w){return c._q.indexOf(w)>=0;});})
+      .sort(function(a,b){return String(a.cliente).localeCompare(String(b.cliente),"es");}).slice(0,8);
+    if(!res.length){box.innerHTML='<div style="padding:10px 12px;color:var(--txt3);font-size:13px">Sin resultados en el Indicador.</div>';return;}
+    window._cliRes=res;
+    box.innerHTML=res.map(function(c,i){
+      var sub=[c.empresa,c.lugar,c.comuna,c.direccion].filter(Boolean).join(" · ");
+      var tel=c.telefono?(c.telefonoExtranjero?"+"+c.telefono:"+569 "+String(c.telefono).slice(-8)):"";
+      return '<div onmousedown="cliElegir('+i+')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--brd)">'
+        +'<div style="font-weight:700;color:var(--txt)">'+esc(c.cliente)+'</div>'
+        +'<div style="font-size:12px;color:var(--txt3)">'+esc(sub)+(tel?(sub?" · ":"")+esc(tel):"")+'</div></div>';
+    }).join("");
+  });
+}
+function cliSetSelect(sel,valor){
+  if(!sel||!valor)return false;
+  var v=cliNorm(valor), opts=Array.prototype.slice.call(sel.options), i;
+  for(i=0;i<opts.length;i++){if(cliNorm(opts[i].value)===v||cliNorm(opts[i].text)===v){sel.value=opts[i].value;return true;}}
+  for(i=0;i<opts.length;i++){var o=cliNorm(opts[i].value);if(o&&(v.indexOf(o)>=0||o.indexOf(v)>=0)){sel.value=opts[i].value;return true;}}
+  return false;
+}
+function cliElegir(i){
+  var c=(window._cliRes||[])[i];
+  if(!c)return;
+  var emp=c.tipo==="empresa"||!!(c.empresa&&String(c.empresa).trim())||!!c.rutEmpresa;
+  setTipoCliente(emp?"Empresa":"Particular");
+  document.getElementById("cnombre").value=emp?(c.empresa||c.cliente):c.cliente;
+  var rut=emp?(c.rutEmpresa||c.rut||""):(c.rut||"");
+  var rutEl=document.getElementById("crut");
+  rutEl.value=rut;
+  if(typeof checkRut==="function")checkRut(rutEl);
+  var pre=document.getElementById("ctel-pre"), num=document.getElementById("ctel-num");
+  var dig=String(c.telefono||"").replace(/\D/g,"");
+  if(dig){
+    if(c.telefonoExtranjero){pre.value="+";num.value=dig;}
+    else{
+      pre.value=c.telefonoFijo?"+562":"+569";
+      var u=dig.slice(-8);
+      num.value=u.slice(0,4)+" "+u.slice(4);
+    }
+  }else{num.value="";}
+  document.getElementById("cdir").value=[c.direccion,c.detalle].filter(Boolean).join(", ");
+  cliSetSelect(document.getElementById("ccom"),c.comuna);
+  var canal=document.getElementById("ccanal");
+  if(canal&&!canal.value)cliSetSelect(canal,"Cliente que vuelve");
+  var inp=document.getElementById("cli-buscar"); if(inp)inp.value="";
+  cliCerrarSug();
+  var msg=document.getElementById("cli-msg");
+  if(msg){
+    var falta=[]; if(!rut)falta.push("RUT"); if(!dig)falta.push("teléfono"); if(!(c.direccion))falta.push("dirección"); if(!c.comuna)falta.push("comuna");
+    msg.style.display="block";
+    msg.textContent="Datos cargados de «"+c.cliente+"»"+([c.lugar,c.comuna].filter(Boolean).length?" ("+[c.lugar,c.comuna].filter(Boolean).join(" · ")+")":"")+(falta.length?". Falta en el Indicador: "+falta.join(", ")+".":".");
+  }
 }
 
 function completarDesdeIndicador(faltan, delHistorial){
