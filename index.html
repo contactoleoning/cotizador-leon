@@ -294,6 +294,7 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
     <div id="ind-duracion-nota" style="font-size:12px;color:var(--txt2);text-align:center;margin-top:-4px"></div>
     <button class="btn" id="btnindicador" style="background:#3b6ea5;color:#fff">📅 Agregar a Indicador de Vencimiento</button>
     <button class="btn" id="btnnuevacot" style="background:transparent;border:2px solid var(--brd2);color:var(--txt2)">🆕 Iniciar Cotización Nueva (siguiente N°)</button>
+    <button class="btn" id="btnnuevavar" style="background:transparent;border:2px solid var(--brd2);color:var(--txt2)">🔀 Nueva variante (mismo N°, letra A/B/C)</button>
   </div>
 </div><!-- /cot-left -->
 
@@ -3050,8 +3051,36 @@ var GAS_URL="https://script.google.com/macros/s/AKfycbz9SbmsjWXY1Bh6375DfslTdPdO
 // Script), porque antes estaba expuesta en este mismo archivo publico.
 var GAS_KEY="931ae6fd8b05dcadb18b09244161efa5b2723997bca3097d";
 
+// Variante de la cotizacion actual (A, B, C...). Vive aparte del correlativo:
+// el N° base no avanza al crear una variante, solo cambia la letra.
+//
+// Se sincroniza entre equipos dentro de "ov" (que ya viaja a la nube) bajo un
+// id reservado, igual que los datos de empresa. Guarda {nro,letra,t}: la letra
+// solo vale mientras el correlativo siga siendo ese nro, asi que al avanzar a
+// la cotizacion siguiente el registro viejo queda obsoleto solo.
+var COT_VAR_ID="_COT_VAR";
+function getVariante(){
+  var r=ov[COT_VAR_ID];
+  var n=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  return (r&&r.nro===n&&r.letra)?String(r.letra):"";
+}
+function setVariante(v){
+  var n=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  ov[COT_VAR_ID]={nro:n,letra:v||"",t:Date.now()};
+  try{localStorage.setItem("ov_"+COT_VAR_ID,JSON.stringify(ov[COT_VAR_ID]));}catch(e){}
+}
+// Entre el registro local y el de la nube gana el de nro mayor; con el mismo
+// nro, el mas reciente.
+function elegirVarianteReg(a,b){
+  if(!a)return b; if(!b)return a;
+  if(a.nro!==b.nro)return a.nro>b.nro?a:b;
+  return (a.t||0)>=(b.t||0)?a:b;
+}
+
 function setNroUI(n){
   var s=String(n).padStart(3,"0");
+  var v=getVariante();
+  if(v)s+="-"+v;
   document.getElementById("nro").value=s;
   document.getElementById("hnum").textContent="COT #"+s;
 }
@@ -3093,6 +3122,7 @@ function loadCloudData(intento){
   })
   .then(function(data){
     var rec=data.record;
+    var varLocalReg=ov[COT_VAR_ID];
     // nro -- gana SIEMPRE el mayor, nunca retrocede.
     // Esta respuesta puede llegar 48 s tarde. Si en ese rato el usuario apretó
     // "Iniciar Cotización Nueva", el número local ya avanzó, y escribir encima
@@ -3118,6 +3148,15 @@ function loadCloudData(intento){
       // mostraba los valores por defecto hasta recargar dos veces.
       renderEmpresaAdmin();
     }
+    // Letra de variante: se resuelve entre lo local y lo que trae la nube y se
+    // repinta el N° (el setNroUI de arriba corrio antes de conocerla).
+    var varGanadora=elegirVarianteReg(varLocalReg,rec.ov&&rec.ov[COT_VAR_ID]);
+    if(varGanadora){
+      ov[COT_VAR_ID]=varGanadora;
+      try{localStorage.setItem("ov_"+COT_VAR_ID,JSON.stringify(varGanadora));}catch(e){}
+    }
+    setNroUI(n);
+    if(varGanadora&&varGanadora===varLocalReg&&(!rec.ov||!rec.ov[COT_VAR_ID]||rec.ov[COT_VAR_ID].t!==varLocalReg.t))saveCloudData();
     // productos personalizados
     if(rec.cat_extra&&rec.cat_extra.length){
       var catExtraVivo=rec.cat_extra.filter(function(e){return CAT_DELETED.indexOf(e.id)===-1;});
@@ -3210,6 +3249,7 @@ function incrementNro(){
   var n=parseInt(localStorage.getItem("cot_nro")||"1")||1;
   var siguiente=n+1;
   localStorage.setItem("cot_nro",String(siguiente));
+  setVariante("");
   setNroUI(siguiente);
   saveCloudData();
 }
@@ -3279,6 +3319,7 @@ function asegurarNroLibre(){
     +"Esta cotización pasa al N° "+n+".");
 
   localStorage.setItem("cot_nro",String(n));
+  setVariante("");
   setNroUI(n);
   saveCloudData();
 }
@@ -3294,6 +3335,40 @@ function nuevaCotizacion(){
   renderCarrito();
   refrescarDuracionSugerida();
   incrementNro();
+}
+
+// Botón "Nueva variante": misma cotización base y mismo cliente, otra opción
+// (173-B, 173-C...). No avanza el correlativo y conserva el carrito para que
+// solo se cambie lo que varía. Si el N° base ya se usó sin letra (173), ese
+// cuenta como la opción A y la primera variante sale como B.
+function nuevaVariante(){
+  var n=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  var base=String(n).padStart(3,"0");
+  var usadas={};
+  (REG_LIST||[]).forEach(function(r){
+    var x=String(r.nro);
+    if(x===base||x===String(n)) usadas.A=true;
+    var m=x.match(/^0*(\d+)-([A-Z])$/);
+    if(m&&parseInt(m[1],10)===n) usadas[m[2]]=true;
+  });
+  var actual=getVariante();
+  if(actual) usadas[actual]=true;
+  else if(carrito.length) usadas.A=true;   // la actual sin letra es la A
+  var letra="";
+  for(var i=65;i<=90;i++){
+    var L=String.fromCharCode(i);
+    if(!usadas[L]){letra=L;break;}
+  }
+  if(!letra){alert("Se acabaron las letras (A–Z) para la cotización N° "+base+".");return;}
+  if(!document.getElementById("cnombre").value.trim()){
+    alert("Primero ingresa el cliente: las variantes son siempre para la misma persona.");
+    return;
+  }
+  if(!confirm("¿Crear la variante N° "+base+"-"+letra+" para "+document.getElementById("cnombre").value.trim()
+    +"? Se mantiene el presupuesto actual para que cambies solo lo que varía.")) return;
+  setVariante(letra);
+  setNroUI(n);
+  saveCloudData();
 }
 
 function mergeById(local,remote){
@@ -5184,6 +5259,7 @@ function restaurarRespaldo(input){
     updateTiposelOptions();updateBtuselOptions();
     renderStatsAdmin();
     renderAdmin();filtrar();
+    setVariante("");
     setNroUI(data.nro||1);
     saveCloudData();
     input.value="";
@@ -5438,6 +5514,7 @@ document.addEventListener("DOMContentLoaded", function(){
   var _bwa=document.getElementById("btnwa");if(_bwa)_bwa.addEventListener("click",enviarWhatsApp);
   var _bind=document.getElementById("btnindicador");if(_bind)_bind.addEventListener("click",enviarAIndicador);
   var _bnuevacot=document.getElementById("btnnuevacot");if(_bnuevacot)_bnuevacot.addEventListener("click",nuevaCotizacion);
+  var _bnuevavar=document.getElementById("btnnuevavar");if(_bnuevavar)_bnuevavar.addEventListener("click",nuevaVariante);
   // Install form changes
   ["itipo","imateriales"].forEach(function(id){
     document.getElementById(id).addEventListener("change",calcInst);
@@ -5475,6 +5552,9 @@ document.addEventListener("DOMContentLoaded", function(){
   loadRegList();
   loadCatDeleted();
   loadListDeleted();
+  // La letra de variante se lee antes de loadNro() para que el N° aparezca
+  // completo (173-B) al instante, aun sin conexion.
+  try{var _varOv=localStorage.getItem("ov_"+COT_VAR_ID);if(_varOv)ov[COT_VAR_ID]=JSON.parse(_varOv);}catch(e){}
   loadNro();
   (function(){var h=new Date();document.getElementById("fecha").value=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");})();
   try{document.getElementById("cvendedor").value=localStorage.getItem("vendedor_nombre")||"";}catch(e){}
