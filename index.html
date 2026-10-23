@@ -2288,6 +2288,117 @@ function fusionarConExistente(existente, row){
   return patch;
 }
 
+// ═══════════════════════════════════════
+// COTIZACION -> HISTORIAL DE LA FICHA DEL CLIENTE
+// ═══════════════════════════════════════
+// Una cotización queda registrada en leon_cotizaciones (Seguimiento), pero la
+// ficha del cliente en el Indicador solo mostraba las que se mandaban con el
+// botón "Agregar a Indicador" -- que además reinicia su ciclo de mantención y
+// suma equipos, cosa que una cotización por sí sola no debe hacer. Aquí se
+// hace solo lo mínimo: agregar la cotización al HISTORIAL de la ficha que
+// corresponde (misma persona y misma dirección). No crea clientes, no toca
+// fechas ni equipos. Si no hay una ficha que calce con seguridad, no hace nada.
+// regs: [{nro, monto, fecha(ISO), servicio, rut, telefono, direccion, comuna}]
+// cb({vinculadas:[{nro,cliente}], sinFicha:[nro]})
+function vincularCotizacionesAFicha(regs, cb){
+  cb=cb||function(){};
+  getFirebaseIdToken(function(token){
+    if(!token){cb(null);return;}
+    withAppCheckHeader(function(xhr){
+      xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4)return;
+        var clientes=null;
+        if(xhr.status>=200&&xhr.status<300){try{clientes=JSON.parse(xhr.responseText);}catch(e){clientes=null;}}
+        if(!clientes){cb(null);return;}
+        var porFicha={}, vinculadas=[], sinFicha=[];
+        regs.forEach(function(rg){
+          var fichas=fichasDeLaPersona(clientes,rg);
+          var m=fichas.length?fichaDeEstaDireccion(fichas,rg):null;
+          if(!m){sinFicha.push(rg.nro);return;}
+          var lista=porFicha[m.clave]||(porFicha[m.clave]={ficha:m.ficha,nuevas:[]});
+          var ya=(m.ficha.cotizaciones||[]).some(function(c){return String(c.nro)===String(rg.nro);})
+            ||lista.nuevas.some(function(c){return String(c.nro)===String(rg.nro);});
+          if(ya)return;
+          lista.nuevas.push({nro:rg.nro,monto:rg.monto,fecha:rg.fecha,servicio:rg.servicio});
+          vinculadas.push({nro:rg.nro,cliente:m.ficha.cliente||"(sin nombre)"});
+        });
+        var claves=Object.keys(porFicha).filter(function(k){return porFicha[k].nuevas.length;});
+        var pendientes=claves.length, fallo=false;
+        if(!pendientes){cb({vinculadas:[],sinFicha:sinFicha});return;}
+        claves.forEach(function(k){
+          var f=porFicha[k], total=(f.ficha.cotizaciones||[]).concat(f.nuevas);
+          var ultima=f.nuevas[f.nuevas.length-1];
+          withAppCheckHeader(function(xp){
+            xp.open("PATCH", FIREBASE_DB_URL+"/leon_clientes/"+k+".json?auth="+token, true);
+            xp.setRequestHeader("Content-Type","application/json");
+            xp.onreadystatechange=function(){
+              if(xp.readyState!==4)return;
+              if(!(xp.status>=200&&xp.status<300))fallo=true;
+              if(--pendientes===0)cb(fallo?null:{vinculadas:vinculadas,sinFicha:sinFicha});
+            };
+            xp.onerror=function(){fallo=true;if(--pendientes===0)cb(null);};
+            return JSON.stringify({cotizaciones:total,nroCotizacion:ultima.nro,montoCotizado:ultima.monto});
+          });
+        });
+      };
+      return null;
+    });
+  });
+}
+
+// Al generar una cotización: se vincula sola a la ficha del cliente.
+function vincularCotizacionNueva(P){
+  try{
+    if(!document.getElementById("cnombre").value.trim())return;
+    var row=construirRowIndicador();
+    vincularCotizacionesAFicha([{nro:P.nro,monto:P.tot,fecha:row.inicia,servicio:row.servicio,
+      rut:row.rut,telefono:row.telefono,direccion:row.direccion,comuna:row.comuna}], function(r){
+      if(!r)console.error("No se pudo vincular la cotización "+P.nro+" a la ficha del cliente.");
+    });
+  }catch(e){console.error(e);}
+}
+
+// Para las que ya existían: revisa el registro y agrega al historial de cada
+// ficha las cotizaciones que le faltan. Pide confirmación antes de escribir.
+function vincularCotizacionesPendientes(){
+  var regs=REG_LIST.map(function(r){
+    return {nro:r.nro,monto:r.total,fecha:fechaISO(r.fecha),servicio:r.serv&&r.serv!=="—"?r.serv:"",
+            rut:r.rut,telefono:r.tel,direccion:"",comuna:r.comuna,_nombre:r.nombre};
+  }).filter(function(r){return r.rut||r.telefono;});
+  if(!regs.length){alert("Ninguna cotización tiene RUT o teléfono para reconocer al cliente.");return;}
+  getFirebaseIdToken(function(token){
+    if(!token){alert("Necesitas sesión iniciada.");return;}
+    withAppCheckHeader(function(xhr){
+      xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4)return;
+        var clientes=null;
+        if(xhr.status>=200&&xhr.status<300){try{clientes=JSON.parse(xhr.responseText);}catch(e){clientes=null;}}
+        if(!clientes){alert("No se pudo leer el Indicador.");return;}
+        var faltan=[];
+        regs.forEach(function(rg){
+          var fichas=fichasDeLaPersona(clientes,rg);
+          var m=fichas.length?fichaDeEstaDireccion(fichas,rg):null;
+          if(!m)return;
+          var ya=(m.ficha.cotizaciones||[]).some(function(c){return String(c.nro)===String(rg.nro);});
+          if(!ya)faltan.push({rg:rg,cliente:m.ficha.cliente||"(sin nombre)"});
+        });
+        if(!faltan.length){alert("Todas las cotizaciones que se pueden reconocer ya están en la ficha de su cliente.");return;}
+        var lista=faltan.slice(0,15).map(function(x){return "  • N°"+x.rg.nro+" → "+x.cliente;}).join("\n");
+        if(!confirm("Se agregarán "+faltan.length+" cotizaciones al historial de la ficha de su cliente en el Indicador:\n\n"+lista
+          +(faltan.length>15?"\n  … y "+(faltan.length-15)+" más":"")
+          +"\n\nSolo se suman al historial: no cambian fechas, equipos ni el ciclo de mantención."))return;
+        vincularCotizacionesAFicha(faltan.map(function(x){return x.rg;}),function(r){
+          if(!r){alert("No se pudo completar. Intenta de nuevo.");return;}
+          alert("✓ "+r.vinculadas.length+" cotizaciones agregadas a la ficha de su cliente.");
+        });
+      };
+      return null;
+    });
+  });
+}
+
 function enviarAIndicador(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
   if(!document.getElementById("cnombre").value.trim()){
@@ -3844,6 +3955,7 @@ function registrarCotizacion(P){
   preguntarSiEsAlternativa(P.nro);
   renderStatsAdmin();
   renderSeguimiento();
+  vincularCotizacionNueva(P);
 }
 
 // Preguntar al generar, no solo despues. Si el cliente ya tiene una cotizacion
@@ -4647,6 +4759,8 @@ function renderSeguimiento(){
       +'<button class="seg-btn" onclick="completarTelefonos()">Completar desde el historial</button>'
       +'</div>'):'')
     +'<div style="font-size:12.5px;color:var(--txt3);margin-bottom:10px">'
+      +'<button class="seg-btn" onclick="vincularCotizacionesPendientes()">Vincular al Indicador</button>'
+      +' <span style="margin:0 12px 0 6px">agrega a la ficha de cada cliente las cotizaciones que le faltan</span>'
       +'<button class="seg-btn" onclick="corregirDesdeLaPlanilla()">Revisar contra la planilla</button>'
       +' <span style="margin-left:6px">deja el registro igual a la planilla: corrige lo distinto y elimina lo que sobra</span>'
       +'</div>'
