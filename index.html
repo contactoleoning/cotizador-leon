@@ -3077,6 +3077,21 @@ function elegirVarianteReg(a,b){
   return (a.t||0)>=(b.t||0)?a:b;
 }
 
+// Correccion unica del 23-oct-2026: una prueba mia dejo el correlativo de la
+// nube en 180 (el real era 173, cotizacion de Manuel). Como el N° nunca
+// retrocede por diseño, ningun equipo podia volver solo. Si algun equipo ve el
+// 180 se lleva a 173 con letra B (la 173 original cuenta como A). Solo corre
+// una vez por equipo y caduca el 15-nov-2026 para no afectar un 180 legitimo.
+function corregirNro180(n,marcar){
+  try{
+    if(n!==180||localStorage.getItem("fix_nro180")||Date.now()>new Date("2026-11-15").getTime())return false;
+    if(marcar)localStorage.setItem("fix_nro180","1");
+    localStorage.setItem("cot_nro","173");
+    setVariante("B");
+    return true;
+  }catch(e){return false;}
+}
+
 function setNroUI(n){
   var s=String(n).padStart(3,"0");
   var v=getVariante();
@@ -3097,6 +3112,7 @@ function loadNro(){loadCloudData();}
 function loadCloudData(intento){
   intento = intento || 0;
   var local=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  if(corregirNro180(local))local=173;
   setNroUI(local);
   if(!GAS_URL){
     document.getElementById("sync-dot").style.background="#e67e22";
@@ -3132,6 +3148,8 @@ function loadCloudData(intento){
     var nRemoto=parseInt(rec.nro,10)||1;
     var nLocal=parseInt(localStorage.getItem("cot_nro")||"1")||1;
     var n=Math.max(nRemoto, nLocal);
+    var nroCorregido=false;
+    if(corregirNro180(n,true)){n=173;nroCorregido=true;varLocalReg=ov[COT_VAR_ID];}
     localStorage.setItem("cot_nro",String(n));
     setNroUI(n);
     // overrides de precios
@@ -3150,7 +3168,7 @@ function loadCloudData(intento){
     }
     // Letra de variante: se resuelve entre lo local y lo que trae la nube y se
     // repinta el N° (el setNroUI de arriba corrio antes de conocerla).
-    var varGanadora=elegirVarianteReg(varLocalReg,rec.ov&&rec.ov[COT_VAR_ID]);
+    var varGanadora=nroCorregido?varLocalReg:elegirVarianteReg(varLocalReg,rec.ov&&rec.ov[COT_VAR_ID]);
     if(varGanadora){
       ov[COT_VAR_ID]=varGanadora;
       try{localStorage.setItem("ov_"+COT_VAR_ID,JSON.stringify(varGanadora));}catch(e){}
