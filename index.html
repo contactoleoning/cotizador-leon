@@ -277,6 +277,7 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
         <option value="40">40% de descuento</option>
       </select>
     </div>
+    <div id="avisoprecios" style="display:none"></div>
     <div id="cartlista"></div>
     <div class="tots" id="totales"></div>
   </div>
@@ -873,7 +874,7 @@ function loadInstList(){
       INST_LIST.forEach(function(it){
         if(it.tipo==="Split Muro"){it.tipo="Split Muro Básica";migrado=true;}
       });
-      if(migrado)saveInstList();
+      if(migrado)saveInstList(true);
       return;
     }
   }catch(e){}
@@ -906,6 +907,7 @@ function loadMatList(){
 function saveMatList(){
   try{localStorage.setItem("mat_list",JSON.stringify(MAT_LIST));}catch(e){}
   updateImaterialesSelect();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
@@ -1014,14 +1016,20 @@ function renderMatAdmin(){
   document.getElementById("matlista").innerHTML=html;
 }
 
-function saveInstList(){
+// A diferencia de las otras listas, esta no subia a la nube al guardar: un
+// precio de instalacion editado aqui no llegaba a otros dispositivos hasta que
+// otro guardado cualquiera lo arrastrara. sinNube=true solo para la migracion
+// de arranque, que corre antes de la primera carga desde la nube.
+function saveInstList(sinNube){
   try{localStorage.setItem("inst_list",JSON.stringify(INST_LIST));}catch(e){}
   updateItipoGrupoSelect();
   updateItipoSelect();
   calcInst();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
+  if(sinNube!==true)saveCloudData();
 }
 
 function updateItipoGrupoSelect(){
@@ -1169,7 +1177,6 @@ function eliminarInst(id){
   marcarListaEliminada("inst",id);
   saveInstList();
   renderInstAdmin();
-  saveCloudData();
 }
 
 function moverInst(id,dir){
@@ -1261,6 +1268,7 @@ function saveOv(id){
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
   filtrar();
+  refrescarPreciosCarrito();
   saveCloudData();
 }
 
@@ -1372,7 +1380,7 @@ function agregarPackVesta(){
   var cant=parseInt(document.getElementById("cantpackvesta").value)||1;
   var item=PACK_LIST.find(function(i){return i.id===val;});
   if(!item)return;
-  carrito.push({id:"PACK_"+Date.now(),cod:"PACK-V",
+  carrito.push({id:"PACK_"+Date.now(),cod:"PACK-V",ref:{l:"pack",id:item.id},
     desc:item.nombre,tipo:"Pack Promocional",
     neto:item.precio,total:wIVA(item.precio),esCyber:false,disc:0,cant:cant});
   sel.value="";
@@ -1406,6 +1414,7 @@ function loadTrasList(){
 function savePackList(){
   try{localStorage.setItem("pack_list",JSON.stringify(PACK_LIST));}catch(e){}
   updatePackSelect();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
@@ -1414,6 +1423,7 @@ function savePackList(){
 function saveTrasList(){
   try{localStorage.setItem("tras_list",JSON.stringify(TRAS_LIST));}catch(e){}
   updateTrasSelect();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
@@ -1576,6 +1586,7 @@ function loadMantList(){
 function saveMantList(){
   try{localStorage.setItem("mant_list",JSON.stringify(MANT_LIST));}catch(e){}
   updateMantencionSelect();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
@@ -1690,7 +1701,7 @@ function agregarMantencionSola(){
   var cant=parseInt(vs("cantmant"))||1;
   var item=MANT_LIST.find(function(i){return i.id===mantId;});
   if(!item)return;
-  carrito.push({id:"MANT_"+Date.now(),cod:"MANT",
+  carrito.push({id:"MANT_"+Date.now(),cod:"MANT",ref:{l:"mant",id:item.id},
     desc:item.nombre,tipo:"Mantención",
     neto:item.precio,total:wIVA(item.precio),esCyber:false,disc:0,cant:cant});
   document.getElementById("imantencion").value="";
@@ -1704,7 +1715,7 @@ function agregarInstalacionSola(){
   var base=getIBASE(vs("itipo"));
   var cantInst=parseInt(vs("cantinst"))||1;
   var _instItem=INST_LIST.find(function(i){return i.id===vs("itipo");})||{};
-  carrito.push({id:"INST_"+Date.now(),cod:"IN-"+vs("itipo").toUpperCase(),
+  carrito.push({id:"INST_"+Date.now(),cod:"IN-"+vs("itipo").toUpperCase(),ref:{l:"inst",id:vs("itipo")},
     desc:_instItem.nombre||vs("itipo"),tipo:"Instalacion",
     neto:base,total:wIVA(base),esCyber:false,disc:0,cant:cantInst});
   document.getElementById("itipo").value="";
@@ -1721,7 +1732,7 @@ function agregarMaterialesSolo(){
   var matId=selEl.options[selEl.selectedIndex].dataset.matid;
   var matItem=MAT_LIST.find(function(i){return i.id===matId;});
   var matNombre=matItem?matItem.nombre:"Materiales";
-  carrito.push({id:"MAT_"+Date.now(),cod:"MAT",
+  carrito.push({id:"MAT_"+Date.now(),cod:"MAT",ref:{l:"mat",id:matId},
     desc:matNombre,tipo:"Materiales",
     neto:mat,total:wIVA(mat),esCyber:false,disc:0,cant:cantMat});
   document.getElementById("imateriales").value="0";
@@ -1747,6 +1758,7 @@ function loadExtraList(){
 function saveExtraList(){
   try{localStorage.setItem("extra_list",JSON.stringify(EXTRA_LIST));}catch(e){}
   updateIExtraSelect();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
@@ -1861,7 +1873,7 @@ function agregarExtraSola(){
   var cant=parseInt(vs("cantextra"))||1;
   var item=EXTRA_LIST.find(function(i){return i.id===extraId;});
   if(!item)return;
-  carrito.push({id:"EXTRA_"+Date.now(),cod:"EXTRA",
+  carrito.push({id:"EXTRA_"+Date.now(),cod:"EXTRA",ref:{l:"extra",id:item.id},
     desc:item.nombre,tipo:item.tipo,
     neto:item.precio,total:wIVA(item.precio),esCyber:false,disc:0,cant:cant});
   document.getElementById("iextra").value="";
@@ -1875,7 +1887,7 @@ function agregarTraslado(){
   if(!val){alert("Selecciona una región de traslado.");return;}
   var item=TRAS_LIST.find(function(i){return i.id===val;});
   if(!item)return;
-  carrito.push({id:"TRASL_"+Date.now(),cod:"TRASL",
+  carrito.push({id:"TRASL_"+Date.now(),cod:"TRASL",ref:{l:"tras",id:item.id},
     desc:"Traslado Fuera de Santiago — "+item.nombre,tipo:"Traslado",
     neto:item.precio,total:wIVA(item.precio),esCyber:false,disc:0,cant:1});
   trasladoSel.value="";
@@ -3186,6 +3198,80 @@ function getCosto(p){
 }
 function pvN(p){return Math.round(getCosto(p)*(1+gPct(p)/100));}
 
+// agregar() copia el neto al carrito en el momento de agregar el equipo. Si
+// despues se cambia costo o % en el administrador, esa linea quedaba con el
+// precio viejo y se cotizaba por debajo (o por encima) de lo configurado. Cada
+// vez que cambia un precio, las lineas de equipo del carrito se recalculan y
+// se avisa cuales cambiaron; el descuento de la linea no se toca.
+var avisosPrecios=[];
+// Cada linea del carrito sabe de donde salio: los equipos por su cod (id del
+// catalogo) y el resto por ref={l:lista,id}. Asi se puede volver a leer el
+// valor vigente en el administrador. Si el item ya no existe en su lista, la
+// linea se deja como estaba: se cotizo asi.
+function fuenteLineaCarrito(it){
+  if(it.esEquipo){
+    var p=CAT.find(function(x){return x.id===it.cod;});
+    return p?{neto:pvN(p),desc:p.marca+" "+p.modelo+" "+fmtBtu(p.btu),tipo:p.tipo,eq:p}:null;
+  }
+  if(!it.ref)return null;
+  var listas={inst:INST_LIST,mant:MANT_LIST,mat:MAT_LIST,extra:EXTRA_LIST,pack:PACK_LIST,tras:TRAS_LIST};
+  var lista=listas[it.ref.l];
+  var x=lista&&lista.find(function(i){return i.id===it.ref.id;});
+  if(!x)return null;
+  var tipos={inst:"Instalacion",mant:"Mantención",mat:"Materiales",extra:x.tipo,pack:"Pack Promocional",tras:"Traslado"};
+  var desc=it.ref.l==="tras"?"Traslado Fuera de Santiago — "+x.nombre:x.nombre;
+  return {neto:x.precio,desc:desc,tipo:tipos[it.ref.l]};
+}
+function refrescarPreciosCarrito(){
+  if(!carrito.length){avisosPrecios=[];return;}
+  var cambios=[],hubo=false;
+  carrito.forEach(function(it){
+    var f=fuenteLineaCarrito(it);
+    if(!f)return;
+    if(f.desc!==it.desc||f.tipo!==it.tipo){it.desc=f.desc;it.tipo=f.tipo;hubo=true;}
+    if(f.eq){it.marca=f.eq.marca;it.modelo=f.eq.modelo;it.btu=f.eq.btu;}
+    if(f.neto===it.neto)return;
+    cambios.push({desc:it.desc,antes:it.neto,ahora:f.neto});
+    it.neto=f.neto;
+    it.total=wIVA(f.neto);
+  });
+  if(!cambios.length&&!hubo)return;
+  renderCarrito();
+  if(!cambios.length)return;
+  avisosPrecios=avisosPrecios.concat(cambios);
+  renderAvisoPrecios();
+  mostrarToastPrecios(cambios);
+}
+function lineaCambioPrecio(c){
+  return esc(c.desc)+": neto "+fmt(c.antes)+" → "+fmt(c.ahora);
+}
+function renderAvisoPrecios(){
+  var b=document.getElementById("avisoprecios");
+  if(!b)return;
+  if(!avisosPrecios.length){b.style.display="none";b.innerHTML="";return;}
+  b.style.display="block";
+  b.style.cssText="display:block;margin-bottom:14px;padding:12px 14px;background:var(--bg3);border:2px solid var(--acc);border-radius:var(--rs);font-size:15px;color:var(--txt)";
+  b.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">'
+    +'<b style="color:var(--acc)">Precios actualizados desde el administrador</b>'
+    +'<button onclick="cerrarAvisoPrecios()" style="background:transparent;border:none;color:var(--txt2);font-size:18px;cursor:pointer">✕</button></div>'
+    +avisosPrecios.map(function(c){return '<div>'+lineaCambioPrecio(c)+'</div>';}).join("");
+}
+function cerrarAvisoPrecios(){avisosPrecios=[];renderAvisoPrecios();}
+function mostrarToastPrecios(cambios){
+  var t=document.getElementById("toastprecios");
+  if(!t){
+    t=document.createElement("div");
+    t.id="toastprecios";
+    t.style.cssText="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;max-width:92vw;padding:12px 16px;background:var(--bg3);color:var(--txt);border:2px solid var(--acc);border-radius:var(--rs);font-size:15px;box-shadow:0 6px 24px rgba(0,0,0,.5)";
+    document.body.appendChild(t);
+  }
+  t.innerHTML='<b style="color:var(--acc)">Se actualizó el precio en el carrito</b>'
+    +cambios.map(function(c){return '<div>'+lineaCambioPrecio(c)+'</div>';}).join("");
+  t.style.display="block";
+  clearTimeout(t._h);
+  t._h=setTimeout(function(){t.style.display="none";},7000);
+}
+
 
 
 // EVENT LISTENERS - no inline onclick
@@ -3383,6 +3469,9 @@ function loadCloudData(intento){
     // eso no se toco.
     setSyncStatus(true);
     filtrar();
+    // Precios, listas y nombres ya estan al dia: se sincroniza lo que haya en
+    // el carrito (equipos y todas las demas lineas) con lo que trajo la nube.
+    refrescarPreciosCarrito();
   })
   .catch(function(){
     setNroUI(local);
