@@ -838,13 +838,35 @@ function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/"/g,"
 // Como esc(), pero ademas segura dentro de un literal JS de comillas
 // simples embebido en un atributo onclick="...('...')" inline.
 function escAttr(s){return String(s==null?"":s).replace(/\\/g,"\\\\").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/'/g,"\\'");}
+// Los campos de precio del admin son de texto: escribir "45.000" (punto de
+// miles, como se escribe en Chile) con parseFloat daba 45, o sea un neto mil
+// veces menor. Un grupo de 3 digitos tras el punto es separador de miles; la
+// coma es el decimal.
+function parsePrecio(s){
+  var x=String(s==null?"":s).replace(/[$\s]/g,"");
+  if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(x))x=x.replace(/\./g,"").replace(",",".");
+  else x=x.replace(",",".");
+  return parseFloat(x)||0;
+}
 function vn(id){return parseFloat(document.getElementById(id).value)||0;}
 function vs(id){return document.getElementById(id).value;}
 
+// Marca, modelo, BTU, tipo y proveedor editados en el admin viven en ov y solo
+// se copiaban al catalogo cuando respondia la nube: al recargar (o sin red) el
+// equipo volvia a su nombre original. El precio no tenia el problema porque se
+// lee siempre desde ov.
+function aplicarOvACatalogo(){
+  CAT.forEach(function(p){
+    var o=ov[p.id];
+    if(o)Object.keys(o).forEach(function(c){p[c]=o[c];});
+  });
+}
 function loadOv(){
   CAT.forEach(function(p){
     try{var s=localStorage.getItem("ov_"+p.id);if(s)ov[p.id]=JSON.parse(s);}catch(e){}
   });
+  aplicarOvACatalogo();
+  updateTiposelOptions();updateBtuselOptions();
   renderAdmin();
 }
 
@@ -987,9 +1009,9 @@ function renderMatAdmin(){
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
       html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
-        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.nombre=el.value;saveMatList();}})(this)"></div>'
+        +'<input type="text" style="'+si+'" value="'+esc(it.nombre)+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.nombre=el.value;saveMatList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.precio=parseFloat(el.value)||0;saveMatList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.precio=parsePrecio(el.value);saveMatList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -1039,7 +1061,7 @@ function updateItipoGrupoSelect(){
   var agr=agruparPorTipo(INST_LIST);
   var grupos=agr.orden.map(function(clave){return agr.display[clave];}).sort();
   var html='<option value="">— Selecciona —</option>';
-  grupos.forEach(function(g){html+='<option value="'+g+'">'+g+'</option>';});
+  grupos.forEach(function(g){html+='<option value="'+esc(g)+'">'+esc(g)+'</option>';});
   sel.innerHTML=html;
   if(grupos.indexOf(cur)!==-1)sel.value=cur;
 }
@@ -1067,7 +1089,7 @@ function updateTiposelOptions(){
   var agr=agruparPorTipo(CAT);
   var tipos=agr.orden.map(function(clave){return agr.display[clave];}).sort();
   var html='<option value="">Todos</option>';
-  tipos.forEach(function(t){html+='<option value="'+t+'">'+t+'</option>';});
+  tipos.forEach(function(t){html+='<option value="'+esc(t)+'">'+esc(t)+'</option>';});
   sel.innerHTML=html;
   if(tipos.indexOf(cur)!==-1)sel.value=cur;
 }
@@ -1103,7 +1125,7 @@ function renderEmpresaAdmin(){
   var sa='width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:10px;font-size:14px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
   var lbl='font-size:11px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;font-weight:600';
   function campo(campoKey,label,val){
-    return '<div style="margin-bottom:10px"><div style="'+lbl+'">'+label+'</div><input type="text" style="'+sa+'" value="'+val+'" data-campo="'+campoKey+'" onchange="setOv(\''+EMPRESA_PDF_ID+'\',this.dataset.campo,this.value)"></div>';
+    return '<div style="margin-bottom:10px"><div style="'+lbl+'">'+label+'</div><input type="text" style="'+sa+'" value="'+esc(val)+'" data-campo="'+campoKey+'" onchange="setOv(\''+EMPRESA_PDF_ID+'\',this.dataset.campo,this.value)"></div>';
   }
   el.innerHTML='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Estos datos aparecen en el encabezado y el pie de página (transferencias) de todas las cotizaciones en PDF. No tocan los datos del cliente, los equipos ni los montos: esos se siguen llenando solos.</div>'
     +'<div class="ss" style="margin-top:0;padding-top:0;border-top:none">Encabezado — tu empresa</div>'
@@ -1233,9 +1255,9 @@ function renderInstAdmin(){
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
       html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
-        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-instid="'+it.id+'" data-instcampo="nombre" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.nombre=el.value;saveInstList();}})(this)"></div>'
+        +'<input type="text" style="'+si+'" value="'+esc(it.nombre)+'" data-instid="'+it.id+'" data-instcampo="nombre" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.nombre=el.value;saveInstList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-instid="'+it.id+'" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.precio=parseFloat(el.value)||0;saveInstList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-instid="'+it.id+'" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.precio=parsePrecio(el.value);saveInstList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -1526,9 +1548,9 @@ function renderCatalogoAdmin(opts){
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
       html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">'+(opts.nombreLbl||"Nombre")+'</div>'
-        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-cid="'+it.id+'" onchange="(function(el){var x='+opts.listaVar+'.find(function(i){return i.id===el.dataset.cid;});if(x){x.nombre=el.value;'+opts.saveFn+'();}})(this)"></div>'
+        +'<input type="text" style="'+si+'" value="'+esc(it.nombre)+'" data-cid="'+it.id+'" onchange="(function(el){var x='+opts.listaVar+'.find(function(i){return i.id===el.dataset.cid;});if(x){x.nombre=el.value;'+opts.saveFn+'();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-cid="'+it.id+'" onchange="(function(el){var x='+opts.listaVar+'.find(function(i){return i.id===el.dataset.cid;});if(x){x.precio=parseFloat(el.value)||0;'+opts.saveFn+'();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-cid="'+it.id+'" onchange="(function(el){var x='+opts.listaVar+'.find(function(i){return i.id===el.dataset.cid;});if(x){x.precio=parsePrecio(el.value);'+opts.saveFn+'();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -1665,9 +1687,9 @@ function renderMantAdmin(){
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
       html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
-        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.nombre=el.value;saveMantList();}})(this)"></div>'
+        +'<input type="text" style="'+si+'" value="'+esc(it.nombre)+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.nombre=el.value;saveMantList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.precio=parseFloat(el.value)||0;saveMantList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.precio=parsePrecio(el.value);saveMantList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -1837,9 +1859,9 @@ function renderExtraAdmin(){
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
       html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
-        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-extraid="'+it.id+'" onchange="(function(el){var x=EXTRA_LIST.find(function(i){return i.id===el.dataset.extraid;});if(x){x.nombre=el.value;saveExtraList();}})(this)"></div>'
+        +'<input type="text" style="'+si+'" value="'+esc(it.nombre)+'" data-extraid="'+it.id+'" onchange="(function(el){var x=EXTRA_LIST.find(function(i){return i.id===el.dataset.extraid;});if(x){x.nombre=el.value;saveExtraList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-extraid="'+it.id+'" onchange="(function(el){var x=EXTRA_LIST.find(function(i){return i.id===el.dataset.extraid;});if(x){x.precio=parseFloat(el.value)||0;saveExtraList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-extraid="'+it.id+'" onchange="(function(el){var x=EXTRA_LIST.find(function(i){return i.id===el.dataset.extraid;});if(x){x.precio=parsePrecio(el.value);saveExtraList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -5596,7 +5618,11 @@ function restaurarRespaldo(input){
     if(data.pack_list)PACK_LIST=data.pack_list;
     if(data.tras_list)TRAS_LIST=data.tras_list;
     if(data.reg_list)REG_LIST=data.reg_list;
-    if(data.ov)ov=data.ov;
+    if(data.ov){
+      ov=data.ov;
+      // Sin esto, tras recargar volvian los valores anteriores a la restauracion.
+      try{Object.keys(ov).forEach(function(id){localStorage.setItem("ov_"+id,JSON.stringify(ov[id]));});}catch(err){}
+    }
     if(data.nro)localStorage.setItem("cot_nro",String(data.nro));
     try{
       localStorage.setItem("inst_list",JSON.stringify(INST_LIST));
@@ -5611,6 +5637,7 @@ function restaurarRespaldo(input){
       data.cat_extra.forEach(function(p){if(!CAT.find(function(x){return x.id===p.id;}))CAT.push(p);});
       try{localStorage.setItem("cat_extra",JSON.stringify(data.cat_extra));}catch(err){}
     }
+    aplicarOvACatalogo();
     updateItipoGrupoSelect();updateItipoSelect();renderInstAdmin();
     updateMantencionSelect();renderMantAdmin();
     updateImaterialesSelect();renderMatAdmin();
@@ -5620,6 +5647,7 @@ function restaurarRespaldo(input){
     updateTiposelOptions();updateBtuselOptions();
     renderStatsAdmin();
     renderAdmin();filtrar();
+    refrescarPreciosCarrito();
     setVariante("");
     setNroUI(data.nro||1);
     saveCloudData();
@@ -5673,7 +5701,7 @@ function renderAdmin(){
   agrEq.orden.forEach(function(clave){
     var tipo=agrEq.display[clave];
     var idsTipo=grupos[clave].map(function(p){return p.id;}).join(',');
-    html+='<div class="gl"><input type="text" value="'+tipo+'" data-ids="'+idsTipo+'" data-campo="tipo" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="background:transparent;border:none;outline:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;width:'+(tipo.length+4)+'ch;max-width:100%"></div>';
+    html+='<div class="gl"><input type="text" value="'+esc(tipo)+'" data-ids="'+idsTipo+'" data-campo="tipo" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="background:transparent;border:none;outline:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;width:'+(tipo.length+4)+'ch;max-width:100%"></div>';
 
     // Sub-agrupar por marca + modelo dentro de cada tipo
     var sub={},subOrder=[];
@@ -5698,8 +5726,8 @@ function renderAdmin(){
       html+='<div style="border-bottom:1px solid var(--brd)">'
         +'<div onclick="toggleEqGroup(\''+keyEsc+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 4px;cursor:pointer;user-select:none;gap:8px">'
         +'<div style="min-width:0;flex:1;display:flex;align-items:center;flex-wrap:wrap;gap:4px">'
-        +'<input type="text" value="'+marca+'" data-ids="'+idsAttr+'" data-campo="marca" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';font-weight:700;color:var(--txt);width:'+(marca.length+3)+'ch;max-width:100%">'
-        +'<input type="text" value="'+modelo+'" data-ids="'+idsAttr+'" data-campo="modelo" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';color:var(--txt2);margin-right:6px;width:'+(modelo.length+3)+'ch;max-width:100%">'
+        +'<input type="text" value="'+esc(marca)+'" data-ids="'+idsAttr+'" data-campo="marca" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';font-weight:700;color:var(--txt);width:'+(marca.length+3)+'ch;max-width:100%">'
+        +'<input type="text" value="'+esc(modelo)+'" data-ids="'+idsAttr+'" data-campo="modelo" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';color:var(--txt2);margin-right:6px;width:'+(modelo.length+3)+'ch;max-width:100%">'
         +'<span style="font-size:12px;color:var(--txt3)">— '+items.length+' BTU: '+btus+'</span></div>'
         +'<span style="color:var(--acc);font-size:16px;transition:transform .2s;flex-shrink:0;margin-left:8px;'+(isOpen?'transform:rotate(180deg)':'')+'">▼</span>'
         +'</div>';
@@ -5712,8 +5740,8 @@ function renderAdmin(){
 
             // Fila 1: Marca + Modelo
             +'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">'
-            +'<div><div style="'+lbl+'">Marca</div><input type="text" style="'+si+'" value="'+p.marca+'" data-id="'+p.id+'" data-campo="marca" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
-            +'<div><div style="'+lbl+'">Modelo</div><input type="text" style="'+si+'" value="'+p.modelo+'" data-id="'+p.id+'" data-campo="modelo" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
+            +'<div><div style="'+lbl+'">Marca</div><input type="text" style="'+si+'" value="'+esc(p.marca)+'" data-id="'+p.id+'" data-campo="marca" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
+            +'<div><div style="'+lbl+'">Modelo</div><input type="text" style="'+si+'" value="'+esc(p.modelo)+'" data-id="'+p.id+'" data-campo="modelo" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
             +'</div>'
 
             // Fila 2: BTU + (Interior/Exterior si es Multisplit) + Tipo + Proveedor
@@ -5724,8 +5752,8 @@ function renderAdmin(){
               +['','Interior','Exterior'].map(function(u){return '<option value="'+u+'"'+(p.ubicacion===u?' selected':'')+'>'+(u||'— Selecciona —')+'</option>';}).join('')
               +'</select></div>'
             ):'')
-            +'<div><div style="'+lbl+'">Tipo</div><input type="text" style="'+si+'" value="'+p.tipo+'" data-id="'+p.id+'" data-campo="tipo" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
-            +'<div><div style="'+lbl+'">Proveedor</div><input type="text" style="'+si+'" value="'+p.prov+'" data-id="'+p.id+'" data-campo="prov" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
+            +'<div><div style="'+lbl+'">Tipo</div><input type="text" style="'+si+'" value="'+esc(p.tipo)+'" data-id="'+p.id+'" data-campo="tipo" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
+            +'<div><div style="'+lbl+'">Proveedor</div><input type="text" style="'+si+'" value="'+esc(p.prov)+'" data-id="'+p.id+'" data-campo="prov" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
             +'</div>'
 
             // Fila 3: Costo + % Gan + Ganancia $ + Precio Venta
@@ -5841,6 +5869,7 @@ function renombrarGrupo(ids,campo,val){
   updateTiposelOptions();updateBtuselOptions();
   renderAdmin();
   filtrar();
+  refrescarPreciosCarrito();
   saveCloudData();
 }
 
