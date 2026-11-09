@@ -242,6 +242,20 @@ select option{background:#161619;color:var(--txt)}
 .mg-fila{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13.5px;color:var(--txt2)}
 .mg-fila b{color:var(--txt)}
 #mg-ver{background:transparent;border:1px solid var(--brd2);color:var(--txt2);border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif}
+/* ── Pedido a proveedores ── */
+#pedido-modal{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px}
+.pd-box{width:100%;max-width:640px;background:var(--bg2);border:2px solid var(--brd2);border-radius:var(--r);padding:16px}
+.pd-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.pd-t{font-size:19px;font-weight:800;color:var(--acc)}
+.pd-x{background:transparent;border:2px solid var(--brd2);color:var(--txt2);border-radius:var(--rs);padding:7px 14px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif}
+.pd-s,.pd-v{font-size:14px;color:var(--txt2);margin-bottom:12px}
+.pd-g{border:2px solid var(--brd);border-radius:var(--rs);background:var(--bg3);padding:12px;margin-bottom:12px}
+.pd-gh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:15px}
+.pd-gh span{font-size:13px;color:var(--txt2)}
+.pd-ta{width:100%;background:var(--bg);border:2px solid var(--brd2);border-radius:var(--rs);color:var(--txt);font-family:"DM Sans",sans-serif;font-size:14px;line-height:1.5;padding:10px;resize:vertical}
+.pd-b{display:flex;gap:8px;margin-top:8px}
+.pd-b button{flex:1;padding:11px;border-radius:var(--rs);font-size:15px;font-weight:800;cursor:pointer;font-family:"DM Sans",sans-serif;border:2px solid var(--brd2);background:var(--bg2);color:var(--txt)}
+.pd-b .pd-wa{background:#25d366;border-color:#25d366;color:#073b22}
 /* ── Eliminar grupos ── */
 .adm-delg{background:transparent;border:1px solid #7a2a2a;color:var(--red);border-radius:20px;padding:3px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap;text-transform:none;letter-spacing:0}
 .adm-delg:hover{background:var(--red);color:#fff;border-color:var(--red)}
@@ -7176,6 +7190,114 @@ if("serviceWorker" in navigator){
     if(!cards[ini])ini="eq";
     mostrar(ini);
     refrescarNav();setInterval(refrescarNav,1500);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
+})();
+</script>
+<script>
+// ═══════════════════════════════════════
+// PEDIDO A PROVEEDORES (v16) — capa sobre lo existente.
+// Con los equipos de la cotización arma un mensaje de compra por proveedor
+// (sin emojis, para que WhatsApp de escritorio no los rompa). No guarda nada
+// ni cambia la cotización. Para quitarlo: borrar este bloque, el CSS «Pedido a
+// proveedores»; el botón y la ventana se crean por código.
+// ═══════════════════════════════════════
+(function(){
+  function el(i){return document.getElementById(i);}
+  function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function limpio(s){return String(s==null?"":s).trim().replace(/\s+/g," ");}
+
+  // Equipos del carrito agrupados por proveedor, leyendo el catálogo vigente.
+  function porProveedor(){
+    var grupos={},orden=[];
+    (window.carrito||[]).forEach(function(it){
+      if(!it.esEquipo)return;
+      var fila=it.cod?CAT.find(function(x){return x.id===it.cod;}):null;
+      var nom=limpio((fila&&fila.prov)||it.prov);
+      if(!nom||nom==="-")nom="Sin proveedor";
+      var k=nom.toLowerCase();
+      if(!grupos[k]){grupos[k]={nombre:nom,lineas:[]};orden.push(k);}
+      var cant=it.cant||1;
+      var costo=fila?getCosto(fila):0;
+      grupos[k].lineas.push({
+        cant:cant,
+        txt:(fila?fila.marca+" "+fila.modelo+" "+fmtBtu(fila.btu):it.desc),
+        tipo:it.tipo||(fila&&fila.tipo)||"",
+        costo:costo
+      });
+    });
+    return orden.map(function(k){return grupos[k];});
+  }
+
+  function mensaje(g){
+    var nro=limpio((el("nro")||{}).value);
+    var l=["Hola, buen día. Quisiera pedir lo siguiente:",""];
+    var total=0;
+    g.lineas.forEach(function(x){
+      var s="- "+x.cant+" x "+x.txt+(x.tipo?" ("+x.tipo+")":"");
+      if(x.costo>0){s+=" - precio neto "+fmt(x.costo)+" c/u";total+=x.costo*x.cant;}
+      l.push(s);
+    });
+    if(total>0){l.push("");l.push("Total neto según su lista: "+fmt(total));}
+    l.push("");
+    l.push("¿Tienen stock y para qué fecha podrían tenerlos?");
+    if(nro)l.push("(Ref. cotización N° "+nro+")");
+    l.push("Gracias. León Ingeniería");
+    return l.join("\n");
+  }
+
+  function cerrar(){var m=el("pedido-modal");if(m)m.remove();}
+  function abrir(){
+    cerrar();
+    var gs=porProveedor();
+    var m=document.createElement("div");m.id="pedido-modal";
+    var h='<div class="pd-box"><div class="pd-h"><div class="pd-t">Pedido a proveedores</div><button type="button" class="pd-x" id="pd-x">Cerrar</button></div>';
+    if(!gs.length){
+      h+='<div class="pd-v">La cotización no tiene equipos. El pedido se arma solo con los equipos.</div>';
+    }else{
+      h+='<div class="pd-s">Un mensaje por proveedor, con los equipos de esta cotización. Puedes editar el texto antes de enviarlo.</div>';
+      gs.forEach(function(g,i){
+        var tot=g.lineas.reduce(function(a,x){return a+x.costo*x.cant;},0);
+        var n=g.lineas.reduce(function(a,x){return a+x.cant;},0);
+        h+='<div class="pd-g"><div class="pd-gh"><b>'+esc(g.nombre)+'</b><span>'+n+(n===1?' equipo':' equipos')+(tot>0?' · '+fmt(tot)+' neto':'')+'</span></div>'
+          +'<textarea class="pd-ta" id="pd-ta-'+i+'" rows="'+(g.lineas.length+9)+'">'+esc(mensaje(g))+'</textarea>'
+          +'<div class="pd-b"><button type="button" class="pd-copy" data-i="'+i+'">Copiar</button>'
+          +'<button type="button" class="pd-wa" data-i="'+i+'">Enviar por WhatsApp</button></div></div>';
+      });
+    }
+    h+='</div>';
+    m.innerHTML=h;
+    document.body.appendChild(m);
+    el("pd-x").onclick=cerrar;
+    m.addEventListener("click",function(e){
+      if(e.target===m){cerrar();return;}
+      var c=e.target.closest(".pd-copy"),w=e.target.closest(".pd-wa");
+      if(c){
+        var ta=el("pd-ta-"+c.dataset.i);ta.select();
+        var ok=false;try{ok=document.execCommand("copy");}catch(x){}
+        if(!ok&&navigator.clipboard)navigator.clipboard.writeText(ta.value);
+        c.textContent="Copiado";setTimeout(function(){c.textContent="Copiar";},1800);
+      }
+      if(w){window.open("https://wa.me/?text="+encodeURIComponent(el("pd-ta-"+w.dataset.i).value),"_blank");}
+    });
+  }
+  window.abrirPedidoProveedores=abrir;
+
+  function iniciar(){
+    var ref=el("btnindicador");if(!ref||el("btnpedido"))return;
+    var b=document.createElement("button");b.type="button";b.className="btn";b.id="btnpedido";
+    b.style.cssText="background:var(--bg3);border:2px solid var(--brd2);color:var(--txt)";
+    b.textContent="Pedido a proveedores (mensaje de compra)";
+    b.onclick=abrir;
+    ref.parentNode.insertBefore(b,ref);
+    var orig=window.renderCarrito;
+    window.renderCarrito=function(){
+      var r=orig.apply(this,arguments);
+      b.style.display=(window.carrito||[]).some(function(x){return x.esEquipo;})?"":"none";
+      return r;
+    };
+    b.style.display="none";
+    document.addEventListener("keydown",function(e){if(e.key==="Escape")cerrar();});
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
 })();
