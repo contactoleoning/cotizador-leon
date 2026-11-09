@@ -493,6 +493,11 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
         <option value="36">36.000 BTU — 60 m² o más</option>
       </select>
     </div>
+    <div class="fr" id="rowmarca"><span class="fl">Marca</span>
+      <select id="marcasel" onchange="filtrar()">
+        <option value="">Todas las marcas</option>
+      </select>
+    </div>
     <div class="ss" style="margin-top:14px">Pack Promocional — Equipo Vesta</div>
     <div class="fr"><span class="fl">Pack Equipo Vesta</span>
       <select id="packvestasel" onchange="onPackVestaChange()">
@@ -1248,6 +1253,7 @@ function updateBtuselOptions(){
   });
   sel.innerHTML=html;
   if(opciones.some(function(o){return o.val===cur;}))sel.value=cur;
+  if(typeof poblarMarcaSel==="function")poblarMarcaSel(tipo,parseInt(sel.value)||0);
 }
 
 function toggleAdmSec(sec){
@@ -1403,13 +1409,41 @@ function tarjetaEquipoHtml(p,marca){
     +'<span class="piv">c/IVA</span></div></div>';
 }
 
+// Marcas disponibles para el tipo y la capacidad elegidos, con los proveedores
+// que las venden. Conserva la marca elegida mientras siga existiendo.
+function poblarMarcaSel(tipoClave,btu){
+  var sel=document.getElementById("marcasel");
+  if(!sel)return;
+  var cur=sel.value,marcas={},orden=[];
+  CAT.forEach(function(p){
+    if(tipoClave&&(p.tipo||"").trim().toLowerCase()!==tipoClave)return;
+    if(btu&&p.btu!==btu)return;
+    var k=(p.marca||"").trim();if(!k)return;
+    if(!marcas[k]){marcas[k]={};orden.push(k);}
+    if(p.prov&&p.prov!=="-")marcas[k][p.prov]=1;
+  });
+  orden.sort(function(a,b){return a.localeCompare(b);});
+  var h='<option value="">Todas las marcas</option>'+orden.map(function(k){
+    var pv=Object.keys(marcas[k]);
+    return '<option value="'+esc(k)+'">'+esc(k)+(pv.length?' — '+esc(pv.join(", ")):'')+'</option>';
+  }).join("");
+  if(sel.innerHTML!==h)sel.innerHTML=h;
+  sel.value=orden.indexOf(cur)>=0?cur:"";
+}
+
 function filtrar(){
   var btu=parseInt(vs("btusel")),tipo=vs("tiposel"),tipoClave=tipo.trim().toLowerCase();
   var lista=document.getElementById("prodlista");
   selProd=null;
   document.getElementById("btnag").style.display="none";
-  if(!btu){lista.innerHTML="";return;}
-  var res=CAT.filter(function(p){return p.btu===btu&&(!tipo||(p.tipo||"").trim().toLowerCase()===tipoClave);});
+  poblarMarcaSel(tipoClave,btu||0);
+  var marca=vs("marcasel");
+  // Sin capacidad solo se lista si se eligio una marca: todas sus capacidades.
+  if(!btu&&!marca){lista.innerHTML="";return;}
+  var res=CAT.filter(function(p){
+    return (!btu||p.btu===btu)&&(!marca||(p.marca||"").trim()===marca)&&(!tipo||(p.tipo||"").trim().toLowerCase()===tipoClave);
+  });
+  if(!btu)res.sort(function(a,b){return a.btu-b.btu;});
   if(!res.length){lista.innerHTML='<div class="empty">NO EXISTE EQUIPO PARA ESA SELECCIÓN</div>';return;}
   // Un mismo equipo puede venderlo mas de un proveedor (cada uno es una fila
   // del catalogo con su propio costo). Se agrupan por marca+modelo+tipo+BTU y,
@@ -1478,6 +1512,7 @@ function agregar(){
   document.getElementById("rowcant").style.display="none";
   document.getElementById("cantequipo").value="1";
   document.getElementById("btusel").value="";
+  var _ms=document.getElementById("marcasel");if(_ms)_ms.value="";
   document.getElementById("prodlista").innerHTML="";
   renderCarrito();
 }
