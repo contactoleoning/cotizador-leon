@@ -498,23 +498,6 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
         <option value="">Todas las marcas</option>
       </select>
     </div>
-    <div class="ss" style="margin-top:14px">Pack Promocional — Equipo Vesta</div>
-    <div class="fr"><span class="fl">Pack Equipo Vesta</span>
-      <select id="packvestasel" onchange="onPackVestaChange()">
-        <option value="">— Selecciona —</option>
-      </select>
-    </div>
-    <div id="rowpackvesta" style="display:none;margin-top:10px;flex-direction:column;gap:8px">
-      <div style="font-size:13px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em">Cantidad de Packs</div>
-      <select id="cantpackvesta" style="width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:11px 13px;font-size:16px;color:var(--txt);font-family:'DM Sans',sans-serif;outline:none;font-weight:500">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
-      </select>
-      <button class="btn badd" onclick="agregarPackVesta()" style="width:100%">+ Agregar Pack al Presupuesto</button>
-    </div>
     <div class="pg" id="prodlista"></div>
     <div class="fr" id="rowcant" style="display:none;margin-top:10px"><span class="fl">Cantidad de equipos</span>
       <select id="cantequipo">
@@ -1396,7 +1379,7 @@ function tarjetaEquipoHtml(p,marca){
   var n=pvN(p);
   if(marca!==null){
     return '<div class="pc pc-prov" id="pc-'+p.id+'" data-pid="'+p.id+'">'
-      +'<div class="pc-prov-l"><span class="pc-prov-n">'+p.prov+'</span>'+marca+'</div>'
+      +'<div class="pc-prov-l"><span class="pc-prov-n">'+esc(String(p.prov||"").trim())+'</span>'+marca+'</div>'
       +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span><span class="piv">c/IVA</span></div></div>';
   }
   return '<div class="pc" id="pc-'+p.id+'" data-pid="'+p.id+'">'
@@ -1404,7 +1387,7 @@ function tarjetaEquipoHtml(p,marca){
     +'<div class="pm"><span class="bdg bb">'+fmtBtu(p.btu)+'</span>'
     +'<span class="bdg bt">'+p.tipo+'</span>'
     +(p.ubicacion?'<span class="bdg bu">'+p.ubicacion+'</span>':'')
-    +'<span class="bdg bp">'+p.prov+'</span></div>'
+    +'<span class="bdg bp">'+esc(String(p.prov||"").trim())+'</span></div>'
     +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span>'
     +'<span class="piv">c/IVA</span></div></div>';
 }
@@ -1420,11 +1403,12 @@ function poblarMarcaSel(tipoClave,btu){
     if(btu&&p.btu!==btu)return;
     var k=(p.marca||"").trim();if(!k)return;
     if(!marcas[k]){marcas[k]={};orden.push(k);}
-    if(p.prov&&p.prov!=="-")marcas[k][p.prov]=1;
+    var pn=String(p.prov||"").trim().replace(/\s+/g," ");
+    if(pn&&pn!=="-"&&!marcas[k][pn.toLowerCase()])marcas[k][pn.toLowerCase()]=pn;
   });
   orden.sort(function(a,b){return a.localeCompare(b);});
   var h='<option value="">Todas las marcas</option>'+orden.map(function(k){
-    var pv=Object.keys(marcas[k]);
+    var pv=Object.keys(marcas[k]).map(function(x){return marcas[k][x];});
     return '<option value="'+esc(k)+'">'+esc(k)+(pv.length?' — '+esc(pv.join(", ")):'')+'</option>';
   }).join("");
   if(sel.innerHTML!==h)sel.innerHTML=h;
@@ -1526,35 +1510,6 @@ function calcInst(){
   var iva=Math.round(neto*IVA);
 }
 
-
-function onPackVestaChange(){
-  var val=document.getElementById("packvestasel").value;
-  var row=document.getElementById("rowpackvesta");
-  if(val){
-    row.style.display="flex";
-    row.style.flexDirection="column";
-    row.style.gap="8px";
-  } else {
-    row.style.display="none";
-    document.getElementById("cantpackvesta").value="1";
-  }
-}
-
-function agregarPackVesta(){
-  var sel=document.getElementById("packvestasel");
-  var val=sel.value;
-  if(!val){alert("Selecciona un pack.");return;}
-  var cant=parseInt(document.getElementById("cantpackvesta").value)||1;
-  var item=PACK_LIST.find(function(i){return i.id===val;});
-  if(!item)return;
-  carrito.push({id:"PACK_"+Date.now(),cod:"PACK-V",ref:{l:"pack",id:item.id},
-    desc:item.nombre,tipo:"Pack Promocional",
-    neto:item.precio,total:wIVA(item.precio),esCyber:false,disc:0,cant:cant});
-  sel.value="";
-  document.getElementById("cantpackvesta").value="1";
-  document.getElementById("rowpackvesta").style.display="none";
-  renderCarrito();
-}
 
 var PACK_LIST=[];
 var PACK_DEFAULTS=[
@@ -2811,7 +2766,7 @@ function renderCarrito(){
     var provLinea='';
     if(p.esEquipo){
       var fila=p.cod?CAT.find(function(x){return x.id===p.cod;}):null;
-      var pv=(fila&&fila.prov)||p.prov;
+      var pv=String((fila&&fila.prov)||p.prov||"").trim();
       if(pv&&pv!=='-')provLinea=' · <span style="color:var(--grn)">'+pv+'</span>';
     }
     return '<div class="ci"><div style="flex:1;min-width:0">'
@@ -6665,7 +6620,8 @@ if("serviceWorker" in navigator){
     if(k==="eq"){
       var provs={},grp={};
       L.forEach(function(p){
-        if(p.prov&&p.prov!=="-")provs[p.prov]=1;
+        var pn=String(p.prov||"").trim().replace(/\s+/g," ").toLowerCase();
+        if(pn&&pn!=="-")provs[pn]=1;
         var c=claveGrupoEq(p);grp[c]=(grp[c]||0)+1;
       });
       var comp=Object.keys(grp).filter(function(c){return grp[c]>1;}).length;
