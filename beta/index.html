@@ -242,6 +242,9 @@ select option{background:#161619;color:var(--txt)}
 .mg-fila{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13.5px;color:var(--txt2)}
 .mg-fila b{color:var(--txt)}
 #mg-ver{background:transparent;border:1px solid var(--brd2);color:var(--txt2);border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif}
+/* ── Eliminar grupos ── */
+.adm-delg{background:transparent;border:1px solid #7a2a2a;color:var(--red);border-radius:20px;padding:3px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap;text-transform:none;letter-spacing:0}
+.adm-delg:hover{background:var(--red);color:#fff;border-color:var(--red)}
 /* ── Menú lateral e historial ── */
 .adm-shell{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px;align-items:start}
 .adm-nav{position:sticky;top:76px;display:flex;flex-direction:column;gap:3px;background:var(--bg2);border:2px solid var(--brd);border-radius:var(--r);padding:10px}
@@ -3561,6 +3564,9 @@ function loadCloudData(intento){
         if(p){Object.keys(rec.ov[id]).forEach(function(c){p[c]=rec.ov[id][c];});}
         try{localStorage.setItem("ov_"+id,JSON.stringify(rec.ov[id]));}catch(e){}
       });
+      var _lap=unirLapidas(rec.ov[ELIM_ID]);
+      ov[ELIM_ID]=_lap.out;
+      if(_lap.cambio)aplicarLapidasLocales();
       // Los datos de empresa (id reservado EMPRESA_PDF_ID) viven en este mismo
       // "ov" pero no son de un producto, así que loadOv() (que solo recorre
       // CAT) no los pinta al cargar la página. Sin este refresco, el admin
@@ -3829,6 +3835,7 @@ function saveCloudData(intento){
     })
     .then(function(data){
       var rec=(data&&data.record)||{};
+      ov[ELIM_ID]=unirLapidas(rec.ov&&rec.ov[ELIM_ID]).out;
       postToGAS(
         {action:"saveCloud",nro:nro,
           ov:Object.assign({},rec.ov||{},ov),
@@ -3952,6 +3959,39 @@ function marcarListaEliminada(key,id){
 function filtrarVivos(key,list){
   var muertos=LIST_DELETED[key];
   return (list||[]).filter(function(it){return muertos.indexOf(it.id)===-1;});
+}
+// Las lapidas vivian solo en cada dispositivo: lo que se eliminaba aqui seguia
+// existiendo en los demas y volvia en el siguiente guardado. Ahora viajan en
+// "ov" bajo un id reservado (como la letra de variante y los datos de empresa)
+// y se unen -- solo se agregan, nunca se quitan -- al leer y al guardar.
+var ELIM_ID="_ELIMINADOS";
+var LAPIDAS_CLAVES=["mat","inst","pack","tras","mant","extra"];
+function unirLapidas(remoto){
+  var cambio=false;
+  remoto=remoto||{};
+  function unir(local,rem){(rem||[]).forEach(function(id){if(local.indexOf(id)===-1){local.push(id);cambio=true;}});}
+  unir(CAT_DELETED,remoto.cat);
+  LAPIDAS_CLAVES.forEach(function(k){unir(LIST_DELETED[k],remoto[k]);});
+  if(cambio){
+    try{localStorage.setItem("cat_deleted",JSON.stringify(CAT_DELETED));}catch(e){}
+    LAPIDAS_CLAVES.forEach(function(k){try{localStorage.setItem(k+"_deleted",JSON.stringify(LIST_DELETED[k]));}catch(e){}});
+  }
+  var out={t:Date.now(),cat:CAT_DELETED.slice()};
+  LAPIDAS_CLAVES.forEach(function(k){out[k]=LIST_DELETED[k].slice();});
+  return {out:out,cambio:cambio};
+}
+// Quita de la memoria y de lo guardado lo que otro dispositivo elimino.
+function aplicarLapidasLocales(){
+  CAT=CAT.filter(function(p){return CAT_DELETED.indexOf(p.id)===-1;});
+  try{localStorage.setItem("cat_extra",JSON.stringify(CAT.filter(function(p){return p._nuevo;})));}catch(e){}
+  LAPIDAS_CLAVES.forEach(function(k){
+    var cfg=ADM_LISTAS[k];if(!cfg)return;
+    cfg.set(filtrarVivos(k,cfg.get()));
+    try{localStorage.setItem(k+"_list",JSON.stringify(cfg.get()));}catch(e){}
+    cfg.render();
+  });
+  updateTiposelOptions();updateBtuselOptions();renderAdmin();
+  if(typeof filtrar==="function")filtrar();
 }
 // ═══════════════════════════════════════
 // REGISTRO DE COTIZACIONES EN FIREBASE
@@ -5498,15 +5538,23 @@ function poblarProveedoresPdfPrecios(){
   var sel=document.getElementById("pdfprecios-proveedor");
   if(!sel)return;
   var cur=sel.value;
-  var provs=Array.from(new Set(CAT.map(function(p){return p.prov;}).filter(Boolean))).sort();
+  // «Moreto» y «Moreto » (espacio al final) o «Mar del Sur» y «Mar Del Sur» son
+  // el mismo proveedor: se agrupan para que el filtro no se deje filas afuera.
+  var vistos={};
+  CAT.forEach(function(p){
+    var k=normProv(p.prov);
+    if(k&&!vistos[k])vistos[k]=String(p.prov).trim().replace(/\s+/g," ");
+  });
+  var provs=Object.keys(vistos).sort();
   sel.innerHTML='<option value="">— Todos los proveedores —</option>';
-  provs.forEach(function(p){
+  provs.forEach(function(k){
     var o=document.createElement("option");
-    o.value=p;o.textContent=p;
+    o.value=k;o.textContent=vistos[k];
     sel.appendChild(o);
   });
   sel.value=cur;
 }
+function normProv(s){return String(s==null?"":s).trim().replace(/\s+/g," ").toLowerCase();}
 
 function procesarPdfPrecios(input){
   var file=input.files&&input.files[0];
@@ -5664,11 +5712,12 @@ function renderPdfPreciosReview(){
 
   var html='<div class="gl" style="margin-top:16px">Revisar y aplicar</div>';
   if(proveedorFiltro){
-    html+='<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--rs)">Filtrando solo equipos de <b>'+proveedorFiltro+'</b>.</div>';
+    var _pn=proveedorSel.options[proveedorSel.selectedIndex];
+    html+='<div style="font-size:13px;color:var(--txt2);margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--rs)">Filtrando solo equipos de <b>'+(_pn?_pn.textContent:proveedorFiltro)+'</b>.</div>';
   }
 
   PDFPRECIOS_CANDIDATOS.forEach(function(cand,idx){
-    var pool=CAT.filter(function(p){return proveedorFiltro?p.prov===proveedorFiltro:true;});
+    var pool=CAT.filter(function(p){return proveedorFiltro?normProv(p.prov)===proveedorFiltro:true;});
     if(cand.marca)pool=pool.filter(function(p){return p.marca===cand.marca;});
     if(cand.tipo)pool=pool.filter(function(p){return p.tipo===cand.tipo;});
     var exactos=pool.filter(function(p){return p.btu===cand.btu;});
@@ -5686,7 +5735,7 @@ function renderPdfPreciosReview(){
       +'<option value="">— Selecciona el equipo —</option>'
       +opciones.map(function(p){
         var sel=p.id===seleccionId?" selected":"";
-        return '<option value="'+p.id+'"'+sel+'>'+p.marca+' — '+p.modelo+' — '+fmtBtu(p.btu)+(p.ubicacion?' — '+p.ubicacion:'')+' (actual: $'+getCosto(p).toLocaleString("es-CL")+')</option>';
+        return '<option value="'+p.id+'"'+sel+'>'+p.marca+' — '+p.modelo+' — '+fmtBtu(p.btu)+(p.ubicacion?' — '+p.ubicacion:'')+' — '+String(p.prov||"").trim()+' (actual: $'+getCosto(p).toLocaleString("es-CL")+')</option>';
       }).join("")
       +'</select></div>'
       +'<div><div style="'+lbl+'">Precio Neto Detectado $</div>'
@@ -5833,7 +5882,9 @@ function admGroupHeader(key,fnName,tipo,count){
   var keyEsc=key.replace(/'/g,"\\'");
   return '<div onclick="toggleAdmGroup(\''+keyEsc+'\',\''+fnName+'\')" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--brd)">'
     +'<span style="font-size:15px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.08em">'+tipo+' <span style="font-size:12px;color:var(--txt3);font-weight:400;text-transform:none;letter-spacing:normal">('+count+')</span></span>'
-    +'<span style="color:var(--acc);font-size:14px;transition:transform .2s;'+(open?'transform:rotate(180deg)':'')+'">▼</span>'
+    +'<span style="display:flex;align-items:center;gap:10px">'
+    +'<button type="button" class="adm-delg" data-gk="'+esc(key)+'" title="Elimina este grupo y todo lo que tiene dentro" onclick="event.stopPropagation();eliminarGrupoAdm(this.dataset.gk)">🗑 Eliminar grupo</button>'
+    +'<span style="color:var(--acc);font-size:14px;transition:transform .2s;'+(open?'transform:rotate(180deg)':'')+'">▼</span></span>'
     +'</div>';
 }
 function renderAdmin(){
@@ -5847,7 +5898,8 @@ function renderAdmin(){
   agrEq.orden.forEach(function(clave){
     var tipo=agrEq.display[clave];
     var idsTipo=grupos[clave].map(function(p){return p.id;}).join(',');
-    html+='<div class="gl"><input type="text" value="'+esc(tipo)+'" data-ids="'+idsTipo+'" data-campo="tipo" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="background:transparent;border:none;outline:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;width:'+(tipo.length+4)+'ch;max-width:100%"></div>';
+    html+='<div class="gl" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><input type="text" value="'+esc(tipo)+'" data-ids="'+idsTipo+'" data-campo="tipo" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="background:transparent;border:none;outline:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;width:'+(tipo.length+4)+'ch;max-width:100%">'
+      +'<button type="button" class="adm-delg" data-ids="'+idsTipo+'" data-label="'+esc(tipo)+'" title="Elimina este tipo con todos sus equipos" onclick="eliminarEquiposGrupo(this.dataset.ids.split(\',\'),this.dataset.label)">🗑 Eliminar tipo</button></div>';
 
     // Sub-agrupar por marca + modelo dentro de cada tipo
     var sub={},subOrder=[];
@@ -5875,6 +5927,7 @@ function renderAdmin(){
         +'<input type="text" value="'+esc(marca)+'" data-ids="'+idsAttr+'" data-campo="marca" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';font-weight:700;color:var(--txt);width:'+(marca.length+3)+'ch;max-width:100%">'
         +'<input type="text" value="'+esc(modelo)+'" data-ids="'+idsAttr+'" data-campo="modelo" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';color:var(--txt2);margin-right:6px;width:'+(modelo.length+3)+'ch;max-width:100%">'
         +'<span style="font-size:12px;color:var(--txt3)">— '+items.length+' BTU: '+btus+'</span></div>'
+        +'<button type="button" class="adm-delg" data-ids="'+idsAttr+'" data-label="'+esc(marca+" "+modelo)+'" title="Elimina este equipo con todas sus capacidades y proveedores" onclick="event.stopPropagation();eliminarEquiposGrupo(this.dataset.ids.split(\',\'),this.dataset.label)">🗑</button>'
         +'<span style="color:var(--acc);font-size:16px;transition:transform .2s;flex-shrink:0;margin-left:8px;'+(isOpen?'transform:rotate(180deg)':'')+'">▼</span>'
         +'</div>';
 
@@ -5970,6 +6023,63 @@ function otroProveedorDe(id){
   if(f){f.scrollIntoView({behavior:"smooth",block:"center"});f.focus();}
 }
 function delEquipo(b){eliminarEquipo(b.getAttribute("data-delid"));}
+
+// Elimina varios equipos de una vez (un tipo, o una marca+modelo con todas sus
+// capacidades y proveedores). Mismo mecanismo que eliminarEquipo: lapida en
+// CAT_DELETED para que la nube no los resucite; un solo guardado al final.
+function eliminarEquiposGrupo(ids,etiqueta){
+  ids=(ids||[]).filter(Boolean);
+  if(!ids.length)return;
+  var filas=CAT.filter(function(p){return ids.indexOf(p.id)>=0;});
+  if(!filas.length)return;
+  var muestra=filas.slice(0,6).map(function(p){return "• "+p.marca+" "+p.modelo+" "+fmtBtu(p.btu)+" · "+String(p.prov||"").trim();}).join("\n");
+  if(!confirm("¿Eliminar «"+etiqueta+"» con sus "+filas.length+(filas.length===1?" equipo":" equipos")+"?\n\n"+muestra+(filas.length>6?"\n… y "+(filas.length-6)+" más":"")+"\n\nNo se puede deshacer."))return;
+  CAT=CAT.filter(function(p){return ids.indexOf(p.id)<0;});
+  ids.forEach(function(id){
+    try{localStorage.removeItem("ov_"+id);}catch(e){}
+    delete ov[id];
+    if(CAT_DELETED.indexOf(id)===-1)CAT_DELETED.push(id);
+  });
+  try{localStorage.setItem("cat_extra",JSON.stringify(CAT.filter(function(p){return p._nuevo;})));}catch(e){}
+  try{localStorage.setItem("cat_deleted",JSON.stringify(CAT_DELETED));}catch(e){}
+  updateTiposelOptions();updateBtuselOptions();
+  renderAdmin();filtrar();saveCloudData();
+}
+
+// Elimina un grupo completo de Instalaciones, Materiales, Mantenciones,
+// Extras, Packs o Traslados: el titulo y todo lo que tiene dentro. Cada item
+// deja su lapida (LIST_DELETED) como en eliminarMat y compañia.
+var ADM_LISTAS={
+  inst:{get:function(){return INST_LIST;},set:function(v){INST_LIST=v;},save:function(){saveInstList();},render:function(){renderInstAdmin();}},
+  mat:{get:function(){return MAT_LIST;},set:function(v){MAT_LIST=v;},save:function(){saveMatList();},render:function(){renderMatAdmin();}},
+  mant:{get:function(){return MANT_LIST;},set:function(v){MANT_LIST=v;},save:function(){saveMantList();},render:function(){renderMantAdmin();}},
+  extra:{get:function(){return EXTRA_LIST;},set:function(v){EXTRA_LIST=v;},save:function(){saveExtraList();},render:function(){renderExtraAdmin();}},
+  pack:{get:function(){return PACK_LIST;},set:function(v){PACK_LIST=v;},save:function(){savePackList();},render:function(){renderPackAdmin();}},
+  tras:{get:function(){return TRAS_LIST;},set:function(v){TRAS_LIST=v;},save:function(){saveTrasList();},render:function(){renderTrasAdmin();}}
+};
+// Al cargar cada lista (de lo guardado o de los valores de fabrica) se descartan
+// las ya eliminadas; si no, los valores de fabrica volvian al recargar.
+["inst:loadInstList","mat:loadMatList","mant:loadMantList","extra:loadExtraList","pack:loadPackList","tras:loadTrasList"].forEach(function(x){
+  var ns=x.split(":")[0],fn=x.split(":")[1],orig=window[fn];
+  if(typeof orig!=="function")return;
+  window[fn]=function(){var r=orig.apply(this,arguments);var cfg=ADM_LISTAS[ns];cfg.set(filtrarVivos(ns,cfg.get()));return r;};
+});
+function eliminarGrupoAdm(key){
+  var i=String(key).indexOf(":");
+  var ns=key.slice(0,i),clave=key.slice(i+1),cfg=ADM_LISTAS[ns];
+  if(!cfg)return;
+  var items=cfg.get().filter(function(it){return (it.tipo||"").trim().toLowerCase()===clave;});
+  if(!items.length)return;
+  var nombre=(items[0].tipo||"").trim()||"(sin nombre)";
+  var muestra=items.slice(0,6).map(function(it){return "• "+it.nombre;}).join("\n");
+  if(!confirm("¿Eliminar el grupo «"+nombre+"» con sus "+items.length+(items.length===1?" ítem":" ítems")+"?\n\n"+muestra+(items.length>6?"\n… y "+(items.length-6)+" más":"")+"\n\nNo se puede deshacer."))return;
+  var ids=items.map(function(it){return it.id;});
+  cfg.set(cfg.get().filter(function(it){return ids.indexOf(it.id)<0;}));
+  ids.forEach(function(id){marcarListaEliminada(ns,id);});
+  cfg.save();
+  delete ADM_GROUP_OPEN[key];
+  cfg.render();
+}
 function eliminarEquipo(id){
   if(!confirm("¿Eliminar este equipo?")) return;
   CAT=CAT.filter(function(p){return p.id!==id;});
@@ -6103,6 +6213,9 @@ document.addEventListener("DOMContentLoaded", function(){
   loadRegList();
   loadCatDeleted();
   loadListDeleted();
+  // Sin esperar a la nube: lo eliminado en este dispositivo no debe volver a
+  // aparecer al recargar (el catalogo base se reconstruye en cada carga).
+  CAT=CAT.filter(function(p){return CAT_DELETED.indexOf(p.id)===-1;});
   // La letra de variante se lee antes de loadNro() para que el N° aparezca
   // completo (173-B) al instante, aun sin conexion.
   try{var _varOv=localStorage.getItem("ov_"+COT_VAR_ID);if(_varOv)ov[COT_VAR_ID]=JSON.parse(_varOv);}catch(e){}
