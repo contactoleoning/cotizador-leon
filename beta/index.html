@@ -227,6 +227,44 @@ select option{background:#161619;color:var(--txt)}
 #totbar button{background:var(--acc);color:#0b0b0d;border:none;border-radius:var(--rs);padding:12px 18px;font-size:15px;
   font-weight:800;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap}
 @media(max-width:860px){#totbar.on{display:flex}}
+/* ── Borrador y ganancia ── */
+#borrador-aviso{border-color:var(--cy);background:#2a2110}
+#borrador-aviso .bd-t{font-size:17px;font-weight:800;color:var(--cy)}
+#borrador-aviso .bd-s{font-size:14.5px;color:var(--txt);margin-top:4px}
+#borrador-aviso .bd-nota{font-size:12.5px;color:var(--txt2);margin-top:4px}
+#borrador-aviso .bd-b{display:flex;gap:8px;margin-top:12px}
+#borrador-aviso button{flex:1;padding:11px;border-radius:var(--rs);font-size:15px;font-weight:800;cursor:pointer;font-family:"DM Sans",sans-serif;border:2px solid var(--brd2);background:var(--bg3);color:var(--txt2)}
+#borrador-aviso #bd-si{background:var(--cy);border-color:var(--cy);color:#0b0b0d}
+.mg{font-weight:700;white-space:nowrap}
+.mg-ok{color:var(--grn)}.mg-med{color:var(--cy)}.mg-bajo{color:var(--red)}
+#mg-total{margin-top:10px}
+.mg-aviso{font-size:14px;font-weight:700;color:var(--red);background:#3a1015;border:2px solid var(--red);border-radius:var(--rs);padding:10px 12px;margin-bottom:8px}
+.mg-fila{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13.5px;color:var(--txt2)}
+.mg-fila b{color:var(--txt)}
+#mg-ver{background:transparent;border:1px solid var(--brd2);color:var(--txt2);border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif}
+/* ── Menú lateral e historial ── */
+.adm-shell{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px;align-items:start}
+.adm-nav{position:sticky;top:76px;display:flex;flex-direction:column;gap:3px;background:var(--bg2);border:2px solid var(--brd);border-radius:var(--r);padding:10px}
+.nav-sep{font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);margin:12px 8px 4px}
+.nav-sep:first-child{margin-top:2px}
+.nav-b{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;width:100%;background:transparent;border:2px solid transparent;color:var(--txt2);
+  border-radius:var(--rs);padding:9px 11px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif}
+.nav-b:hover{background:var(--bg3);color:var(--txt)}
+.nav-b.on{background:var(--bg3);border-color:var(--brd2);color:var(--acc)}
+.nav-n{margin-left:auto;font-size:12px;font-weight:700;color:var(--txt3)}
+.nav-w{color:var(--cy);font-size:11px}
+.adm-lat [id^="adm-"][id$="-arrow"]{display:none}
+.adm-lat .card > div[onclick^="toggleAdmSec"]{pointer-events:none;cursor:default}
+.hist-f{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--brd)}
+.hist-f:last-child{border-bottom:none}
+.hist-v{font-size:14px;white-space:nowrap;text-align:right}
+@media(max-width:860px){
+  .adm-shell{grid-template-columns:minmax(0,1fr)}
+  .adm-nav{position:sticky;top:60px;z-index:50;flex-direction:row;overflow-x:auto;gap:6px;padding:8px;scrollbar-width:none}
+  .adm-nav::-webkit-scrollbar{display:none}
+  .nav-sep{display:none}
+  .nav-b{width:auto;white-space:nowrap;flex-shrink:0}
+}
 /* ── Administrador en bloques ── */
 .adm-grp{font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);margin:22px 4px 10px}
 #adm-buscar{margin-bottom:6px}
@@ -6691,6 +6729,7 @@ if("serviceWorker" in navigator){
   }
   function ir(x){
     var c=cards[x.sec];if(!c)return;
+    if(window.admMostrar)window.admMostrar(x.sec);
     var body=c.querySelector('[id^="adm-"][id$="-body"]');
     if(body&&body.style.display==="none")toggleAdmSec(x.sec);
     var clave=(x.item.tipo||"").trim().toLowerCase();
@@ -6749,6 +6788,281 @@ if("serviceWorker" in navigator){
     });
     refrescar();
     setInterval(refrescar,1500);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
+})();
+</script>
+<script>
+// ═══════════════════════════════════════
+// BORRADOR AUTOMÁTICO Y SEMÁFORO DE GANANCIA (v16) — capa sobre lo existente.
+// Borrador: la cotización en curso se guarda en este dispositivo y se ofrece
+// recuperarla si se recarga la página. Semáforo: cada línea de equipo muestra
+// si deja buena ganancia sobre el costo. No cambia precios ni lo que se guarda
+// en la nube. Para quitarlo: borrar este bloque, el CSS «Borrador y ganancia»
+// y la llamada en el HTML (#borrador-aviso se crea por código).
+// ═══════════════════════════════════════
+(function(){
+  var KEY="cot_borrador_v1",MAX_MS=7*24*3600*1000;
+  var GAN_BUENA=20,GAN_JUSTA=10; // % de ganancia sobre el costo
+  var CAMPOS=["cnombre","crut","cdir","ccom","cemail","ctel-pre","ctel-num","ccanal","validez","cyberdisc","cvendedor","ind-duracion"];
+  var pendiente=false,restaurando=false,timer=null;
+  function el(i){return document.getElementById(i);}
+  function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+  // ── Borrador ──
+  function leer(){
+    try{
+      var d=JSON.parse(localStorage.getItem(KEY)||"null");
+      if(!d||!d.carrito||!d.carrito.length)return null;
+      if(Date.now()-(d.t||0)>MAX_MS){localStorage.removeItem(KEY);return null;}
+      return d;
+    }catch(e){return null;}
+  }
+  function borrar(){try{localStorage.removeItem(KEY);}catch(e){}}
+  function guardar(){
+    if(pendiente||restaurando)return;
+    if(!(window.carrito||[]).length){borrar();return;}
+    var d={t:Date.now(),nro:(el("nro")||{}).value||"",carrito:window.carrito,campos:{},
+      tipoCliente:(el("cnombre")&&el("cnombre").dataset.tipo)||"Particular"};
+    CAMPOS.forEach(function(id){if(el(id))d.campos[id]=el(id).value;});
+    try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}
+  }
+  function programar(){clearTimeout(timer);timer=setTimeout(guardar,600);}
+  function restaurar(d){
+    restaurando=true;
+    CAMPOS.forEach(function(id){if(el(id)&&d.campos&&d.campos[id]!==undefined)el(id).value=d.campos[id];});
+    if(typeof setTipoCliente==="function")setTipoCliente(d.tipoCliente||"Particular");
+    if(el("crut")&&typeof checkRut==="function")try{checkRut(el("crut"));}catch(e){}
+    window.carrito=d.carrito||[];
+    // Si cambió algún precio en el administrador desde que se guardó, se actualiza y avisa.
+    if(typeof refrescarPreciosCarrito==="function")try{refrescarPreciosCarrito();}catch(e){}
+    renderCarrito();
+    restaurando=false;pendiente=false;
+    guardar();
+  }
+  function mostrarAviso(d){
+    var left=el("cot-left");if(!left)return;
+    var b=document.createElement("div");b.className="card";b.id="borrador-aviso";
+    var cy=parseInt((d.campos&&d.campos.cyberdisc)||0,10)||0;
+    var tot=d.carrito.reduce(function(a,x){return a+x.neto*(x.cant||1)*(1-(x.disc||0)/100);},0)*(1-cy/100)*(1+IVA);
+    var mins=Math.max(1,Math.round((Date.now()-d.t)/60000));
+    var hace=mins<60?mins+" min":(mins<1440?Math.round(mins/60)+" h":Math.round(mins/1440)+" d");
+    var nom=(d.campos&&d.campos.cnombre)||"sin cliente";
+    var cur=(el("nro")||{}).value||"";
+    var nota=(d.nro&&cur&&d.nro!==cur)?'<div class="bd-nota">Estaba en el N° '+esc(d.nro)+'; ahora el número que sigue es el '+esc(cur)+' y se usará ese.</div>':'';
+    b.innerHTML='<div class="bd-t">Tienes una cotización sin terminar</div>'
+      +'<div class="bd-s"><b>'+esc(nom)+'</b> · '+d.carrito.length+(d.carrito.length===1?' línea':' líneas')+' · '+fmt(tot)+' · guardada hace '+hace+'</div>'+nota
+      +'<div class="bd-b"><button type="button" id="bd-si">Recuperar</button><button type="button" id="bd-no">Descartar</button></div>';
+    left.insertBefore(b,left.firstChild);
+    el("bd-si").onclick=function(){b.remove();restaurar(d);};
+    el("bd-no").onclick=function(){b.remove();borrar();pendiente=false;guardar();};
+  }
+
+  // ── Semáforo de ganancia ──
+  var verGan=false;try{verGan=localStorage.getItem("cot_ver_ganancia")==="1";}catch(e){}
+  function nivel(g){return g>=GAN_BUENA?"ok":(g>=GAN_JUSTA?"med":"bajo");}
+  function semaforo(){
+    var lista=el("cartlista"),card=el("cartcard");
+    if(!lista||!card||card.style.display==="none")return;
+    var cy=parseInt((el("cyberdisc")||{}).value||0,10)||0;
+    var filas=lista.querySelectorAll(".ci");
+    var totGan=0,totCosto=0,bajas=0;
+    (window.carrito||[]).forEach(function(it,i){
+      var fila=filas[i];if(!fila||!it.esEquipo)return;
+      var p=it.cod?CAT.find(function(x){return x.id===it.cod;}):null;
+      if(!p)return;
+      var costo=getCosto(p);if(!(costo>0))return;
+      var cant=it.cant||1;
+      var precio=it.neto*(1-(it.disc||0)/100)*(1-cy/100);
+      var gan=(precio-costo)/costo*100,monto=(precio-costo)*cant;
+      totGan+=monto;totCosto+=costo*cant;
+      var n=nivel(gan);if(n==="bajo")bajas++;
+      var sub=fila.querySelector("div > div:nth-child(2)");if(!sub)return;
+      var txt=verGan?("Ganancia "+gan.toFixed(1).replace(".",",")+" % · "+fmt(monto)):({ok:"Ganancia buena",med:"Ganancia justa",bajo:"Ganancia baja"})[n];
+      sub.insertAdjacentHTML("beforeend",' · <span class="mg mg-'+n+'">● '+txt+'</span>');
+    });
+    var box=el("mg-total");
+    if(!box){
+      box=document.createElement("div");box.id="mg-total";
+      var tot=el("totales");if(tot&&tot.parentNode)tot.parentNode.insertBefore(box,tot.nextSibling);
+    }
+    var h="";
+    if(bajas)h+='<div class="mg-aviso">⚠ '+bajas+(bajas===1?' línea de equipo deja':' líneas de equipo dejan')+' menos de '+GAN_JUSTA+' % de ganancia sobre el costo.</div>';
+    if(totCosto>0){
+      h+='<div class="mg-fila"><span>'+(verGan?'Ganancia en equipos: <b>'+fmt(totGan)+'</b> ('+(totGan/totCosto*100).toFixed(1).replace(".",",")+' % sobre costo)':'Ganancia de equipos oculta')+'</span>'
+        +'<button type="button" id="mg-ver">'+(verGan?'Ocultar':'Mostrar')+' cifras</button></div>';
+    }
+    box.innerHTML=h;
+    var bt=el("mg-ver");
+    if(bt)bt.onclick=function(){verGan=!verGan;try{localStorage.setItem("cot_ver_ganancia",verGan?"1":"0");}catch(e){}renderCarrito();};
+  }
+
+  function iniciar(){
+    var orig=window.renderCarrito;
+    window.renderCarrito=function(){var r=orig.apply(this,arguments);try{semaforo();}catch(e){}programar();return r;};
+    var cot=el("view-cot");
+    if(cot){cot.addEventListener("input",programar);cot.addEventListener("change",programar);}
+    // «Iniciar cotización nueva» vacía el carrito: ahí el borrador ya no sirve.
+    var bn=el("btnnuevacot");
+    if(bn)bn.addEventListener("click",function(){setTimeout(function(){if(!(window.carrito||[]).length)borrar();},0);});
+    var d=leer();
+    if(d&&!(window.carrito||[]).length){pendiente=true;mostrarAviso(d);}
+    window.addEventListener("pagehide",guardar);
+    document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")guardar();});
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
+})();
+</script>
+<script>
+// ═══════════════════════════════════════
+// HISTORIAL DE PRECIOS Y MENÚ LATERAL DEL ADMINISTRADOR (v16)
+// Historial: anota cada cambio de costo, % de ganancia o precio hecho a mano
+// en este dispositivo (no viaja a la nube: solo se ve lo editado desde acá).
+// Menú lateral: una sección a la vez, con la lista a la izquierda (chips en el
+// celular). No cambia cómo se guarda nada. Para quitarlo: borrar este bloque
+// y el CSS «Menú lateral e historial».
+// ═══════════════════════════════════════
+(function(){
+  var KEY="cot_hist_precios_v1",MAX=400;
+  var LISTAS=[["inst","INST_LIST","Instalaciones"],["mat","MAT_LIST","Materiales"],["mant","MANT_LIST","Mantenciones"],
+              ["extra","EXTRA_LIST","Extras"],["pack","PACK_LIST","Packs"],["tras","TRAS_LIST","Traslados"]];
+  function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function el(i){return document.getElementById(i);}
+
+  // ── Historial ──
+  function foto(){
+    var m={};
+    (window.CAT||[]).forEach(function(p){
+      m["Equipos|"+p.id]={sec:"Equipos",nombre:p.marca+" "+p.modelo+" "+fmtBtu(p.btu)+" · "+String(p.prov||"").trim(),
+        costo:getCosto(p),pct:gPct(p)};
+    });
+    LISTAS.forEach(function(l){
+      (window[l[1]]||[]).forEach(function(i){m[l[2]+"|"+i.id]={sec:l[2],nombre:i.nombre,precio:i.precio};});
+    });
+    return m;
+  }
+  function leerHist(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")||[];}catch(e){return [];}}
+  function anotar(antes,despues){
+    var nuevos=[],quien=(window.LEON_USUARIO&&LEON_USUARIO.nombre)||"";
+    Object.keys(despues).forEach(function(k){
+      var a=antes[k],d=despues[k];if(!a)return;
+      ["costo","pct","precio"].forEach(function(c){
+        if(d[c]===undefined||a[c]===undefined||a[c]===d[c])return;
+        nuevos.push({t:Date.now(),sec:d.sec,n:d.nombre,c:c,a:a[c],d:d[c],q:quien});
+      });
+    });
+    if(!nuevos.length)return;
+    var h=nuevos.concat(leerHist()).slice(0,MAX);
+    try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){}
+    if(el("adm-hist")&&el("adm-hist").style.display!=="none")pintarHist();
+  }
+  var previa=null;
+  function antesDelCambio(){previa=foto();}
+  function despuesDelCambio(){if(previa){var p=previa;previa=null;try{anotar(p,foto());}catch(e){}}}
+
+  function fechaCorta(t){
+    var d=new Date(t),z=function(n){return String(n).padStart(2,"0");};
+    return z(d.getDate())+"-"+z(d.getMonth()+1)+" "+z(d.getHours())+":"+z(d.getMinutes());
+  }
+  function pintarHist(){
+    var cont=el("adm-hist-lista");if(!cont)return;
+    var q=(el("adm-hist-q")||{value:""}).value.toLowerCase().trim();
+    var h=leerHist().filter(function(x){return !q||(x.n+" "+x.sec).toLowerCase().indexOf(q)>=0;});
+    if(!h.length){cont.innerHTML='<div class="adm-r-vacio">'+(q?'Nada coincide.':'Todavía no hay cambios anotados en este dispositivo.')+'</div>';return;}
+    var NOM={costo:"Costo",pct:"% ganancia",precio:"Precio neto"};
+    cont.innerHTML=h.slice(0,150).map(function(x){
+      var esPct=x.c==="pct";
+      var f=function(v){return esPct?v+" %":fmt(v);};
+      var delta=(!esPct&&x.a>0)?((x.d-x.a)/x.a*100):null;
+      var sube=x.d>x.a;
+      return '<div class="hist-f"><div style="min-width:0"><div class="adm-r-t">'+esc(x.n)+'</div>'
+        +'<div class="adm-r-s">'+esc(x.sec)+' · '+NOM[x.c]+' · '+fechaCorta(x.t)+(x.q?' · '+esc(x.q):'')+'</div></div>'
+        +'<div class="hist-v"><span style="color:var(--txt3)">'+f(x.a)+'</span> → <b style="color:'+(sube?'var(--cy)':'var(--grn)')+'">'+f(x.d)+'</b>'
+        +(delta!==null?'<div class="adm-r-s" style="text-align:right">'+(sube?'+':'')+delta.toFixed(1).replace(".",",")+' %</div>':'')+'</div></div>';
+    }).join("");
+  }
+
+  // ── Menú lateral ──
+  var ITEMS=[
+    {k:"eq",t:"Equipos"},{k:"inst",t:"Instalaciones"},{k:"mat",t:"Materiales"},{k:"mnt",t:"Mantenciones"},
+    {k:"ext",t:"Extras"},{k:"pack",t:"Packs"},{k:"tras",t:"Traslados"},
+    {sep:"Empresa"},{k:"empresa",t:"Datos de la empresa"},
+    {sep:"Datos"},{k:"bak",t:"Respaldo"},{k:"pdfprecios",t:"Precios desde PDF"},{k:"hist",t:"Historial de precios"}
+  ];
+  var cards={},actual="eq";
+  function cuenta(k){
+    try{
+      if(k==="eq")return (window.CAT||[]).length;
+      var m={inst:"INST_LIST",mat:"MAT_LIST",mnt:"MANT_LIST",ext:"EXTRA_LIST",pack:"PACK_LIST",tras:"TRAS_LIST"}[k];
+      return m?(window[m]||[]).length:"";
+    }catch(e){return "";}
+  }
+  function refrescarNav(){
+    ITEMS.forEach(function(it){
+      if(!it.k)return;
+      var b=el("adm-nav-"+it.k);if(!b)return;
+      var c=cuenta(it.k),w=cards[it.k]&&cards[it.k].querySelector(".adm-warn");
+      var h=esc(it.t)+(c!==""?' <span class="nav-n">'+c+'</span>':'')+(w?' <span class="nav-w" title="Hay avisos en esta sección">●</span>':'');
+      if(b.innerHTML!==h)b.innerHTML=h;
+    });
+  }
+  function mostrar(k,irArriba){
+    if(!cards[k])return;
+    actual=k;
+    try{localStorage.setItem("adm_sec",k);}catch(e){}
+    Object.keys(cards).forEach(function(x){cards[x].style.display=(x===k)?"":"none";});
+    var body=cards[k].querySelector('[id^="adm-"][id$="-body"]');
+    if(body&&body.style.display==="none"&&k!=="hist")toggleAdmSec(k);
+    ITEMS.forEach(function(it){if(it.k){var b=el("adm-nav-"+it.k);if(b)b.classList.toggle("on",it.k===k);}});
+    if(k==="hist")pintarHist();
+    if(irArriba)window.scrollTo({top:0,behavior:"smooth"});
+  }
+  window.admMostrar=mostrar;
+
+  function iniciar(){
+    var view=el("view-adm");if(!view)return;
+    view.querySelectorAll(":scope > .card").forEach(function(c){
+      var h=c.querySelector('[onclick^="toggleAdmSec"]');if(!h)return;
+      var m=/toggleAdmSec\('([^']+)'\)/.exec(h.getAttribute("onclick"));
+      if(m)cards[m[1]]=c;
+    });
+    // Tarjeta del historial
+    var hc=document.createElement("div");hc.className="card";hc.id="adm-hist";
+    hc.innerHTML='<div class="ct" style="margin-bottom:6px">Historial de precios</div>'
+      +'<div class="adm-sum" style="margin-bottom:12px">Cambios de costo, % de ganancia y precio hechos a mano desde este dispositivo. Lo editado desde otro aparato no aparece aquí.</div>'
+      +'<div style="display:flex;gap:8px;margin-bottom:10px"><input type="text" id="adm-hist-q" placeholder="Filtrar por equipo o sección" style="flex:1">'
+      +'<button type="button" id="adm-hist-borrar" style="background:transparent;border:2px solid var(--brd2);color:var(--txt2);border-radius:var(--rs);padding:0 14px;font-weight:700;cursor:pointer;font-family:inherit">Borrar</button></div>'
+      +'<div id="adm-hist-lista"></div>';
+    cards.hist=hc;
+    // Estructura: nav + contenido
+    var buscar=el("adm-buscar");
+    var shell=document.createElement("div");shell.className="adm-shell";shell.id="adm-shell";
+    var nav=document.createElement("nav");nav.id="adm-nav";nav.className="adm-nav";
+    var main=document.createElement("div");main.id="adm-main";
+    ITEMS.forEach(function(it){
+      if(it.sep){var s=document.createElement("div");s.className="nav-sep";s.textContent=it.sep;nav.appendChild(s);return;}
+      var b=document.createElement("button");b.type="button";b.id="adm-nav-"+it.k;b.className="nav-b";
+      b.onclick=function(){mostrar(it.k,true);};nav.appendChild(b);
+    });
+    shell.appendChild(nav);shell.appendChild(main);
+    view.insertBefore(shell,view.firstChild);
+    if(buscar)main.appendChild(buscar);
+    Object.keys(cards).forEach(function(k){main.appendChild(cards[k]);});
+    // rótulos de bloque de la versión anterior: sobran con el menú
+    view.querySelectorAll(":scope > .adm-grp").forEach(function(g){g.remove();});
+    var sm=el("savedmsg");if(sm&&sm.parentNode===view)main.appendChild(sm);
+    view.classList.add("adm-lat");
+    // Historial: capturar antes y después de cada edición
+    view.addEventListener("change",antesDelCambio,true);
+    view.addEventListener("change",despuesDelCambio,false);
+    view.addEventListener("click",function(e){if(e.target.closest("button"))antesDelCambio();},true);
+    view.addEventListener("click",function(e){if(e.target.closest("button"))setTimeout(despuesDelCambio,0);},false);
+    el("adm-hist-q").addEventListener("input",pintarHist);
+    el("adm-hist-borrar").onclick=function(){if(confirm("¿Borrar el historial de este dispositivo?")){try{localStorage.removeItem(KEY);}catch(e){}pintarHist();}};
+    var ini="eq";try{ini=localStorage.getItem("adm_sec")||"eq";}catch(e){}
+    if(!cards[ini])ini="eq";
+    mostrar(ini);
+    refrescarNav();setInterval(refrescarNav,1500);
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
 })();
