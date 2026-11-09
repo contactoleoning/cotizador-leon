@@ -227,6 +227,21 @@ select option{background:#161619;color:var(--txt)}
 #totbar button{background:var(--acc);color:#0b0b0d;border:none;border-radius:var(--rs);padding:12px 18px;font-size:15px;
   font-weight:800;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap}
 @media(max-width:860px){#totbar.on{display:flex}}
+/* ── Administrador en bloques ── */
+.adm-grp{font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);margin:22px 4px 10px}
+#adm-buscar{margin-bottom:6px}
+#adm-res{margin-top:10px;border:2px solid var(--brd2);border-radius:var(--rs);overflow:hidden;background:var(--bg3)}
+.adm-r{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--brd)}
+.adm-r:last-child{border-bottom:none}
+.adm-r:hover{background:#26315a}
+.adm-r-t{font-size:15px;font-weight:700;color:var(--txt)}
+.adm-r-s{font-size:12.5px;color:var(--txt3);margin-top:1px}
+.adm-r-v{font-size:14px;font-weight:700;color:var(--grn);white-space:nowrap}
+.adm-r-vacio{padding:12px 14px;font-size:13.5px;color:var(--txt2)}
+.adm-sum{font-size:13px;color:var(--txt2);font-weight:500;margin-top:3px}
+.adm-warn{display:inline-block;margin-left:6px;font-size:12px;font-weight:800;color:var(--cy);border:1px solid #6b4f1c;background:#3a2d12;border-radius:20px;padding:1px 9px}
+.adm-flash{animation:admflash 2.2s ease}
+@keyframes admflash{0%,60%{box-shadow:0 0 0 3px var(--acc);background:#26315a}100%{box-shadow:none}}
 .btn{transition:transform .12s,filter .15s,box-shadow .2s}
 .btn:hover{filter:brightness(1.07)}
 .btn:active{transform:scale(.98)}
@@ -537,6 +552,32 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
   </div>
   <div class="card">
     <div class="sec-hdr" onclick="toggleSec(this)">
+      <div class="ct">🧱 Materiales</div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body" style="max-height:0">
+
+    <div class="fr"><span class="fl">Tipo de materiales</span>
+      <select id="imateriales" onchange="calcInst()">
+        <option value="0">— Selecciona —</option>
+      </select>
+    </div>
+    <div class="fr"><span class="fl">Cantidad materiales</span>
+      <select id="cantmat">
+        <option value="">—</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+
+    <button class="btn badd" id="btnagregarmateriales" style="margin-top:10px">+ Agregar Materiales al Presupuesto</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec-hdr" onclick="toggleSec(this)">
       <div class="ct">🛠️ Mantención</div>
       <span class="sec-arrow">▼</span>
     </div>
@@ -563,32 +604,6 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
       </select>
     </div>
     <button class="btn badd" id="btnagregarmantencion" style="margin-top:10px">+ Agregar Mantención al Presupuesto</button>
-    </div>
-  </div>
-  <div class="card">
-    <div class="sec-hdr" onclick="toggleSec(this)">
-      <div class="ct">🧱 Materiales</div>
-      <span class="sec-arrow">▼</span>
-    </div>
-    <div class="sec-body" style="max-height:0">
-
-    <div class="fr"><span class="fl">Tipo de materiales</span>
-      <select id="imateriales" onchange="calcInst()">
-        <option value="0">— Selecciona —</option>
-      </select>
-    </div>
-    <div class="fr"><span class="fl">Cantidad materiales</span>
-      <select id="cantmat">
-        <option value="">—</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
-      </select>
-    </div>
-
-    <button class="btn badd" id="btnagregarmateriales" style="margin-top:10px">+ Agregar Materiales al Presupuesto</button>
     </div>
   </div>
   <div class="card">
@@ -6453,8 +6468,8 @@ if("serviceWorker" in navigator){
 // ═══════════════════════════════════════
 (function(){
   var PASOS=[
-    {c:"Cliente"},{c:"Equipo"},{c:"Instalación"},{c:"Mantención"},
-    {c:"Materiales"},{c:"Extras"},{c:"Traslado"}
+    {c:"Cliente"},{c:"Equipo"},{c:"Instalación"},{c:"Materiales"},
+    {c:"Mantención"},{c:"Extras"},{c:"Traslado"}
   ];
   var cards=[];
 
@@ -6473,8 +6488,8 @@ if("serviceWorker" in navigator){
     e.push(nombre?{ok:true,res:nombre+(com?" · "+com:"")}:{ok:false,res:"Falta el nombre del cliente"});
     var eq=lineasDe("equipo");
     e.push(eq.length?{ok:true,res:plural(eq.length,"línea de equipo","líneas de equipo")}:{ok:false,res:"Elige tipo y capacidad"});
-    [["inst","instalación","instalaciones"],["mant","mantención","mantenciones"],
-     ["mat","línea de materiales","líneas de materiales"],["extra","extra","extras"],
+    [["inst","instalación","instalaciones"],["mat","línea de materiales","líneas de materiales"],
+     ["mant","mantención","mantenciones"],["extra","extra","extras"],
      ["tras","traslado","traslados"]].forEach(function(d){
       var n=lineasDe(d[0]).length;
       e.push(n?{ok:true,res:plural(n,d[1],d[2])+" agregado"+(n===1?"":"s")}:{ok:false,res:"Opcional"});
@@ -6576,6 +6591,173 @@ if("serviceWorker" in navigator){
     // cliente del Indicador): un repaso liviano cubre esos casos.
     setInterval(refrescar,900);
     refrescar();
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
+})();
+</script>
+<script>
+// ═══════════════════════════════════════
+// ADMINISTRADOR EN BLOQUES (v16) — capa visual sobre lo existente.
+// Ordena las secciones en tres bloques, muestra un resumen y avisos en cada
+// encabezado y agrega un buscador que abre la fila exacta. No cambia cómo se
+// guarda ni se calcula nada. Para quitarla: borrar este bloque, el HTML
+// #adm-buscar y el CSS bajo «Administrador en bloques».
+// ═══════════════════════════════════════
+(function(){
+  var SEC={
+    eq:{t:"Equipos",lista:function(){return window.CAT;},ns:null},
+    inst:{t:"Instalaciones",lista:function(){return window.INST_LIST;},ns:"inst",fn:"renderInstAdmin"},
+    mat:{t:"Materiales",lista:function(){return window.MAT_LIST;},ns:"mat",fn:"renderMatAdmin"},
+    mnt:{t:"Mantenciones",lista:function(){return window.MANT_LIST;},ns:"mant",fn:"renderMantAdmin"},
+    ext:{t:"Extras",lista:function(){return window.EXTRA_LIST;},ns:"extra",fn:"renderExtraAdmin"},
+    pack:{t:"Packs",lista:function(){return window.PACK_LIST;},ns:"pack",fn:"renderPackAdmin"},
+    tras:{t:"Traslados",lista:function(){return window.TRAS_LIST;},ns:"tras",fn:"renderTrasAdmin"}
+  };
+  var BLOQUES=[
+    {t:"Catálogo · lo que se cotiza",k:["eq","inst","mat","mnt","ext","pack","tras"]},
+    {t:"Empresa",k:["empresa"]},
+    {t:"Datos y respaldo",k:["bak","pdfprecios"]}
+  ];
+  var cards={};
+  function norm(s){return String(s==null?"":s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");}
+  function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function plural(n,s,p){return n+" "+(n===1?s:p);}
+
+  function resumen(k){
+    var def=SEC[k],L=def.lista();
+    if(!L)return {txt:"",warn:[]};
+    var warn=[];
+    if(k==="eq"){
+      var provs={},grp={};
+      L.forEach(function(p){
+        if(p.prov&&p.prov!=="-")provs[p.prov]=1;
+        var c=claveGrupoEq(p);grp[c]=(grp[c]||0)+1;
+      });
+      var comp=Object.keys(grp).filter(function(c){return grp[c]>1;}).length;
+      var sinCosto=L.filter(function(p){return !(getCosto(p)>0);}).length;
+      var sinGan=L.filter(function(p){return getCosto(p)>0&&!(gPct(p)>0);}).length;
+      if(sinCosto)warn.push(plural(sinCosto,"sin costo","sin costo"));
+      if(sinGan)warn.push(plural(sinGan,"con 0 % de ganancia","con 0 % de ganancia"));
+      return {txt:plural(L.length,"equipo","equipos")+" · "+plural(Object.keys(provs).length,"proveedor","proveedores")+
+        (comp?" · "+plural(comp,"equipo comparable","equipos comparables"):""),warn:warn};
+    }
+    var tipos={};L.forEach(function(i){tipos[(i.tipo||"").trim().toLowerCase()]=1;});
+    var sinP=L.filter(function(i){return !(i.precio>0);}).length;
+    if(sinP)warn.push(plural(sinP,"sin precio","sin precio"));
+    return {txt:plural(L.length,"ítem","ítems")+" · "+plural(Object.keys(tipos).length,"grupo","grupos"),warn:warn};
+  }
+
+  function refrescar(){
+    Object.keys(SEC).forEach(function(k){
+      var c=cards[k];if(!c)return;
+      var s=c.querySelector(".adm-sum");if(!s)return;
+      var r;try{r=resumen(k);}catch(e){return;}
+      var h=esc(r.txt)+r.warn.map(function(w){return ' <span class="adm-warn">⚠ '+esc(w)+'</span>';}).join("");
+      if(s.innerHTML!==h)s.innerHTML=h;
+    });
+  }
+
+  // ── Buscador ──
+  function indice(){
+    var out=[];
+    (window.CAT||[]).forEach(function(p){
+      out.push({sec:"eq",id:p.id,item:p,
+        titulo:p.marca+" "+p.modelo+" · "+fmtBtu(p.btu),
+        sub:(p.tipo||"")+" · "+(p.prov||"-"),
+        val:fmt(wIVA(pvN(p)))+" c/IVA",
+        txt:norm([p.marca,p.modelo,p.tipo,p.prov,p.btu,fmtBtu(p.btu),p.ubicacion].join(" "))});
+    });
+    ["inst","mat","mnt","ext","pack","tras"].forEach(function(k){
+      (SEC[k].lista()||[]).forEach(function(i){
+        out.push({sec:k,id:i.id,item:i,titulo:i.nombre,sub:SEC[k].t+" · "+(i.tipo||""),
+          val:fmt(Math.round((i.precio||0)*(1+IVA)))+" c/IVA",
+          txt:norm([i.nombre,i.tipo,SEC[k].t].join(" "))});
+      });
+    });
+    return out;
+  }
+  function buscar(q){
+    var box=document.getElementById("adm-res");
+    q=norm(q).trim();
+    if(!q){box.innerHTML="";box.style.display="none";return;}
+    var ts=q.split(/\s+/);
+    var r=indice().filter(function(x){return ts.every(function(t){return x.txt.indexOf(t)>=0;});});
+    box.style.display="block";
+    if(!r.length){box.innerHTML='<div class="adm-r-vacio">Nada coincide con «'+esc(q)+'»</div>';return;}
+    var mostrar=r.slice(0,12);
+    box.innerHTML=mostrar.map(function(x,i){
+      return '<div class="adm-r" data-i="'+i+'"><div style="min-width:0"><div class="adm-r-t">'+esc(x.titulo)+'</div><div class="adm-r-s">'+esc(x.sub)+'</div></div><div class="adm-r-v">'+esc(x.val)+'</div></div>';
+    }).join("")+(r.length>12?'<div class="adm-r-vacio">y '+(r.length-12)+' más: escribe algo más para afinar</div>':'');
+    box._r=mostrar;
+  }
+  function filaDe(root,id){
+    var els=root.querySelectorAll("input,select,button");
+    for(var i=0;i<els.length;i++){
+      var d=els[i].dataset;
+      for(var k in d){if(d[k]===id)return els[i];}
+    }
+    return null;
+  }
+  function ir(x){
+    var c=cards[x.sec];if(!c)return;
+    var body=c.querySelector('[id^="adm-"][id$="-body"]');
+    if(body&&body.style.display==="none")toggleAdmSec(x.sec);
+    var clave=(x.item.tipo||"").trim().toLowerCase();
+    if(x.sec==="eq"){
+      window.EQ_OPEN_GROUPS[clave+"||"+x.item.marca+"||"+x.item.modelo]=true;
+      renderAdmin();
+    }else{
+      window.ADM_GROUP_OPEN[SEC[x.sec].ns+":"+clave]=true;
+      window[SEC[x.sec].fn]();
+    }
+    var el=filaDe(body,x.id);
+    if(el){
+      var fila=el.closest(".ai,.admin-row")||el.parentElement;
+      fila.scrollIntoView({behavior:"smooth",block:"center"});
+      fila.classList.add("adm-flash");
+      setTimeout(function(){fila.classList.remove("adm-flash");},2200);
+    }else c.scrollIntoView({behavior:"smooth",block:"start"});
+    document.getElementById("adm-res").style.display="none";
+  }
+
+  function iniciar(){
+    var view=document.getElementById("view-adm");if(!view)return;
+    // Tarjetas por clave
+    view.querySelectorAll(':scope > .card').forEach(function(c){
+      var h=c.querySelector('[onclick^="toggleAdmSec"]');if(!h)return;
+      var m=/toggleAdmSec\('([^']+)'\)/.exec(h.getAttribute("onclick"));
+      if(m)cards[m[1]]=c;
+    });
+    // Buscador arriba
+    var b=document.createElement("div");b.className="card";b.id="adm-buscar";
+    b.innerHTML='<div class="fl" style="margin-bottom:6px">Buscar en el administrador</div>'+
+      '<input type="text" id="adm-q" placeholder="Equipo, marca, proveedor, instalación, traslado…" autocomplete="off">'+
+      '<div id="adm-res" style="display:none"></div>';
+    view.insertBefore(b,view.firstChild);
+    var q=document.getElementById("adm-q");
+    q.addEventListener("input",function(){buscar(q.value);});
+    document.getElementById("adm-res").addEventListener("click",function(e){
+      var r=e.target.closest(".adm-r");if(!r)return;
+      var lista=this._r||[];ir(lista[parseInt(r.getAttribute("data-i"),10)]);
+    });
+    // Bloques: reordenar y rotular
+    var ref=b.nextSibling;
+    BLOQUES.forEach(function(bl){
+      var lab=document.createElement("div");lab.className="adm-grp";lab.textContent=bl.t;
+      view.insertBefore(lab,ref);
+      bl.k.forEach(function(k){if(cards[k])view.insertBefore(cards[k],ref);});
+    });
+    // Resumen bajo el título de cada sección
+    Object.keys(SEC).forEach(function(k){
+      var c=cards[k];if(!c)return;
+      var h=c.querySelector('[onclick^="toggleAdmSec"]');
+      var ct=h.querySelector(".ct");
+      var w=document.createElement("div");
+      var s=document.createElement("div");s.className="adm-sum";
+      h.insertBefore(w,ct);w.appendChild(ct);w.appendChild(s);
+    });
+    refrescar();
+    setInterval(refrescar,1500);
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
 })();
