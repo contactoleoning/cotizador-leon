@@ -2865,7 +2865,7 @@ function armarPDF(){
     +".th{font-weight:700;font-size:10px;text-align:center;padding:5px 8px;border:1px solid #aaa;background:#fff;color:#1a1a1a}"
     +".th-l{text-align:left}";
 
-  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='format-detection' content='telephone=no'><title>BETA · Cotizador</title><style>"+css+"</style></head><body><div class='wrap'>";
+  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='format-detection' content='telephone=no'><title>Cotizacion "+nro+"</title><style>"+css+"</style></head><body><div class='wrap'>";
 
   // TÍTULO + EMPRESA + LOGO
   var emp=getEmpresaPDF();
@@ -3090,7 +3090,7 @@ function armarCatalogoPDF(){
 
   var hoy=new Date().toLocaleDateString("es-CL");
   var emp=getEmpresaPDF();
-  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>BETA · Cotizador</title><style>"+css+"</style></head><body><div class='wrap'>";
+  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Catálogo "+esc(emp.nombre)+"</title><style>"+css+"</style></head><body><div class='wrap'>";
   h+="<table style='width:100%;margin-bottom:10px'><tr>"
     +"<td style='vertical-align:top;padding:0'>"
     +"<div style='font-size:24px;font-weight:800;color:#e8291c;letter-spacing:.02em'>CATÁLOGO DE EQUIPOS</div>"
@@ -3287,7 +3287,7 @@ function enviarWhatsApp(){
   // Más tarde le asignamos la URL real de WhatsApp.
   var waWin=window.open("","_blank");
   if(waWin&&waWin.document){
-    waWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>BETA · Cotizador</title></head><body style='font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0b0b0d;color:#fff'><div>Generando cotización y subiendo a Drive…</div></body></html>");
+    waWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Preparando…</title></head><body style='font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0b0b0d;color:#fff'><div>Generando cotización y subiendo a Drive…</div></body></html>");
     waWin.document.close();
   }
 
