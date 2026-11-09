@@ -58,7 +58,7 @@ select option{background:#161619;color:var(--txt)}
 .pn{font-size:18px;font-weight:700}
 .pm{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 9px}
 .badge,.bdg{font-size:14px;padding:4px 11px;border-radius:20px;font-weight:700}
-.bb{background:#1e4575;color:#a8d0ff}.bp{background:#1a6e4a;color:#a0f0c8}.bt{background:var(--bg2);color:var(--txt2);border:1px solid var(--brd)}
+.bb{background:#1e4575;color:#a8d0ff}.bp{background:#1a6e4a;color:#a0f0c8}.bt{background:var(--bg2);color:var(--txt2);border:1px solid var(--brd)}.bu{background:#2d3f52;color:var(--blu);border:1px solid #3a5570}
 .pp{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .pv{font-size:22px;font-weight:700;color:var(--grn)}
 .pcy{font-size:18px;font-weight:700;color:var(--cy)}
@@ -183,6 +183,50 @@ select option{background:#161619;color:var(--txt)}
 .seg-resumen b{color:var(--txt);font-size:15px}
 .card{transition:box-shadow .2s,border-color .2s}
 .card:hover{box-shadow:0 6px 22px rgba(0,0,0,.28)}
+/* ── Comparador de proveedores (un equipo, varios proveedores) ── */
+.pgrp{border:2px solid var(--brd2);border-radius:var(--rs);background:var(--bg2);padding:12px 12px 10px}
+.pgrp-h .pm{margin:6px 0 10px}
+.pgrp .pc-prov+.pc-prov{margin-top:8px}
+.bcmp{background:#3a2d12;color:var(--cy);border:1px solid #6b4f1c}
+.pc-prov{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 14px}
+.pc-prov-l{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pc-prov-n{font-size:17px;font-weight:700}
+.tag-barato,.tag-igual,.tag-mas{font-size:12px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:20px}
+.tag-barato{background:#12361f;color:var(--grn);border:1px solid var(--grn)}
+.tag-igual{background:var(--bg2);color:var(--txt2);border:1px solid var(--brd2)}
+.tag-mas{background:var(--bg2);color:var(--txt3);border:1px solid var(--brd)}
+.pc-prov.sel{border-color:var(--grn);background:#16301f;box-shadow:0 0 0 1px var(--grn)}
+.pc-prov.sel .pc-prov-n{color:var(--grn)}
+/* ── Cotizar en pasos ── */
+.paso-n{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;
+  border:2px solid var(--brd2);color:var(--txt2);font-size:14px;font-weight:800;flex-shrink:0;margin-right:12px;transition:all .2s}
+.paso-hdr{display:flex;align-items:center;min-width:0;flex:1}
+.paso-tx{min-width:0}
+.paso-tx .ct{white-space:normal}
+.paso-res{font-size:13px;color:var(--txt2);margin-top:2px;font-weight:500;text-transform:none;letter-spacing:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.paso-ok .paso-n{background:var(--grn);border-color:var(--grn);color:#0b0b0d}
+.paso-act .paso-n{border-color:var(--acc);color:var(--acc)}
+.card.paso-act{border-color:var(--brd2)}
+#cot-resumen{margin-bottom:12px}
+#cot-resumen .rs-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+#cot-resumen .rs-nro{font-size:22px;font-weight:800;color:var(--acc)}
+#cot-resumen .rs-cli{font-size:15px;color:var(--txt2);margin-top:4px}
+#cot-resumen .rs-cli b{color:var(--txt)}
+#cot-resumen .rs-vacio{margin-top:14px;padding:18px 14px;border:2px dashed var(--brd2);border-radius:var(--rs);
+  text-align:center;color:var(--txt2);font-size:15px;line-height:1.6}
+#cot-resumen .rs-pasos{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+#cot-resumen .rs-chip{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid var(--brd2);color:var(--txt3)}
+#cot-resumen .rs-chip.ok{border-color:var(--grn);color:var(--grn)}
+#totbar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:300;background:var(--bg2);border-top:2px solid var(--brd2);
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));align-items:center;justify-content:space-between;gap:12px;
+  box-shadow:0 -10px 30px rgba(0,0,0,.5)}
+#totbar .tb-l{min-width:0}
+#totbar .tb-n{font-size:12.5px;color:var(--txt2);font-weight:600}
+#totbar .tb-t{font-size:24px;font-weight:800;color:var(--grn);line-height:1.1}
+#totbar button{background:var(--acc);color:#0b0b0d;border:none;border-radius:var(--rs);padding:12px 18px;font-size:15px;
+  font-weight:800;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap}
+@media(max-width:860px){#totbar.on{display:flex}}
 .btn{transition:transform .12s,filter .15s,box-shadow .2s}
 .btn:hover{filter:brightness(1.07)}
 .btn:active{transform:scale(.98)}
@@ -229,6 +273,12 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
 
 <!-- ── IZQUIERDA: PRESUPUESTO ── -->
 <div id="cot-left">
+  <div class="card" id="cot-resumen">
+    <div class="rs-top"><span class="rs-nro" id="rs-nro">Cotización</span><span id="rs-fecha" style="font-size:13px;color:var(--txt3);font-weight:600"></span></div>
+    <div class="rs-cli" id="rs-cli"></div>
+    <div class="rs-vacio" id="rs-vacio">Aquí se arma la cotización.<br>Elige un servicio a la derecha y cada línea aparece acá con su total.</div>
+    <div class="rs-pasos" id="rs-pasos"></div>
+  </div>
   <div class="card" id="cartcard" style="display:none">
     <div class="ct">Presupuesto</div>
     <div class="fr" style="margin-bottom:14px;padding:12px 14px;background:var(--bg3);border:2px solid var(--brd);border-radius:var(--rs);align-items:center">
@@ -277,6 +327,7 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
         <option value="40">40% de descuento</option>
       </select>
     </div>
+    <div id="avisoprecios" style="display:none"></div>
     <div id="cartlista"></div>
     <div class="tots" id="totales"></div>
   </div>
@@ -294,6 +345,7 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
     <div id="ind-duracion-nota" style="font-size:12px;color:var(--txt2);text-align:center;margin-top:-4px"></div>
     <button class="btn" id="btnindicador" style="background:#3b6ea5;color:#fff">📅 Agregar a Indicador de Vencimiento</button>
     <button class="btn" id="btnnuevacot" style="background:transparent;border:2px solid var(--brd2);color:var(--txt2)">🆕 Iniciar Cotización Nueva (siguiente N°)</button>
+    <button class="btn" id="btnnuevavar" style="background:transparent;border:2px solid var(--brd2);color:var(--txt2)">🔀 Nueva variante (mismo N°, letra A/B/C)</button>
   </div>
 </div><!-- /cot-left -->
 
@@ -306,6 +358,12 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
       <span class="sec-arrow">▶</span>
     </div>
     <div class="sec-body" style="max-height:0">
+    <div class="fr" style="position:relative">
+      <span class="fl">Buscar cliente del Indicador</span>
+      <input type="text" id="cli-buscar" placeholder="Nombre, empresa, RUT, teléfono o comuna" autocomplete="off" oninput="cliBuscar()" onfocus="cliBuscar()" onblur="setTimeout(cliCerrarSug,200)">
+      <div id="cli-sug" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:4px;z-index:500;background:var(--bg2);border:2px solid var(--brd2);border-radius:8px;max-height:300px;overflow:auto;box-shadow:0 14px 36px rgba(0,0,0,.7)"></div>
+      <div id="cli-msg" style="font-size:12px;color:var(--txt3);margin-top:4px;display:none"></div>
+    </div>
     <div class="fr"><span class="fl">N° Cotización</span><input type="text" id="nro" readonly style="opacity:0.7;cursor:default;font-weight:600;color:var(--acc)"></div>
     <div class="fr"><span class="fl">Fecha</span><input type="date" id="fecha"></div>
     <div class="fr"><span class="fl">Vendedor</span><input type="text" id="cvendedor" placeholder="Nombre del vendedor" oninput="localStorage.setItem('vendedor_nombre',this.value)"></div>
@@ -325,7 +383,7 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
       <button type="button" id="tipo-empresa" class="tipo-cliente-btn" onclick="setTipoCliente('Empresa')" style="flex:1;padding:9px;border-radius:6px;border:2px solid var(--brd);background:var(--inp);color:var(--txt);font-weight:700;cursor:pointer">Empresa</button>
     </div></div>
     <div class="fr"><span class="fl" id="cnombre-label">Nombre Cliente</span><input type="text" id="cnombre" placeholder="Nombre del cliente"></div>
-    <div class="fr"><span class="fl">Teléfono</span><div style="display:flex;gap:6px;flex:1"><select id="ctel-pre" style="width:80px;flex:0 0 80px;background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:9px 6px;font-size:14px"><option value="+569">+569</option><option value="+562">+562</option></select><input type="text" id="ctel-num" placeholder="XXXX XXXX" style="flex:1"></div></div>
+    <div class="fr"><span class="fl">Teléfono</span><div style="display:flex;gap:6px;flex:1"><select id="ctel-pre" style="width:80px;flex:0 0 80px;background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:9px 6px;font-size:14px"><option value="+569">+569</option><option value="+562">+562</option><option value="+">Ext.</option></select><input type="text" id="ctel-num" placeholder="XXXX XXXX" style="flex:1"></div></div>
     <div class="fr"><span class="fl">Dirección</span><input type="text" id="cdir" placeholder="Calle, numero, depto"></div>
     <div class="fr"><span class="fl">Comuna</span>
       <select id="ccom">
@@ -675,6 +733,15 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
 </div>
 <div id="view-adm" style="display:none">
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+    <div onclick="toggleAdmSec('empresa')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
+      <div class="ct" style="margin:0;border:none;padding:0">🏢 Datos de la Empresa (PDF)</div>
+      <span id="adm-empresa-arrow" style="font-size:18px;color:var(--acc);transition:transform .2s">▶</span>
+    </div>
+    <div id="adm-empresa-body" style="display:none;padding:14px">
+      <div id="empresalista"></div>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
     <div onclick="toggleAdmSec('eq')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-bottom:2px solid var(--brd)">
       <div class="ct" style="margin:0;border:none;padding:0">Equipos</div>
       <span id="adm-eq-arrow" style="font-size:18px;color:var(--acc);transition:transform .2s">▶</span>
@@ -821,13 +888,35 @@ function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/"/g,"
 // Como esc(), pero ademas segura dentro de un literal JS de comillas
 // simples embebido en un atributo onclick="...('...')" inline.
 function escAttr(s){return String(s==null?"":s).replace(/\\/g,"\\\\").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/'/g,"\\'");}
+// Los campos de precio del admin son de texto: escribir "45.000" (punto de
+// miles, como se escribe en Chile) con parseFloat daba 45, o sea un neto mil
+// veces menor. Un grupo de 3 digitos tras el punto es separador de miles; la
+// coma es el decimal.
+function parsePrecio(s){
+  var x=String(s==null?"":s).replace(/[$\s]/g,"");
+  if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(x))x=x.replace(/\./g,"").replace(",",".");
+  else x=x.replace(",",".");
+  return parseFloat(x)||0;
+}
 function vn(id){return parseFloat(document.getElementById(id).value)||0;}
 function vs(id){return document.getElementById(id).value;}
 
+// Marca, modelo, BTU, tipo y proveedor editados en el admin viven en ov y solo
+// se copiaban al catalogo cuando respondia la nube: al recargar (o sin red) el
+// equipo volvia a su nombre original. El precio no tenia el problema porque se
+// lee siempre desde ov.
+function aplicarOvACatalogo(){
+  CAT.forEach(function(p){
+    var o=ov[p.id];
+    if(o)Object.keys(o).forEach(function(c){p[c]=o[c];});
+  });
+}
 function loadOv(){
   CAT.forEach(function(p){
     try{var s=localStorage.getItem("ov_"+p.id);if(s)ov[p.id]=JSON.parse(s);}catch(e){}
   });
+  aplicarOvACatalogo();
+  updateTiposelOptions();updateBtuselOptions();
   renderAdmin();
 }
 
@@ -857,7 +946,7 @@ function loadInstList(){
       INST_LIST.forEach(function(it){
         if(it.tipo==="Split Muro"){it.tipo="Split Muro Básica";migrado=true;}
       });
-      if(migrado)saveInstList();
+      if(migrado)saveInstList(true);
       return;
     }
   }catch(e){}
@@ -890,6 +979,7 @@ function loadMatList(){
 function saveMatList(){
   try{localStorage.setItem("mat_list",JSON.stringify(MAT_LIST));}catch(e){}
   updateImaterialesSelect();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
@@ -913,6 +1003,7 @@ function updateImaterialesSelect(){
 function eliminarMat(id){
   if(!confirm("¿Eliminar este material?"))return;
   MAT_LIST=MAT_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("mat",id);
   saveMatList();
   renderMatAdmin();
 }
@@ -968,9 +1059,9 @@ function renderMatAdmin(){
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
       html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
-        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.nombre=el.value;saveMatList();}})(this)"></div>'
+        +'<input type="text" style="'+si+'" value="'+esc(it.nombre)+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.nombre=el.value;saveMatList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.precio=parseFloat(el.value)||0;saveMatList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-matid="'+it.id+'" onchange="(function(el){var x=MAT_LIST.find(function(i){return i.id===el.dataset.matid;});if(x){x.precio=parsePrecio(el.value);saveMatList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -997,14 +1088,20 @@ function renderMatAdmin(){
   document.getElementById("matlista").innerHTML=html;
 }
 
-function saveInstList(){
+// A diferencia de las otras listas, esta no subia a la nube al guardar: un
+// precio de instalacion editado aqui no llegaba a otros dispositivos hasta que
+// otro guardado cualquiera lo arrastrara. sinNube=true solo para la migracion
+// de arranque, que corre antes de la primera carga desde la nube.
+function saveInstList(sinNube){
   try{localStorage.setItem("inst_list",JSON.stringify(INST_LIST));}catch(e){}
   updateItipoGrupoSelect();
   updateItipoSelect();
   calcInst();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
+  if(sinNube!==true)saveCloudData();
 }
 
 function updateItipoGrupoSelect(){
@@ -1014,7 +1111,7 @@ function updateItipoGrupoSelect(){
   var agr=agruparPorTipo(INST_LIST);
   var grupos=agr.orden.map(function(clave){return agr.display[clave];}).sort();
   var html='<option value="">— Selecciona —</option>';
-  grupos.forEach(function(g){html+='<option value="'+g+'">'+g+'</option>';});
+  grupos.forEach(function(g){html+='<option value="'+esc(g)+'">'+esc(g)+'</option>';});
   sel.innerHTML=html;
   if(grupos.indexOf(cur)!==-1)sel.value=cur;
 }
@@ -1042,24 +1139,100 @@ function updateTiposelOptions(){
   var agr=agruparPorTipo(CAT);
   var tipos=agr.orden.map(function(clave){return agr.display[clave];}).sort();
   var html='<option value="">Todos</option>';
-  tipos.forEach(function(t){html+='<option value="'+t+'">'+t+'</option>';});
+  tipos.forEach(function(t){html+='<option value="'+esc(t)+'">'+esc(t)+'</option>';});
   sel.innerHTML=html;
   if(tipos.indexOf(cur)!==-1)sel.value=cur;
 }
 
+// Datos de la empresa que aparecen en el encabezado y el pie de página (banco)
+// del PDF de cotización. Editables en Administrador → Datos de la Empresa;
+// se guardan en el mismo mecanismo genérico de overrides (ov) usando un id
+// reservado que no corresponde a ningún producto real, así no hace falta
+// tocar el Apps Script para sincronizarlos.
+var EMPRESA_PDF_ID="_EMPRESA_PDF";
+var EMPRESA_PDF_DEFAULT={
+  nombre:"LEÓN INGENIERÍA Y PROYECTOS SPA",
+  giro:"Construcción Climatización Y Transporte",
+  direccion:"Islas Guaitecas #936 MZ E 1",
+  ciudad:"Santiago",
+  comuna:"Las Condes",
+  telOficina:"+569 6371 0820",
+  email:"contactoleoning@gmail.com",
+  banco:"Falabella",
+  tipoCuenta:"Cuenta Corriente",
+  numCuenta:"0-1983-154-6787",
+  rutEmpresa:"18.245.550-4",
+  titular:"Isaac León",
+  emailConfirmacion:"contactoleoning@gmail.com"
+};
+function getEmpresaPDF(){
+  return Object.assign({},EMPRESA_PDF_DEFAULT,ov[EMPRESA_PDF_ID]||{});
+}
+function renderEmpresaAdmin(){
+  var el=document.getElementById("empresalista");
+  if(!el)return;
+  var e=getEmpresaPDF();
+  var sa='width:100%;background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:10px;font-size:14px;color:var(--txt);font-family:\'DM Sans\',sans-serif;box-sizing:border-box';
+  var lbl='font-size:11px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;font-weight:600';
+  function campo(campoKey,label,val){
+    return '<div style="margin-bottom:10px"><div style="'+lbl+'">'+label+'</div><input type="text" style="'+sa+'" value="'+esc(val)+'" data-campo="'+campoKey+'" onchange="setOv(\''+EMPRESA_PDF_ID+'\',this.dataset.campo,this.value)"></div>';
+  }
+  el.innerHTML='<div style="font-size:14px;color:var(--txt2);margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Estos datos aparecen en el encabezado y el pie de página (transferencias) de todas las cotizaciones en PDF. No tocan los datos del cliente, los equipos ni los montos: esos se siguen llenando solos.</div>'
+    +'<div class="ss" style="margin-top:0;padding-top:0;border-top:none">Encabezado — tu empresa</div>'
+    +campo('nombre','Nombre empresa',e.nombre)
+    +campo('giro','Giro',e.giro)
+    +campo('direccion','Dirección',e.direccion)
+    +campo('ciudad','Ciudad',e.ciudad)
+    +campo('comuna','Comuna',e.comuna)
+    +campo('telOficina','Teléfono oficina',e.telOficina)
+    +campo('email','Email',e.email)
+    +'<div class="ss">Pie de página — transferencias a</div>'
+    +campo('banco','Banco',e.banco)
+    +campo('tipoCuenta','Tipo de cuenta',e.tipoCuenta)
+    +campo('numCuenta','N° Cuenta',e.numCuenta)
+    +campo('rutEmpresa','RUT',e.rutEmpresa)
+    +campo('titular','Nombre titular',e.titular)
+    +campo('emailConfirmacion','Email confirmación',e.emailConfirmacion);
+}
+
 var BTU_LABELS={9:"9.000 BTU — 15 a 18 m²",12:"12.000 BTU — 20 a 25 m²",18:"18.000 BTU — 30 a 35 m²",22:"22.000 BTU — 40 a 50 m²",24:"24.000 BTU — 40 a 50 m²",36:"36.000 BTU — 60 m² o más"};
+// El título del tipo "Multisplit" ahora es editable en el admin; si alguien lo
+// escribe con espacio ("Multi Split") esta comparación no debe dejar de
+// reconocerlo, o el selector Interior/Exterior desaparece silenciosamente.
+function esTipoMultisplit(tipoStr){
+  return (tipoStr||"").trim().toLowerCase().replace(/\s+/g,"")==="multisplit";
+}
+function fmtBtu(b){
+  // Compat: datos antiguos guardan el BTU abreviado (9 = 9.000); el catálogo
+  // de equipos lo guarda completo (9000). Se normaliza siempre a completo.
+  var n=parseFloat(b)||0;
+  if(n>0&&n<1000)n=n*1000;
+  return Math.round(n).toLocaleString("es-CL")+" BTU";
+}
 function updateBtuselOptions(){
   var sel=document.getElementById("btusel");
   if(!sel)return;
   var cur=sel.value;
   var tipo=(document.getElementById("tiposel")?document.getElementById("tiposel").value:"").trim().toLowerCase();
-  var btus=[];
-  CAT.forEach(function(p){if((!tipo||(p.tipo||"").trim().toLowerCase()===tipo)&&btus.indexOf(p.btu)===-1)btus.push(p.btu);});
-  btus.sort(function(a,b){return a-b;});
+  var esMultisplit=esTipoMultisplit(tipo);
+  var vistos={},opciones=[];
+  CAT.forEach(function(p){
+    if(tipo&&(p.tipo||"").trim().toLowerCase()!==tipo)return;
+    var ubic=esMultisplit?(p.ubicacion||""):"";
+    var key=p.btu+"|"+ubic;
+    if(vistos[key])return;
+    vistos[key]=true;
+    opciones.push({btu:p.btu,ubic:ubic,val:key});
+  });
+  opciones.sort(function(a,b){return a.btu-b.btu||a.ubic.localeCompare(b.ubic);});
   var html='<option value="">— Selecciona —</option>';
-  btus.forEach(function(b){html+='<option value="'+b+'">'+(BTU_LABELS[b]||(b+".000 BTU"))+'</option>';});
+  opciones.forEach(function(o){
+    var label=BTU_LABELS[o.btu]||fmtBtu(o.btu);
+    if(o.ubic)label+=" — "+o.ubic;
+    html+='<option value="'+o.val+'">'+label+'</option>';
+  });
   sel.innerHTML=html;
-  if(btus.indexOf(parseInt(cur))!==-1)sel.value=cur;
+  if(opciones.some(function(o){return o.val===cur;}))sel.value=cur;
 }
 
 function toggleAdmSec(sec){
@@ -1073,6 +1246,7 @@ function toggleAdmSec(sec){
 function eliminarInst(id){
   if(!confirm("¿Eliminar esta instalación?"))return;
   INST_LIST=INST_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("inst",id);
   saveInstList();
   renderInstAdmin();
 }
@@ -1131,9 +1305,9 @@ function renderInstAdmin(){
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
       html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
-        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-instid="'+it.id+'" data-instcampo="nombre" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.nombre=el.value;saveInstList();}})(this)"></div>'
+        +'<input type="text" style="'+si+'" value="'+esc(it.nombre)+'" data-instid="'+it.id+'" data-instcampo="nombre" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.nombre=el.value;saveInstList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-instid="'+it.id+'" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.precio=parseFloat(el.value)||0;saveInstList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-instid="'+it.id+'" onchange="(function(el){var x=INST_LIST.find(function(i){return i.id===el.dataset.instid;});if(x){x.precio=parsePrecio(el.value);saveInstList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -1166,6 +1340,7 @@ function saveOv(id){
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
   filtrar();
+  refrescarPreciosCarrito();
   saveCloudData();
 }
 
@@ -1189,6 +1364,30 @@ function updXm(){}
 function syncMovil(){}
 function chkMovil(){}
 
+// Clave tolerante: "Inverter R32" y "inverter r-32" cuentan como el mismo modelo.
+function claveGrupoEq(p){
+  function n(s){return String(s==null?"":s).toLowerCase().replace(/[^a-z0-9]/g,"");}
+  return [n(p.marca),n(p.modelo),n(p.tipo),n(p.btu),n(p.ubicacion)].join("|");
+}
+// Tarjeta de un equipo. En un grupo con varios proveedores (marca != null) el
+// nombre del equipo va en la cabecera del grupo y aqui se destaca el proveedor.
+function tarjetaEquipoHtml(p,marca){
+  var n=pvN(p);
+  if(marca!==null){
+    return '<div class="pc pc-prov" id="pc-'+p.id+'" data-pid="'+p.id+'">'
+      +'<div class="pc-prov-l"><span class="pc-prov-n">'+p.prov+'</span>'+marca+'</div>'
+      +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span><span class="piv">c/IVA</span></div></div>';
+  }
+  return '<div class="pc" id="pc-'+p.id+'" data-pid="'+p.id+'">'
+    +'<div class="pn">'+p.marca+' - '+p.modelo+'</div>'
+    +'<div class="pm"><span class="bdg bb">'+fmtBtu(p.btu)+'</span>'
+    +'<span class="bdg bt">'+p.tipo+'</span>'
+    +(p.ubicacion?'<span class="bdg bu">'+p.ubicacion+'</span>':'')
+    +'<span class="bdg bp">'+p.prov+'</span></div>'
+    +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span>'
+    +'<span class="piv">c/IVA</span></div></div>';
+}
+
 function filtrar(){
   var btu=parseInt(vs("btusel")),tipo=vs("tiposel"),tipoClave=tipo.trim().toLowerCase();
   var lista=document.getElementById("prodlista");
@@ -1197,15 +1396,36 @@ function filtrar(){
   if(!btu){lista.innerHTML="";return;}
   var res=CAT.filter(function(p){return p.btu===btu&&(!tipo||(p.tipo||"").trim().toLowerCase()===tipoClave);});
   if(!res.length){lista.innerHTML='<div class="empty">NO EXISTE EQUIPO PARA ESA SELECCIÓN</div>';return;}
-  lista.innerHTML=res.map(function(p){
-    var n=pvN(p);
-    return '<div class="pc" id="pc-'+p.id+'" data-pid="'+p.id+'">'
-      +'<div class="pn">'+p.marca+' - '+p.modelo+'</div>'
-      +'<div class="pm"><span class="bdg bb">'+p.btu+'.000 BTU</span>'
-      +'<span class="bdg bt">'+p.tipo+'</span>'
-      +'<span class="bdg bp">'+p.prov+'</span></div>'
-      +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span>'
-      +'<span class="piv">c/IVA</span></div></div>';
+  // Un mismo equipo puede venderlo mas de un proveedor (cada uno es una fila
+  // del catalogo con su propio costo). Se agrupan por marca+modelo+tipo+BTU y,
+  // si hay mas de un proveedor, se muestran juntos con el mas barato marcado.
+  // El costo es el neto que se paga al proveedor; el % de ganancia es de cada fila.
+  var grupos=[],porClave={};
+  res.forEach(function(p){
+    var k=claveGrupoEq(p);
+    if(!porClave[k]){porClave[k]=[];grupos.push(porClave[k]);}
+    porClave[k].push(p);
+  });
+  lista.innerHTML=grupos.map(function(g){
+    if(g.length===1)return tarjetaEquipoHtml(g[0],null);
+    var ord=g.slice().sort(function(a,b){return getCosto(a)-getCosto(b);});
+    var minC=getCosto(ord[0]);
+    var empate=ord.every(function(p){return getCosto(p)===minC;});
+    var p0=ord[0];
+    return '<div class="pgrp">'
+      +'<div class="pgrp-h"><div class="pn">'+p0.marca+' - '+p0.modelo+'</div>'
+      +'<div class="pm"><span class="bdg bb">'+fmtBtu(p0.btu)+'</span>'
+      +'<span class="bdg bt">'+p0.tipo+'</span>'
+      +(p0.ubicacion?'<span class="bdg bu">'+p0.ubicacion+'</span>':'')
+      +'<span class="bdg bcmp">'+g.length+' proveedores</span></div></div>'
+      +ord.map(function(p,i){
+        var dif=getCosto(p)-minC;
+        var marca=(!empate&&i===0)?'<span class="tag-barato">MÁS BARATO</span>'
+          :(empate?'<span class="tag-igual">MISMO COSTO</span>'
+          :'<span class="tag-mas">+'+fmt(dif)+' de costo</span>');
+        return tarjetaEquipoHtml(p,marca);
+      }).join("")
+      +'</div>';
   }).join("");
   // Fix: si la sección tiene max-height fijo, liberarlo para mostrar contenido dinámico
   var _sb=lista.closest('.sec-body');
@@ -1233,8 +1453,9 @@ function agregar(){
   // equipos del cliente, y sacarlos de vuelta partiendo el texto de desc es
   // fragil (hay modelos con espacios).
   carrito.push({id:selProd.id+"_"+Date.now(),cod:selProd.id,
-    desc:selProd.marca+" "+selProd.modelo+" "+selProd.btu+".000 BTU",
+    desc:selProd.marca+" "+selProd.modelo+" "+fmtBtu(selProd.btu),
     marca:selProd.marca,modelo:selProd.modelo,btu:selProd.btu,esEquipo:true,
+    prov:selProd.prov,
     tipo:selProd.tipo,neto:neto,total:wIVA(neto),esCyber:false,disc:0,cant:cant});
   selProd=null;
   document.querySelectorAll(".pc").forEach(function(c){c.classList.remove("sel");});
@@ -1276,7 +1497,7 @@ function agregarPackVesta(){
   var cant=parseInt(document.getElementById("cantpackvesta").value)||1;
   var item=PACK_LIST.find(function(i){return i.id===val;});
   if(!item)return;
-  carrito.push({id:"PACK_"+Date.now(),cod:"PACK-V",
+  carrito.push({id:"PACK_"+Date.now(),cod:"PACK-V",ref:{l:"pack",id:item.id},
     desc:item.nombre,tipo:"Pack Promocional",
     neto:item.precio,total:wIVA(item.precio),esCyber:false,disc:0,cant:cant});
   sel.value="";
@@ -1310,6 +1531,7 @@ function loadTrasList(){
 function savePackList(){
   try{localStorage.setItem("pack_list",JSON.stringify(PACK_LIST));}catch(e){}
   updatePackSelect();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
@@ -1318,6 +1540,7 @@ function savePackList(){
 function saveTrasList(){
   try{localStorage.setItem("tras_list",JSON.stringify(TRAS_LIST));}catch(e){}
   updateTrasSelect();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
@@ -1352,11 +1575,13 @@ function updateTrasSelect(){
 function eliminarPack(id){
   if(!confirm("¿Eliminar este pack?"))return;
   PACK_LIST=PACK_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("pack",id);
   savePackList();renderPackAdmin();
 }
 function eliminarTras(id){
   if(!confirm("¿Eliminar este traslado?"))return;
   TRAS_LIST=TRAS_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("tras",id);
   saveTrasList();renderTrasAdmin();
 }
 
@@ -1418,9 +1643,9 @@ function renderCatalogoAdmin(opts){
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
       html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">'+(opts.nombreLbl||"Nombre")+'</div>'
-        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-cid="'+it.id+'" onchange="(function(el){var x='+opts.listaVar+'.find(function(i){return i.id===el.dataset.cid;});if(x){x.nombre=el.value;'+opts.saveFn+'();}})(this)"></div>'
+        +'<input type="text" style="'+si+'" value="'+esc(it.nombre)+'" data-cid="'+it.id+'" onchange="(function(el){var x='+opts.listaVar+'.find(function(i){return i.id===el.dataset.cid;});if(x){x.nombre=el.value;'+opts.saveFn+'();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-cid="'+it.id+'" onchange="(function(el){var x='+opts.listaVar+'.find(function(i){return i.id===el.dataset.cid;});if(x){x.precio=parseFloat(el.value)||0;'+opts.saveFn+'();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-cid="'+it.id+'" onchange="(function(el){var x='+opts.listaVar+'.find(function(i){return i.id===el.dataset.cid;});if(x){x.precio=parsePrecio(el.value);'+opts.saveFn+'();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -1478,6 +1703,7 @@ function loadMantList(){
 function saveMantList(){
   try{localStorage.setItem("mant_list",JSON.stringify(MANT_LIST));}catch(e){}
   updateMantencionSelect();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
@@ -1500,6 +1726,7 @@ function updateMantencionSelect(){
 function eliminarMant(id){
   if(!confirm("¿Eliminar esta mantención?"))return;
   MANT_LIST=MANT_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("mant",id);
   saveMantList();
   renderMantAdmin();
 }
@@ -1555,9 +1782,9 @@ function renderMantAdmin(){
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
       html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
-        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.nombre=el.value;saveMantList();}})(this)"></div>'
+        +'<input type="text" style="'+si+'" value="'+esc(it.nombre)+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.nombre=el.value;saveMantList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.precio=parseFloat(el.value)||0;saveMantList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-mantid="'+it.id+'" onchange="(function(el){var x=MANT_LIST.find(function(i){return i.id===el.dataset.mantid;});if(x){x.precio=parsePrecio(el.value);saveMantList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -1591,7 +1818,7 @@ function agregarMantencionSola(){
   var cant=parseInt(vs("cantmant"))||1;
   var item=MANT_LIST.find(function(i){return i.id===mantId;});
   if(!item)return;
-  carrito.push({id:"MANT_"+Date.now(),cod:"MANT",
+  carrito.push({id:"MANT_"+Date.now(),cod:"MANT",ref:{l:"mant",id:item.id},
     desc:item.nombre,tipo:"Mantención",
     neto:item.precio,total:wIVA(item.precio),esCyber:false,disc:0,cant:cant});
   document.getElementById("imantencion").value="";
@@ -1605,7 +1832,7 @@ function agregarInstalacionSola(){
   var base=getIBASE(vs("itipo"));
   var cantInst=parseInt(vs("cantinst"))||1;
   var _instItem=INST_LIST.find(function(i){return i.id===vs("itipo");})||{};
-  carrito.push({id:"INST_"+Date.now(),cod:"IN-"+vs("itipo").toUpperCase(),
+  carrito.push({id:"INST_"+Date.now(),cod:"IN-"+vs("itipo").toUpperCase(),ref:{l:"inst",id:vs("itipo")},
     desc:_instItem.nombre||vs("itipo"),tipo:"Instalacion",
     neto:base,total:wIVA(base),esCyber:false,disc:0,cant:cantInst});
   document.getElementById("itipo").value="";
@@ -1622,7 +1849,7 @@ function agregarMaterialesSolo(){
   var matId=selEl.options[selEl.selectedIndex].dataset.matid;
   var matItem=MAT_LIST.find(function(i){return i.id===matId;});
   var matNombre=matItem?matItem.nombre:"Materiales";
-  carrito.push({id:"MAT_"+Date.now(),cod:"MAT",
+  carrito.push({id:"MAT_"+Date.now(),cod:"MAT",ref:{l:"mat",id:matId},
     desc:matNombre,tipo:"Materiales",
     neto:mat,total:wIVA(mat),esCyber:false,disc:0,cant:cantMat});
   document.getElementById("imateriales").value="0";
@@ -1648,6 +1875,7 @@ function loadExtraList(){
 function saveExtraList(){
   try{localStorage.setItem("extra_list",JSON.stringify(EXTRA_LIST));}catch(e){}
   updateIExtraSelect();
+  refrescarPreciosCarrito();
   var m=document.getElementById("savedmsg");
   m.textContent="Guardado";
   setTimeout(function(){m.textContent="";},2000);
@@ -1670,6 +1898,7 @@ function updateIExtraSelect(){
 function eliminarExtra(id){
   if(!confirm("¿Eliminar este extra?"))return;
   EXTRA_LIST=EXTRA_LIST.filter(function(i){return i.id!==id;});
+  marcarListaEliminada("extra",id);
   saveExtraList();
   renderExtraAdmin();
 }
@@ -1725,9 +1954,9 @@ function renderExtraAdmin(){
       var isFirst=idxInGroup===0, isLast=idxInGroup===items.length-1;
       html+='<div class="admin-row">'
         +'<div><div style="'+lbl+'">Nombre</div>'
-        +'<input type="text" style="'+si+'" value="'+it.nombre+'" data-extraid="'+it.id+'" onchange="(function(el){var x=EXTRA_LIST.find(function(i){return i.id===el.dataset.extraid;});if(x){x.nombre=el.value;saveExtraList();}})(this)"></div>'
+        +'<input type="text" style="'+si+'" value="'+esc(it.nombre)+'" data-extraid="'+it.id+'" onchange="(function(el){var x=EXTRA_LIST.find(function(i){return i.id===el.dataset.extraid;});if(x){x.nombre=el.value;saveExtraList();}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio Neto $</div>'
-        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-extraid="'+it.id+'" onchange="(function(el){var x=EXTRA_LIST.find(function(i){return i.id===el.dataset.extraid;});if(x){x.precio=parseFloat(el.value)||0;saveExtraList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
+        +'<input type="text" inputmode="numeric" style="'+si+'" value="'+it.precio+'" data-extraid="'+it.id+'" onchange="(function(el){var x=EXTRA_LIST.find(function(i){return i.id===el.dataset.extraid;});if(x){x.precio=parsePrecio(el.value);saveExtraList();var civa=el.closest(\'div.admin-row\').querySelector(\'.civa-val\');if(civa)civa.textContent=fmt(Math.round(x.precio*(1+IVA)));}})(this)"></div>'
         +'<div><div style="'+lbl+'">Precio c/IVA</div>'
         +'<div class="civa-val" style="font-size:15px;font-weight:700;color:var(--grn);padding:9px 2px">'+fmt(pventa)+'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:4px">'
@@ -1761,7 +1990,7 @@ function agregarExtraSola(){
   var cant=parseInt(vs("cantextra"))||1;
   var item=EXTRA_LIST.find(function(i){return i.id===extraId;});
   if(!item)return;
-  carrito.push({id:"EXTRA_"+Date.now(),cod:"EXTRA",
+  carrito.push({id:"EXTRA_"+Date.now(),cod:"EXTRA",ref:{l:"extra",id:item.id},
     desc:item.nombre,tipo:item.tipo,
     neto:item.precio,total:wIVA(item.precio),esCyber:false,disc:0,cant:cant});
   document.getElementById("iextra").value="";
@@ -1775,7 +2004,7 @@ function agregarTraslado(){
   if(!val){alert("Selecciona una región de traslado.");return;}
   var item=TRAS_LIST.find(function(i){return i.id===val;});
   if(!item)return;
-  carrito.push({id:"TRASL_"+Date.now(),cod:"TRASL",
+  carrito.push({id:"TRASL_"+Date.now(),cod:"TRASL",ref:{l:"tras",id:item.id},
     desc:"Traslado Fuera de Santiago — "+item.nombre,tipo:"Traslado",
     neto:item.precio,total:wIVA(item.precio),esCyber:false,disc:0,cant:1});
   trasladoSel.value="";
@@ -1809,12 +2038,47 @@ function getAppCheckToken(){
   return firebase.appCheck().getToken(false).then(function(r){return r.token;}).catch(function(){return null;});
 }
 
+// ── Topes de tiempo para todo lo que sale a la red ──────────────────────────
+// Una conexion que se queda colgada (no responde pero tampoco corta) no dispara
+// readyState 4 ni onerror ni el rechazo del fetch. Sin tope, el que espera la
+// respuesta espera para siempre: pasa desde una etiqueta que nunca se llena
+// hasta la app que no termina de cargar. Ya ocurrio el 2026-08-18 con el envio
+// al Apps Script, que dejo el cargador girando toda la tarde.
+var TOPE_RED_MS = 30000;   // consultas normales
+var TOPE_SUBIDA_MS = 90000; // subidas pesadas (PDF en base64)
+
+// Le pone tope a un XHR y garantiza que 'alFallar' se llame una sola vez.
+function ponerTopeXHR(xhr, alFallar, ms){
+  xhr.timeout = ms || TOPE_RED_MS;
+  xhr.ontimeout = function(){ if(alFallar) alFallar(); };
+  return xhr;
+}
+
+// fetch con tope real: sin AbortController, un fetch colgado no se resuelve
+// jamas y deja la promesa (y a quien la espera) en el aire.
+function fetchConTope(url, ms){
+  if(typeof AbortController === "undefined") return fetch(url);
+  var ctrl = new AbortController();
+  var t = setTimeout(function(){ ctrl.abort(); }, ms || TOPE_RED_MS);
+  return fetch(url, {signal: ctrl.signal}).then(function(res){
+    clearTimeout(t); return res;
+  }, function(err){
+    clearTimeout(t); throw err;
+  });
+}
+
 // Ejecuta una peticion XHR a Firebase adjuntando el token de App Check
 // (si esta disponible) antes de enviarla. 'configure' recibe el xhr ya
 // creado: debe llamar a xhr.open(...), setRequestHeader, onreadystatechange
 // y onerror, y devolver el body a enviar (o nada/undefined para un GET).
 function withAppCheckHeader(configure){
   var xhr=new XMLHttpRequest();
+  // Tope para que una escritura a Firebase que se cuelgue no quede en el aire
+  // sin avisar. 'configure' ya deja puesto su propio onreadystatechange; aca
+  // solo se corta la espera y se deja constancia en la consola.
+  ponerTopeXHR(xhr, function(){
+    console.error("Firebase no respondio a tiempo; la escritura no se completo.");
+  });
   getAppCheckToken().then(function(token){
     var body=configure(xhr);
     if(token){try{xhr.setRequestHeader("X-Firebase-AppCheck",token);}catch(e){}}
@@ -1843,6 +2107,11 @@ function buscarCotizacion(){
   res.innerHTML="<div style=\'color:var(--txt2);font-size:14px\'>Buscando...</div>";
 
   var xhr=new XMLHttpRequest();
+  // Sin tope, si la planilla no responde el cuadro se queda en "Buscando..."
+  // para siempre y parece que la cotizacion no existe.
+  ponerTopeXHR(xhr, function(){
+    res.innerHTML="<div style='color:#e67e22;font-size:14px'>La planilla no respondió a tiempo. Revisa tu conexión e intenta de nuevo.</div>";
+  });
   xhr.open("GET", GAS_URL+"?nro="+encodeURIComponent(nro)+"&key="+encodeURIComponent(GAS_KEY), true);
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
@@ -1857,7 +2126,11 @@ function buscarCotizacion(){
           "<a href='"+esc(data.link)+"' target='_blank' style='display:inline-block;background:var(--acc);color:#1a1a1a;font-weight:700;padding:9px 18px;border-radius:6px;text-decoration:none;font-size:14px;margin-right:8px'>📄 Ver PDF</a>":"";
         var waBtn="";
         if(data.link){
-          var msg="Hola"+(data.nombre?" "+data.nombre:"")+", aquí está tu cotización N° "+data.nro+" de León Ingeniería. 💧❄️\n\nPuedes verla y descargarla aquí:\n"+data.link;
+          var msg=mensajeCotizacionWA({
+            nombre:data.nombre, empresa:false, nro:data.nro, total:parseFloat(data.total)||0, link:data.link,
+            servicios:data.items, vendedor:data.vendedor,
+            descPct:(parseFloat(data.subtotal)>0&&parseFloat(data.descuento)>0)?Math.round(parseFloat(data.descuento)*100/parseFloat(data.subtotal)):0
+          });
           waBtn="<a href='https://wa.me/?text="+encodeURIComponent(msg)+"' target='_blank' style='display:inline-block;background:#25d366;color:#073b22;font-weight:700;padding:9px 18px;border-radius:6px;text-decoration:none;font-size:14px'>📲 Reenviar por WhatsApp</a>";
         }
         res.innerHTML="<div style='background:var(--bg3);border:2px solid var(--brd2);border-radius:var(--rs);padding:14px 16px'>"
@@ -1886,6 +2159,7 @@ function cargarExtremosCotizaciones(){
   var el=document.getElementById("extremos-cot");
   if(!el||!GAS_URL)return;
   var xhr=new XMLHttpRequest();
+  ponerTopeXHR(xhr, function(){ el.textContent=""; });
   xhr.open("GET", GAS_URL+"?action=extremos&key="+encodeURIComponent(GAS_KEY), true);
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
@@ -2143,6 +2417,117 @@ function fusionarConExistente(existente, row){
   return patch;
 }
 
+// ═══════════════════════════════════════
+// COTIZACION -> HISTORIAL DE LA FICHA DEL CLIENTE
+// ═══════════════════════════════════════
+// Una cotización queda registrada en leon_cotizaciones (Seguimiento), pero la
+// ficha del cliente en el Indicador solo mostraba las que se mandaban con el
+// botón "Agregar a Indicador" -- que además reinicia su ciclo de mantención y
+// suma equipos, cosa que una cotización por sí sola no debe hacer. Aquí se
+// hace solo lo mínimo: agregar la cotización al HISTORIAL de la ficha que
+// corresponde (misma persona y misma dirección). No crea clientes, no toca
+// fechas ni equipos. Si no hay una ficha que calce con seguridad, no hace nada.
+// regs: [{nro, monto, fecha(ISO), servicio, rut, telefono, direccion, comuna}]
+// cb({vinculadas:[{nro,cliente}], sinFicha:[nro]})
+function vincularCotizacionesAFicha(regs, cb){
+  cb=cb||function(){};
+  getFirebaseIdToken(function(token){
+    if(!token){cb(null);return;}
+    withAppCheckHeader(function(xhr){
+      xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4)return;
+        var clientes=null;
+        if(xhr.status>=200&&xhr.status<300){try{clientes=JSON.parse(xhr.responseText);}catch(e){clientes=null;}}
+        if(!clientes){cb(null);return;}
+        var porFicha={}, vinculadas=[], sinFicha=[];
+        regs.forEach(function(rg){
+          var fichas=fichasDeLaPersona(clientes,rg);
+          var m=fichas.length?fichaDeEstaDireccion(fichas,rg):null;
+          if(!m){sinFicha.push(rg.nro);return;}
+          var lista=porFicha[m.clave]||(porFicha[m.clave]={ficha:m.ficha,nuevas:[]});
+          var ya=(m.ficha.cotizaciones||[]).some(function(c){return String(c.nro)===String(rg.nro);})
+            ||lista.nuevas.some(function(c){return String(c.nro)===String(rg.nro);});
+          if(ya)return;
+          lista.nuevas.push({nro:rg.nro,monto:rg.monto,fecha:rg.fecha,servicio:rg.servicio});
+          vinculadas.push({nro:rg.nro,cliente:m.ficha.cliente||"(sin nombre)"});
+        });
+        var claves=Object.keys(porFicha).filter(function(k){return porFicha[k].nuevas.length;});
+        var pendientes=claves.length, fallo=false;
+        if(!pendientes){cb({vinculadas:[],sinFicha:sinFicha});return;}
+        claves.forEach(function(k){
+          var f=porFicha[k], total=(f.ficha.cotizaciones||[]).concat(f.nuevas);
+          var ultima=f.nuevas[f.nuevas.length-1];
+          withAppCheckHeader(function(xp){
+            xp.open("PATCH", FIREBASE_DB_URL+"/leon_clientes/"+k+".json?auth="+token, true);
+            xp.setRequestHeader("Content-Type","application/json");
+            xp.onreadystatechange=function(){
+              if(xp.readyState!==4)return;
+              if(!(xp.status>=200&&xp.status<300))fallo=true;
+              if(--pendientes===0)cb(fallo?null:{vinculadas:vinculadas,sinFicha:sinFicha});
+            };
+            xp.onerror=function(){fallo=true;if(--pendientes===0)cb(null);};
+            return JSON.stringify({cotizaciones:total,nroCotizacion:ultima.nro,montoCotizado:ultima.monto});
+          });
+        });
+      };
+      return null;
+    });
+  });
+}
+
+// Al generar una cotización: se vincula sola a la ficha del cliente.
+function vincularCotizacionNueva(P){
+  try{
+    if(!document.getElementById("cnombre").value.trim())return;
+    var row=construirRowIndicador();
+    vincularCotizacionesAFicha([{nro:P.nro,monto:P.tot,fecha:row.inicia,servicio:row.servicio,
+      rut:row.rut,telefono:row.telefono,direccion:row.direccion,comuna:row.comuna}], function(r){
+      if(!r)console.error("No se pudo vincular la cotización "+P.nro+" a la ficha del cliente.");
+    });
+  }catch(e){console.error(e);}
+}
+
+// Para las que ya existían: revisa el registro y agrega al historial de cada
+// ficha las cotizaciones que le faltan. Pide confirmación antes de escribir.
+function vincularCotizacionesPendientes(){
+  var regs=REG_LIST.map(function(r){
+    return {nro:r.nro,monto:r.total,fecha:fechaISO(r.fecha),servicio:r.serv&&r.serv!=="—"?r.serv:"",
+            rut:r.rut,telefono:r.tel,direccion:"",comuna:r.comuna,_nombre:r.nombre};
+  }).filter(function(r){return r.rut||r.telefono;});
+  if(!regs.length){alert("Ninguna cotización tiene RUT o teléfono para reconocer al cliente.");return;}
+  getFirebaseIdToken(function(token){
+    if(!token){alert("Necesitas sesión iniciada.");return;}
+    withAppCheckHeader(function(xhr){
+      xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4)return;
+        var clientes=null;
+        if(xhr.status>=200&&xhr.status<300){try{clientes=JSON.parse(xhr.responseText);}catch(e){clientes=null;}}
+        if(!clientes){alert("No se pudo leer el Indicador.");return;}
+        var faltan=[];
+        regs.forEach(function(rg){
+          var fichas=fichasDeLaPersona(clientes,rg);
+          var m=fichas.length?fichaDeEstaDireccion(fichas,rg):null;
+          if(!m)return;
+          var ya=(m.ficha.cotizaciones||[]).some(function(c){return String(c.nro)===String(rg.nro);});
+          if(!ya)faltan.push({rg:rg,cliente:m.ficha.cliente||"(sin nombre)"});
+        });
+        if(!faltan.length){alert("Todas las cotizaciones que se pueden reconocer ya están en la ficha de su cliente.");return;}
+        var lista=faltan.slice(0,15).map(function(x){return "  • N°"+x.rg.nro+" → "+x.cliente;}).join("\n");
+        if(!confirm("Se agregarán "+faltan.length+" cotizaciones al historial de la ficha de su cliente en el Indicador:\n\n"+lista
+          +(faltan.length>15?"\n  … y "+(faltan.length-15)+" más":"")
+          +"\n\nSolo se suman al historial: no cambian fechas, equipos ni el ciclo de mantención."))return;
+        vincularCotizacionesAFicha(faltan.map(function(x){return x.rg;}),function(r){
+          if(!r){alert("No se pudo completar. Intenta de nuevo.");return;}
+          alert("✓ "+r.vinculadas.length+" cotizaciones agregadas a la ficha de su cliente.");
+        });
+      };
+      return null;
+    });
+  });
+}
+
 function enviarAIndicador(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
   if(!document.getElementById("cnombre").value.trim()){
@@ -2371,9 +2756,17 @@ function renderCarrito(){
     var netoDisc=p.neto*(1-disc/100);
     var cantLabel=cant>1?'<span style="color:var(--acc);font-weight:800"> ×'+cant+'</span>':'';
     var cantDesc=cant>1?(' — '+cant+' unidades'):'';
+    // De que proveedor viene el equipo: se lee del catalogo vigente por cod y,
+    // si ya no esta, de lo guardado al agregar la linea.
+    var provLinea='';
+    if(p.esEquipo){
+      var fila=p.cod?CAT.find(function(x){return x.id===p.cod;}):null;
+      var pv=(fila&&fila.prov)||p.prov;
+      if(pv&&pv!=='-')provLinea=' · <span style="color:var(--grn)">'+pv+'</span>';
+    }
     return '<div class="ci"><div style="flex:1;min-width:0">'
       +'<div style="font-size:18px;font-weight:700;color:var(--txt)">'+p.desc+cantLabel+'</div>'
-      +'<div style="font-size:15px;color:var(--txt2);margin-top:3px">'+p.tipo+cantDesc+'</div></div>'
+      +'<div style="font-size:15px;color:var(--txt2);margin-top:3px">'+p.tipo+cantDesc+provLinea+'</div></div>'
       +'<div style="display:flex;align-items:center;gap:8px">'
       +'<div style="display:flex;align-items:center;gap:4px">'
       +'<input type="number" min="0" max="100" value="'+disc+'" style="width:50px;font-size:13px;padding:3px 5px;border:1px solid var(--brd);border-radius:4px;background:var(--inp);color:var(--txt);text-align:center" onchange="changeItemDisc('+i+',this.value)" title="Descuento %">'
@@ -2472,35 +2865,36 @@ function armarPDF(){
     +".th{font-weight:700;font-size:10px;text-align:center;padding:5px 8px;border:1px solid #aaa;background:#fff;color:#1a1a1a}"
     +".th-l{text-align:left}";
 
-  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='format-detection' content='telephone=no'><title>Cotizacion "+nro+"</title><style>"+css+"</style></head><body><div class='wrap'>";
+  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='format-detection' content='telephone=no'><title>BETA · Cotizador</title><style>"+css+"</style></head><body><div class='wrap'>";
 
   // TÍTULO + EMPRESA + LOGO
+  var emp=getEmpresaPDF();
   h+="<table style='width:100%;margin-bottom:6px'><tr>"
     +"<td style='vertical-align:top;padding:0'>"
     +"<div style='font-size:26px;font-weight:800;color:#e8291c;letter-spacing:.02em'>COTIZACIÓN &nbsp; N°: "+nro+"</div>"
-    +"<div style='font-size:15px;font-weight:700;color:#1a1a1a;margin-top:5px'>LEÓN INGENIERÍA Y PROYECTOS SPA</div>"
+    +"<div style='font-size:15px;font-weight:700;color:#1a1a1a;margin-top:5px'>"+esc(emp.nombre)+"</div>"
     +"<table style='border-collapse:collapse;margin-top:3px;font-size:12px;color:#1a1a1a'>"
     +"<tr>"
     +"<td style='width:72px;white-space:nowrap;vertical-align:top;padding:1px 0'>Giro:</td>"
-    +"<td style='padding:1px 30px 1px 6px;width:220px'>Construcción Climatización Y Transporte</td>"
+    +"<td style='padding:1px 30px 1px 6px;width:220px'>"+esc(emp.giro)+"</td>"
     +"<td></td><td></td>"
     +"</tr>"
     +"<tr>"
     +"<td style='white-space:nowrap;vertical-align:top;padding:1px 0'>Dirección:</td>"
-    +"<td style='padding:1px 30px 1px 6px'>Islas Guaitecas #936 MZ E 1</td>"
+    +"<td style='padding:1px 30px 1px 6px'>"+esc(emp.direccion)+"</td>"
     +"<td></td><td></td>"
     +"</tr>"
     +"<tr>"
     +"<td style='white-space:nowrap;vertical-align:top;padding:1px 0'>Ciudad:</td>"
-    +"<td style='padding:1px 30px 1px 6px'>Santiago</td>"
+    +"<td style='padding:1px 30px 1px 6px'>"+esc(emp.ciudad)+"</td>"
     +"<td style='white-space:nowrap;padding:1px 0 1px 0'>E-mail:</td>"
-    +"<td style='padding:1px 0 1px 8px'>contactoleoning@gmail.com</td>"
+    +"<td style='padding:1px 0 1px 8px'>"+esc(emp.email)+"</td>"
     +"</tr>"
     +"<tr>"
     +"<td style='white-space:nowrap;vertical-align:top;padding:1px 0'>Comuna:</td>"
-    +"<td style='padding:1px 30px 1px 6px'>Las Condes</td>"
+    +"<td style='padding:1px 30px 1px 6px'>"+esc(emp.comuna)+"</td>"
     +"<td style='white-space:nowrap;padding:1px 0 1px 0'>Tel. Oficina:</td>"
-    +"<td style='padding:1px 0 1px 8px'>+569 6371 0820</td>"
+    +"<td style='padding:1px 0 1px 8px'>"+esc(emp.telOficina)+"</td>"
     +"</tr>"
     +"</table>"
     +"</td>"
@@ -2558,19 +2952,19 @@ function armarPDF(){
     +"<div style='font-size:9.5px;margin-top:4px;color:#1a1a1a'>"
     +"<div style='font-weight:700;margin-bottom:4px;text-decoration:underline;color:#1a1a1a'>TRANSFERENCIAS A:</div>"
     +"<table style='border-collapse:collapse;font-size:9.5px;color:#1a1a1a'>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Banco:</td><td style='padding:1px 0;color:#1a1a1a'>Falabella</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Tipo:</td><td style='padding:1px 0;color:#1a1a1a'>Cuenta Corriente</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>N° Cuenta:</td><td style='padding:1px 0;color:#1a1a1a'>0-1983-154-6787</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>RUT:</td><td style='padding:1px 0;color:#1a1a1a'>18.245.550-4</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Nombre:</td><td style='padding:1px 0;color:#1a1a1a'>Isaac León</td></tr>"
-    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Confirmación:</td><td style='padding:1px 0;color:#1a1a1a'>contactoleoning@gmail.com</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Banco:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.banco)+"</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Tipo:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.tipoCuenta)+"</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>N° Cuenta:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.numCuenta)+"</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>RUT:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.rutEmpresa)+"</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Nombre:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.titular)+"</td></tr>"
+    +"<tr><td style='padding:1px 8px 1px 0;white-space:nowrap;color:#555'>Confirmación:</td><td style='padding:1px 0;color:#1a1a1a'>"+esc(emp.emailConfirmacion)+"</td></tr>"
     +"</table>"
     +"</div>"
     +"</td>"
     +"<td style='vertical-align:top;min-width:200px;white-space:nowrap'>"
     +"<table style='border-collapse:collapse;width:100%;border:1px solid #999;color:#1a1a1a'>"
     +"<tr><td style='padding:5px 12px;font-size:10px'>SUBTOTAL NETO</td><td style='padding:5px 12px;font-size:10px;text-align:right'>$ "+Math.round(sN).toLocaleString("es-CL")+"</td></tr>"
-    +(dM>0?"<tr><td style='padding:5px 12px;font-size:10px'>DESCUENTO GLOBAL</td><td style='padding:5px 12px;font-size:10px;text-align:right'>-$ "+Math.round(dM).toLocaleString("es-CL")+"</td></tr>":"")
+    +(dM>0?"<tr><td style='padding:5px 12px;font-size:10px'>DESCUENTO GLOBAL "+(cyberPct>0?"-"+cyberPct+"%":"")+"</td><td style='padding:5px 12px;font-size:10px;text-align:right'>-$ "+Math.round(dM).toLocaleString("es-CL")+"</td></tr>":"")
     +"<tr><td style='padding:5px 12px;font-size:10px'>NETO($)</td><td style='padding:5px 12px;font-size:10px;text-align:right'>$ "+Math.round(nD).toLocaleString("es-CL")+"</td></tr>"
     +"<tr><td style='padding:5px 12px;font-size:10px'>I.V.A(19%)</td><td style='padding:5px 12px;font-size:10px;text-align:right'>$ "+Math.round(iva).toLocaleString("es-CL")+"</td></tr>"
     +"<tr><td style='padding:5px 12px;font-weight:700;font-size:10px'>TOTAL</td><td style='padding:5px 12px;font-weight:700;font-size:10px;text-align:right'>$ "+Math.round(tot).toLocaleString("es-CL")+"</td></tr>"
@@ -2622,9 +3016,20 @@ function genPDF(){
   // reabrible desde "Reabrir Cotización". Si la subida falla, igual queda
   // registrada localmente (sin link), como antes.
   if(typeof html2pdf!=="undefined"&&GAS_URL){
-    generarYSubirPDF(P, function(){}, function(){
+    // Las dos vueltas TIENEN que apagar el cargador. generarYSubirPDF muestra
+    // "Subiendo a Drive..." por dentro, y antes la vuelta de éxito era una
+    // función vacía: la subida terminaba bien y la pantalla quedaba tapada por
+    // el cargador girando para siempre. Pasó el 2026-08-18 -- quedó pegado toda
+    // la tarde despues de apretar "Generar PDF Formal".
+    generarYSubirPDF(P, function(){
+      hideLoader();
+    }, function(){
+      hideLoader();
       saveQuoteRecord(pdfRecord(P));
       registrarCotizacion(P);
+      // Si no se avisa, el cargador desaparece y parece que subió bien. La
+      // cotización quedó registrada igual, pero sin PDF en Drive.
+      alert("La cotización N° "+P.nro+" quedó registrada, pero el PDF no se pudo subir a Drive. La ventana para imprimir ya está abierta; puedes reintentar con \"Enviar PDF por WhatsApp\".");
     });
   }else{
     saveQuoteRecord(pdfRecord(P));
@@ -2669,7 +3074,7 @@ function armarCatalogoPDF(){
       rowsHtml+="<tr>"
         +"<td style='"+TL+"'>"+p.marca+"</td>"
         +"<td style='"+TL+"'>"+p.modelo+"</td>"
-        +"<td style='"+TC+"'>"+p.btu+".000 BTU</td>"
+        +"<td style='"+TC+"'>"+fmtBtu(p.btu)+(p.ubicacion?" ("+p.ubicacion+")":"")+"</td>"
         +"<td style='"+TC+";font-weight:700'>$ "+precio.toLocaleString("es-CL")+"</td>"
         +"</tr>";
     });
@@ -2684,11 +3089,12 @@ function armarCatalogoPDF(){
     +".th-l{text-align:left}";
 
   var hoy=new Date().toLocaleDateString("es-CL");
-  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Catálogo León Ingeniería</title><style>"+css+"</style></head><body><div class='wrap'>";
+  var emp=getEmpresaPDF();
+  var h="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>BETA · Cotizador</title><style>"+css+"</style></head><body><div class='wrap'>";
   h+="<table style='width:100%;margin-bottom:10px'><tr>"
     +"<td style='vertical-align:top;padding:0'>"
     +"<div style='font-size:24px;font-weight:800;color:#e8291c;letter-spacing:.02em'>CATÁLOGO DE EQUIPOS</div>"
-    +"<div style='font-size:15px;font-weight:700;color:#1a1a1a;margin-top:5px'>LEÓN INGENIERÍA Y PROYECTOS SPA</div>"
+    +"<div style='font-size:15px;font-weight:700;color:#1a1a1a;margin-top:5px'>"+esc(emp.nombre)+"</div>"
     +"<div style='font-size:11px;color:#555;margin-top:4px'>Precios de venta con IVA incluido &middot; Vigente al "+hoy+"</div>"
     +"</td>"
     +"<td style='vertical-align:top;text-align:right;padding:0;width:120px'>"
@@ -2699,7 +3105,7 @@ function armarCatalogoPDF(){
     +"<tr><td class='th th-l'>Marca</td><td class='th th-l'>Modelo</td><td class='th'>BTU</td><td class='th'>Precio c/IVA</td></tr>"
     +rowsHtml
     +"</table>";
-  h+="<div style='margin-top:14px;font-size:9px;color:#777'>Precios sujetos a cambio sin previo aviso. Instalación cotizada por separado según tipo de trabajo. León Ingeniería y Proyectos SpA &middot; +569 6371 0820 &middot; contactoleoning@gmail.com</div>";
+  h+="<div style='margin-top:14px;font-size:9px;color:#777'>Precios sujetos a cambio sin previo aviso. Instalación cotizada por separado según tipo de trabajo. "+esc(emp.nombre)+" &middot; "+esc(emp.telOficina)+" &middot; "+esc(emp.email)+"</div>";
   h+="</div></body></html>";
   return h;
 }
@@ -2850,6 +3256,28 @@ function generarYSubirPDF(P, onDone, onError){
   setTimeout(capturar,350);
 }
 
+// Mensaje con que se manda la cotizacion por WhatsApp: personalizado, de usted,
+// sin emojis (en el WhatsApp de Isaac salian como "?"), con el total y la
+// vigencia a la vista, y cerrando con el paso siguiente (coordinar la visita).
+// o = {nombre, empresa(bool), nro, total, link, validez, servicios, vendedor, descPct}
+function mensajeCotizacionWA(o){
+  // Sin saludo de entrada: la cotizacion se manda en una conversacion que ya
+  // está en curso con el cliente, así que el mensaje parte directo.
+  var nom=String(o.nombre||"").replace(/\(.*\)/,"").trim();
+  var primero=(!o.empresa&&nom)?nom.split(/\s+/)[0]:"";
+  var t=String(o.servicios||"").toLowerCase(), tipos=[];
+  if(/mantenc/.test(t))tipos.push("mantención");
+  if(/instalaci/.test(t))tipos.push("instalación");
+  if(/reparaci/.test(t))tipos.push("reparación");
+  var trabajo=tipos.length?"los trabajos de "+tipos.join(" e ")+" solicitados":"los trabajos solicitados";
+  var m=(primero?primero+", le envío":"Le envío")+" la cotización N° "+o.nro+" por "+trabajo
+    +(o.total?", por un total de "+fmt(o.total)+" con IVA incluido"+(o.descPct>0?" (incluye un descuento del "+o.descPct+"%)":""):"")+"."
+    +(o.validez?" Está vigente por "+String(o.validez).toLowerCase()+".":"");
+  if(o.link)m+="\n\nPuede verla y descargarla aquí:\n"+o.link;
+  m+="\n\nSi le parece bien, coordinamos la fecha de la visita; con solo responderme el día que prefiera, le confirmo el horario. Quedo atento a sus consultas.";
+  return m;
+}
+
 function enviarWhatsApp(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
   if(!GAS_URL){alert("Falta configurar el servidor de Google. Avísale a Isaac.");return;}
@@ -2859,7 +3287,7 @@ function enviarWhatsApp(){
   // Más tarde le asignamos la URL real de WhatsApp.
   var waWin=window.open("","_blank");
   if(waWin&&waWin.document){
-    waWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Preparando…</title></head><body style='font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0b0b0d;color:#fff'><div>Generando cotización y subiendo a Drive…</div></body></html>");
+    waWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>BETA · Cotizador</title></head><body style='font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0b0b0d;color:#fff'><div>Generando cotización y subiendo a Drive…</div></body></html>");
     waWin.document.close();
   }
 
@@ -2873,8 +3301,12 @@ function enviarWhatsApp(){
     if(pre&&num&&num.value.trim()){
       digits=(pre.value.replace(/[^0-9]/g,"")+num.value.replace(/[^0-9]/g,""));
     }
-    var msg="Hola"+(P.nombre?" "+P.nombre:"")+", aquí está tu cotización N° "+P.nro+" de León Ingeniería. 💧❄️";
-    if(link)msg+="\n\nPuedes verla y descargarla aquí:\n"+link;
+    var msg=mensajeCotizacionWA({
+      nombre:P.nombre, empresa:(document.getElementById("cnombre").dataset.tipo==="Empresa"),
+      nro:P.nro, total:P.tot, link:link, validez:vs("validez"), servicios:P.items,
+      vendedor:(document.getElementById("cvendedor")||{value:""}).value,
+      descPct:(P.sN>0&&P.dM>0)?Math.round(P.dM*100/P.sN):0
+    });
     var wa=digits?("https://wa.me/"+digits+"?text="+encodeURIComponent(msg)):("https://wa.me/?text="+encodeURIComponent(msg));
     hideLoader();
     if(waWin&&!waWin.closed){ waWin.location.href=wa; }
@@ -2891,6 +3323,80 @@ function getCosto(p){
 }
 function pvN(p){return Math.round(getCosto(p)*(1+gPct(p)/100));}
 
+// agregar() copia el neto al carrito en el momento de agregar el equipo. Si
+// despues se cambia costo o % en el administrador, esa linea quedaba con el
+// precio viejo y se cotizaba por debajo (o por encima) de lo configurado. Cada
+// vez que cambia un precio, las lineas de equipo del carrito se recalculan y
+// se avisa cuales cambiaron; el descuento de la linea no se toca.
+var avisosPrecios=[];
+// Cada linea del carrito sabe de donde salio: los equipos por su cod (id del
+// catalogo) y el resto por ref={l:lista,id}. Asi se puede volver a leer el
+// valor vigente en el administrador. Si el item ya no existe en su lista, la
+// linea se deja como estaba: se cotizo asi.
+function fuenteLineaCarrito(it){
+  if(it.esEquipo){
+    var p=CAT.find(function(x){return x.id===it.cod;});
+    return p?{neto:pvN(p),desc:p.marca+" "+p.modelo+" "+fmtBtu(p.btu),tipo:p.tipo,eq:p}:null;
+  }
+  if(!it.ref)return null;
+  var listas={inst:INST_LIST,mant:MANT_LIST,mat:MAT_LIST,extra:EXTRA_LIST,pack:PACK_LIST,tras:TRAS_LIST};
+  var lista=listas[it.ref.l];
+  var x=lista&&lista.find(function(i){return i.id===it.ref.id;});
+  if(!x)return null;
+  var tipos={inst:"Instalacion",mant:"Mantención",mat:"Materiales",extra:x.tipo,pack:"Pack Promocional",tras:"Traslado"};
+  var desc=it.ref.l==="tras"?"Traslado Fuera de Santiago — "+x.nombre:x.nombre;
+  return {neto:x.precio,desc:desc,tipo:tipos[it.ref.l]};
+}
+function refrescarPreciosCarrito(){
+  if(!carrito.length){avisosPrecios=[];return;}
+  var cambios=[],hubo=false;
+  carrito.forEach(function(it){
+    var f=fuenteLineaCarrito(it);
+    if(!f)return;
+    if(f.desc!==it.desc||f.tipo!==it.tipo){it.desc=f.desc;it.tipo=f.tipo;hubo=true;}
+    if(f.eq){it.marca=f.eq.marca;it.modelo=f.eq.modelo;it.btu=f.eq.btu;}
+    if(f.neto===it.neto)return;
+    cambios.push({desc:it.desc,antes:it.neto,ahora:f.neto});
+    it.neto=f.neto;
+    it.total=wIVA(f.neto);
+  });
+  if(!cambios.length&&!hubo)return;
+  renderCarrito();
+  if(!cambios.length)return;
+  avisosPrecios=avisosPrecios.concat(cambios);
+  renderAvisoPrecios();
+  mostrarToastPrecios(cambios);
+}
+function lineaCambioPrecio(c){
+  return esc(c.desc)+": neto "+fmt(c.antes)+" → "+fmt(c.ahora);
+}
+function renderAvisoPrecios(){
+  var b=document.getElementById("avisoprecios");
+  if(!b)return;
+  if(!avisosPrecios.length){b.style.display="none";b.innerHTML="";return;}
+  b.style.display="block";
+  b.style.cssText="display:block;margin-bottom:14px;padding:12px 14px;background:var(--bg3);border:2px solid var(--acc);border-radius:var(--rs);font-size:15px;color:var(--txt)";
+  b.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">'
+    +'<b style="color:var(--acc)">Precios actualizados desde el administrador</b>'
+    +'<button onclick="cerrarAvisoPrecios()" style="background:transparent;border:none;color:var(--txt2);font-size:18px;cursor:pointer">✕</button></div>'
+    +avisosPrecios.map(function(c){return '<div>'+lineaCambioPrecio(c)+'</div>';}).join("");
+}
+function cerrarAvisoPrecios(){avisosPrecios=[];renderAvisoPrecios();}
+function mostrarToastPrecios(cambios){
+  var t=document.getElementById("toastprecios");
+  if(!t){
+    t=document.createElement("div");
+    t.id="toastprecios";
+    t.style.cssText="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;max-width:92vw;padding:12px 16px;background:var(--bg3);color:var(--txt);border:2px solid var(--acc);border-radius:var(--rs);font-size:15px;box-shadow:0 6px 24px rgba(0,0,0,.5)";
+    document.body.appendChild(t);
+  }
+  t.innerHTML='<b style="color:var(--acc)">Se actualizó el precio en el carrito</b>'
+    +cambios.map(function(c){return '<div>'+lineaCambioPrecio(c)+'</div>';}).join("");
+  t.style.display="block";
+  clearTimeout(t._h);
+  t._h=setTimeout(function(){t.style.display="none";},7000);
+}
+
 
 
 // EVENT LISTENERS - no inline onclick
@@ -2903,8 +3409,51 @@ var GAS_URL="https://script.google.com/macros/s/AKfycbz9SbmsjWXY1Bh6375DfslTdPdO
 // Script), porque antes estaba expuesta en este mismo archivo publico.
 var GAS_KEY="931ae6fd8b05dcadb18b09244161efa5b2723997bca3097d";
 
+// Variante de la cotizacion actual (A, B, C...). Vive aparte del correlativo:
+// el N° base no avanza al crear una variante, solo cambia la letra.
+//
+// Se sincroniza entre equipos dentro de "ov" (que ya viaja a la nube) bajo un
+// id reservado, igual que los datos de empresa. Guarda {nro,letra,t}: la letra
+// solo vale mientras el correlativo siga siendo ese nro, asi que al avanzar a
+// la cotizacion siguiente el registro viejo queda obsoleto solo.
+var COT_VAR_ID="_COT_VAR";
+function getVariante(){
+  var r=ov[COT_VAR_ID];
+  var n=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  return (r&&r.nro===n&&r.letra)?String(r.letra):"";
+}
+function setVariante(v){
+  var n=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  ov[COT_VAR_ID]={nro:n,letra:v||"",t:Date.now()};
+  try{localStorage.setItem("ov_"+COT_VAR_ID,JSON.stringify(ov[COT_VAR_ID]));}catch(e){}
+}
+// Entre el registro local y el de la nube gana el de nro mayor; con el mismo
+// nro, el mas reciente.
+function elegirVarianteReg(a,b){
+  if(!a)return b; if(!b)return a;
+  if(a.nro!==b.nro)return a.nro>b.nro?a:b;
+  return (a.t||0)>=(b.t||0)?a:b;
+}
+
+// Correccion unica del 23-oct-2026: una prueba mia dejo el correlativo de la
+// nube en 180 (el real era 173, cotizacion de Manuel). Como el N° nunca
+// retrocede por diseño, ningun equipo podia volver solo. Si algun equipo ve el
+// 180 se lleva a 173 con letra B (la 173 original cuenta como A). Solo corre
+// una vez por equipo y caduca el 15-nov-2026 para no afectar un 180 legitimo.
+function corregirNro180(n,marcar){
+  try{
+    if(n!==180||localStorage.getItem("fix_nro180")||Date.now()>new Date("2026-11-15").getTime())return false;
+    if(marcar)localStorage.setItem("fix_nro180","1");
+    localStorage.setItem("cot_nro","173");
+    setVariante("B");
+    return true;
+  }catch(e){return false;}
+}
+
 function setNroUI(n){
   var s=String(n).padStart(3,"0");
+  var v=getVariante();
+  if(v)s+="-"+v;
   document.getElementById("nro").value=s;
   document.getElementById("hnum").textContent="COT #"+s;
 }
@@ -2918,20 +3467,47 @@ function setSyncStatus(ok){
 }
 
 function loadNro(){loadCloudData();}
-function loadCloudData(){
+function loadCloudData(intento){
+  intento = intento || 0;
   var local=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  if(corregirNro180(local))local=173;
   setNroUI(local);
   if(!GAS_URL){
     document.getElementById("sync-dot").style.background="#e67e22";
     document.getElementById("sync-lbl").textContent="sin configurar";
     return;
   }
-  fetch(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY))
-  .then(function(r){return r.json();})
+  // Esta carga despierta al Apps Script y le hace leer la planilla entera: es
+  // la llamada mas lenta de la app, mucho mas que una consulta normal. Con el
+  // tope generico de 30 s se abortaba una sincronizacion que igual iba a
+  // terminar bien, y quedaba "sin conexión" con la red perfecta. Ademas corre
+  // UNA sola vez al cargar y no se reintentaba nunca: un tropiezo puntual
+  // dejaba el punto rojo hasta recargar la pagina a mano.
+  fetchConTope(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY), 60000)
+  .then(function(r){
+    // Google devuelve intermitentemente una pagina HTML de error 404 en vez de
+    // la respuesta del Apps Script -- medido el 2026-08-19: 1 de cada 5
+    // llamadas. Sin este control, ese HTML llegaba igual a r.json(), que
+    // reventaba al parsear y caia en el .catch por accidente. Mejor decirlo
+    // claro: es un fallo de ruteo de Google, no un problema de datos, y se
+    // resuelve reintentando.
+    if(!r.ok) throw new Error("El servidor de Google respondio "+r.status);
+    return r.json();
+  })
   .then(function(data){
     var rec=data.record;
-    // nro
-    var n=rec.nro||1;
+    var varLocalReg=ov[COT_VAR_ID];
+    // nro -- gana SIEMPRE el mayor, nunca retrocede.
+    // Esta respuesta puede llegar 48 s tarde. Si en ese rato el usuario apretó
+    // "Iniciar Cotización Nueva", el número local ya avanzó, y escribir encima
+    // el de la nube lo hacía retroceder: la siguiente cotización salía con un
+    // número ya usado. Tampoco sirve que gane siempre el local, porque entonces
+    // dos equipos dejan de converger y cada uno lleva su propio correlativo.
+    var nRemoto=parseInt(rec.nro,10)||1;
+    var nLocal=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+    var n=Math.max(nRemoto, nLocal);
+    var nroCorregido=false;
+    if(corregirNro180(n,true)){n=173;nroCorregido=true;varLocalReg=ov[COT_VAR_ID];}
     localStorage.setItem("cot_nro",String(n));
     setNroUI(n);
     // overrides de precios
@@ -2942,16 +3518,32 @@ function loadCloudData(){
         if(p){Object.keys(rec.ov[id]).forEach(function(c){p[c]=rec.ov[id][c];});}
         try{localStorage.setItem("ov_"+id,JSON.stringify(rec.ov[id]));}catch(e){}
       });
+      // Los datos de empresa (id reservado EMPRESA_PDF_ID) viven en este mismo
+      // "ov" pero no son de un producto, así que loadOv() (que solo recorre
+      // CAT) no los pinta al cargar la página. Sin este refresco, el admin
+      // mostraba los valores por defecto hasta recargar dos veces.
+      renderEmpresaAdmin();
     }
+    // Letra de variante: se resuelve entre lo local y lo que trae la nube y se
+    // repinta el N° (el setNroUI de arriba corrio antes de conocerla).
+    var varGanadora=nroCorregido?varLocalReg:elegirVarianteReg(varLocalReg,rec.ov&&rec.ov[COT_VAR_ID]);
+    if(varGanadora){
+      ov[COT_VAR_ID]=varGanadora;
+      try{localStorage.setItem("ov_"+COT_VAR_ID,JSON.stringify(varGanadora));}catch(e){}
+    }
+    setNroUI(n);
+    if(varGanadora&&varGanadora===varLocalReg&&(!rec.ov||!rec.ov[COT_VAR_ID]||rec.ov[COT_VAR_ID].t!==varLocalReg.t))saveCloudData();
     // productos personalizados
     if(rec.cat_extra&&rec.cat_extra.length){
-      rec.cat_extra.forEach(function(e){if(!CAT.find(function(x){return x.id===e.id;}))CAT.push(e);});
-      try{localStorage.setItem("cat_extra",JSON.stringify(rec.cat_extra));}catch(e){}
+      var catExtraVivo=rec.cat_extra.filter(function(e){return CAT_DELETED.indexOf(e.id)===-1;});
+      catExtraVivo.forEach(function(e){if(!CAT.find(function(x){return x.id===e.id;}))CAT.push(e);});
+      CAT=CAT.filter(function(p){return CAT_DELETED.indexOf(p.id)===-1;});
+      try{localStorage.setItem("cat_extra",JSON.stringify(catExtraVivo));}catch(e){}
       updateTiposelOptions();updateBtuselOptions();
     }
     // lista de instalaciones
     if(rec.inst_list&&rec.inst_list.length){
-      INST_LIST=mergeById(INST_LIST,rec.inst_list);
+      INST_LIST=filtrarVivos("inst",mergeById(INST_LIST,rec.inst_list));
       try{localStorage.setItem("inst_list",JSON.stringify(INST_LIST));}catch(e){}
       updateItipoGrupoSelect();
       updateItipoSelect();
@@ -2959,14 +3551,14 @@ function loadCloudData(){
     }
     // lista de mantenciones
     if(rec.mant_list&&rec.mant_list.length){
-      MANT_LIST=mergeById(MANT_LIST,rec.mant_list);
+      MANT_LIST=filtrarVivos("mant",mergeById(MANT_LIST,rec.mant_list));
       try{localStorage.setItem("mant_list",JSON.stringify(MANT_LIST));}catch(e){}
       updateMantencionSelect();
       renderMantAdmin();
     }
     // lista de materiales
     if(rec.mat_list&&rec.mat_list.length){
-      MAT_LIST=mergeById(MAT_LIST,rec.mat_list);
+      MAT_LIST=filtrarVivos("mat",mergeById(MAT_LIST,rec.mat_list));
       MAT_LIST.forEach(function(it){if(!it.tipo)it.tipo="Materiales Estándar";});
       try{localStorage.setItem("mat_list",JSON.stringify(MAT_LIST));}catch(e){}
       updateImaterialesSelect();
@@ -2974,21 +3566,21 @@ function loadCloudData(){
     }
     // lista de extras
     if(rec.extra_list&&rec.extra_list.length){
-      EXTRA_LIST=mergeById(EXTRA_LIST,rec.extra_list);
+      EXTRA_LIST=filtrarVivos("extra",mergeById(EXTRA_LIST,rec.extra_list));
       try{localStorage.setItem("extra_list",JSON.stringify(EXTRA_LIST));}catch(e){}
       updateIExtraSelect();
       renderExtraAdmin();
     }
     // packs promocionales
     if(rec.pack_list&&rec.pack_list.length){
-      PACK_LIST=mergeById(PACK_LIST,rec.pack_list);
+      PACK_LIST=filtrarVivos("pack",mergeById(PACK_LIST,rec.pack_list));
       try{localStorage.setItem("pack_list",JSON.stringify(PACK_LIST));}catch(e){}
       updatePackSelect();
       renderPackAdmin();
     }
     // traslados
     if(rec.tras_list&&rec.tras_list.length){
-      TRAS_LIST=mergeById(TRAS_LIST,rec.tras_list);
+      TRAS_LIST=filtrarVivos("tras",mergeById(TRAS_LIST,rec.tras_list));
       try{localStorage.setItem("tras_list",JSON.stringify(TRAS_LIST));}catch(e){}
       updateTrasSelect();
       renderTrasAdmin();
@@ -3002,17 +3594,41 @@ function loadCloudData(){
     // eso no se toco.
     setSyncStatus(true);
     filtrar();
+    // Precios, listas y nombres ya estan al dia: se sincroniza lo que haya en
+    // el carrito (equipos y todas las demas lineas) con lo que trajo la nube.
+    refrescarPreciosCarrito();
   })
   .catch(function(){
     setNroUI(local);
+    // Antes de declarar "sin conexión" se reintenta un par de veces con espera
+    // creciente: el Apps Script suele responder al segundo intento cuando
+    // estaba dormido, y decir "sin conexión" con la red buena hace desconfiar
+    // de la app entera.
+    // Tres reintentos y no dos: con una tasa de fallo medida de ~20% por
+    // llamada, dos intentos dejan 4% de arranques en rojo sin motivo real;
+    // cuatro lo bajan a menos del 1%.
+    if (intento < 3) {
+      var lbl=document.getElementById("sync-lbl");
+      if(lbl) lbl.textContent = "reintentando…";
+      setTimeout(function(){ loadCloudData(intento+1); }, (intento+1)*3000);
+      return;
+    }
     setSyncStatus(false);
   });
 }
+
+// Si el punto quedo rojo y despues vuelve la red, se reintenta solo: antes
+// quedaba rojo hasta recargar a mano, aunque la conexion ya estuviera bien.
+window.addEventListener("online", function(){
+  var lbl=document.getElementById("sync-lbl");
+  if(lbl && lbl.textContent==="sin conexión") loadCloudData();
+});
 
 function incrementNro(){
   var n=parseInt(localStorage.getItem("cot_nro")||"1")||1;
   var siguiente=n+1;
   localStorage.setItem("cot_nro",String(siguiente));
+  setVariante("");
   setNroUI(siguiente);
   saveCloudData();
 }
@@ -3047,12 +3663,19 @@ function asegurarNroLibre(){
   var nombreActual=nombreClaveCot(document.getElementById("cnombre").value);
   if(!nombreActual) return;
 
-  // Sin registro cargado no hay con que comparar. Antes seguia de largo en
-  // silencio; ahora al menos se avisa, porque es exactamente la situacion en
-  // la que se repiten los numeros.
-  if(!REG_LIST.length){
-    alert("No se pudo verificar el N° de cotización: el registro no está cargado.\n\n"
-      +"Si ya generaste otra cotización hoy, revisa que el N° "+nroActual+" no esté repetido "
+  // Sin registro COMPARTIDO cargado no hay con que comparar de verdad.
+  //
+  // Ojo con la condicion: antes era solo `!REG_LIST.length`, y eso casi nunca
+  // se cumple porque loadRegList() llena REG_LIST desde localStorage en el
+  // arranque. El registro compartido llega despues, desde Firebase, en
+  // cargarRegDeFirebase(). En esa ventana REG_LIST tiene datos -- los viejos de
+  // este equipo-- asi que el aviso no saltaba, y un numero que otro equipo ya
+  // habia usado se veia libre. Ese es el mecanismo de las diez cotizaciones
+  // N° 148 de julio. REG_FB_LISTO es la bandera que dice si Firebase ya
+  // respondio; ya la usan guardarRegEnFirebase() y borrarRegDeFirebase().
+  if(!REG_FB_LISTO || !REG_LIST.length){
+    alert("No se pudo verificar el N° de cotización: el registro compartido todavía no termina de cargar.\n\n"
+      +"Espera unos segundos y reintenta, o revisa que el N° "+nroActual+" no esté repetido "
       +"antes de continuar.");
     return;
   }
@@ -3075,6 +3698,7 @@ function asegurarNroLibre(){
     +"Esta cotización pasa al N° "+n+".");
 
   localStorage.setItem("cot_nro",String(n));
+  setVariante("");
   setNroUI(n);
   saveCloudData();
 }
@@ -3090,6 +3714,40 @@ function nuevaCotizacion(){
   renderCarrito();
   refrescarDuracionSugerida();
   incrementNro();
+}
+
+// Botón "Nueva variante": misma cotización base y mismo cliente, otra opción
+// (173-B, 173-C...). No avanza el correlativo y conserva el carrito para que
+// solo se cambie lo que varía. Si el N° base ya se usó sin letra (173), ese
+// cuenta como la opción A y la primera variante sale como B.
+function nuevaVariante(){
+  var n=parseInt(localStorage.getItem("cot_nro")||"1")||1;
+  var base=String(n).padStart(3,"0");
+  var usadas={};
+  (REG_LIST||[]).forEach(function(r){
+    var x=String(r.nro);
+    if(x===base||x===String(n)) usadas.A=true;
+    var m=x.match(/^0*(\d+)-([A-Z])$/);
+    if(m&&parseInt(m[1],10)===n) usadas[m[2]]=true;
+  });
+  var actual=getVariante();
+  if(actual) usadas[actual]=true;
+  else if(carrito.length) usadas.A=true;   // la actual sin letra es la A
+  var letra="";
+  for(var i=65;i<=90;i++){
+    var L=String.fromCharCode(i);
+    if(!usadas[L]){letra=L;break;}
+  }
+  if(!letra){alert("Se acabaron las letras (A–Z) para la cotización N° "+base+".");return;}
+  if(!document.getElementById("cnombre").value.trim()){
+    alert("Primero ingresa el cliente: las variantes son siempre para la misma persona.");
+    return;
+  }
+  if(!confirm("¿Crear la variante N° "+base+"-"+letra+" para "+document.getElementById("cnombre").value.trim()
+    +"? Se mantiene el presupuesto actual para que cambies solo lo que varía.")) return;
+  setVariante(letra);
+  setNroUI(n);
+  saveCloudData();
 }
 
 function mergeById(local,remote){
@@ -3108,27 +3766,36 @@ function mergeReg(local,remote){
     .map(function(k){return byNro[k];});
 }
 
-function saveCloudData(){
+function saveCloudData(intento){
   if(!GAS_URL){return;}
+  intento = intento || 0;
   var nro=parseInt(localStorage.getItem("cot_nro")||"1")||1;
   var catExtra=CAT.filter(function(p){return p._nuevo;});
   // Antes de guardar, se trae la última versión de la nube y se fusiona por id.
   // Así, si otra pestaña/sesión agregó algo a un catálogo mientras esta pestaña
   // tenía una copia más vieja en memoria, esta escritura no la borra.
-  fetch(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY))
-    .then(function(r){return r.json();})
+  // Tope largo (60 s) y no el generico: esta es la misma llamada lenta de
+  // loadCloudData, medida entre 10 y 48 s.
+  fetchConTope(GAS_URL+"?action=loadCloud&key="+encodeURIComponent(GAS_KEY), 60000)
+    .then(function(r){
+      // Sin este control, la pagina 404 de Google llegaba a r.json(), reventaba
+      // al parsear y caia en el catch de abajo -- que antes escribia la nube
+      // SIN fusionar. Ver el comentario del catch.
+      if(!r.ok) throw new Error("El servidor de Google respondio "+r.status);
+      return r.json();
+    })
     .then(function(data){
       var rec=(data&&data.record)||{};
       postToGAS(
         {action:"saveCloud",nro:nro,
           ov:Object.assign({},rec.ov||{},ov),
-          cat_extra:mergeById(catExtra,rec.cat_extra),
-          inst_list:mergeById(INST_LIST,rec.inst_list),
-          mat_list:mergeById(MAT_LIST,rec.mat_list),
-          mant_list:mergeById(MANT_LIST,rec.mant_list),
-          extra_list:mergeById(EXTRA_LIST,rec.extra_list),
-          pack_list:mergeById(PACK_LIST,rec.pack_list),
-          tras_list:mergeById(TRAS_LIST,rec.tras_list),
+          cat_extra:mergeById(catExtra,rec.cat_extra).filter(function(it){return CAT_DELETED.indexOf(it.id)===-1;}),
+          inst_list:filtrarVivos("inst",mergeById(INST_LIST,rec.inst_list)),
+          mat_list:filtrarVivos("mat",mergeById(MAT_LIST,rec.mat_list)),
+          mant_list:filtrarVivos("mant",mergeById(MANT_LIST,rec.mant_list)),
+          extra_list:filtrarVivos("extra",mergeById(EXTRA_LIST,rec.extra_list)),
+          pack_list:filtrarVivos("pack",mergeById(PACK_LIST,rec.pack_list)),
+          tras_list:filtrarVivos("tras",mergeById(TRAS_LIST,rec.tras_list)),
           // reg_list ya no viaja: el registro vive en Firebase.
           },
         function(){setSyncStatus(true);},
@@ -3136,26 +3803,70 @@ function saveCloudData(){
       );
     })
     .catch(function(){
-      postToGAS(
-        {action:"saveCloud",nro:nro,ov:ov,cat_extra:catExtra,inst_list:INST_LIST,mat_list:MAT_LIST,mant_list:MANT_LIST,extra_list:EXTRA_LIST,pack_list:PACK_LIST,tras_list:TRAS_LIST},
-        function(){setSyncStatus(true);},
-        function(){setSyncStatus(false);}
-      );
+      // ANTES aca se posteaba la configuracion local SIN FUSIONAR, y eso pisaba
+      // la nube: lo que otro equipo hubiera agregado al catalogo mientras tanto
+      // se borraba. Y como igual llamaba setSyncStatus(true), un guardado que
+      // habia perdido la fusion se veia identico a uno bueno. Con el 404
+      // intermitente de Google (~1 de cada 5) y los 48 s de esta llamada, eso
+      // pasaba seguido.
+      //
+      // Ahora se reintenta, y si no se logra leer la nube NO SE ESCRIBE. Perder
+      // este guardado es reversible -- los cambios siguen en localStorage y el
+      // proximo guardado los sube-- pero pisar el catalogo de otro equipo no.
+      if(intento < 3){
+        setTimeout(function(){ saveCloudData(intento+1); }, (intento+1)*3000);
+        return;
+      }
+      setSyncStatus(false);
+      console.error("No se pudo leer la nube para fusionar: no se guardo, para no pisar lo que hayan agregado otros equipos. Se reintenta en el proximo guardado.");
     });
 }
 
-function postToGAS(payload, onDone, onError){
+function postToGAS(payload, onDone, onError, intento){
   if(!GAS_URL){if(onError)onError();return;}
+  intento = intento || 0;
   var xhr=new XMLHttpRequest();
   xhr.open("POST", GAS_URL, true);
   xhr.setRequestHeader("Content-Type","text/plain;charset=utf-8");
+  // Sin tope de tiempo, si la conexión con el Apps Script se queda colgada no
+  // llega nunca readyState 4 ni salta onerror: no se llama ninguna de las dos
+  // vueltas y quien esté esperando se queda esperando para siempre. Con el PDF
+  // en base64 el envío es pesado y esto deja de ser hipotético. 90 s es de
+  // sobra para una subida normal.
+  xhr.timeout=90000;
+  // Una sola salida: pase lo que pase se llama exactamente una vuelta.
+  var listo=false;
+  function terminar(ok, texto){
+    if(listo)return; listo=true;
+    if(ok){ if(onDone)onDone(texto||""); } else { if(onError)onError(); }
+  }
+  // Reintento acotado y SOLO cuando consta que el Apps Script nunca corrio.
+  // Google devuelve por su cuenta una pagina 404 (u otro error de su frontend)
+  // en ~1 de cada 5 llamadas -- medido el 2026-08-19. En ese caso la peticion
+  // ni siquiera llego al script, asi que repetirla es seguro y es la diferencia
+  // entre que el PDF suba a Drive o no.
+  //
+  // OJO: un vencimiento de tiempo NO se reintenta a proposito. Ahi no se sabe
+  // si el script alcanzo a correr, y repetir un guardado que si se ejecuto
+  // dejaria dos PDF y dos filas para la misma cotizacion.
+  function fallo(status){
+    var seguroReintentar = (status===404 || status===0 || (status>=500 && status<600));
+    if(seguroReintentar && intento<2){
+      setTimeout(function(){ postToGAS(payload, onDone, onError, intento+1); }, (intento+1)*2000);
+      listo=true;   // esta vuelta ya se cedio al reintento
+      return;
+    }
+    terminar(false);
+  }
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
-      if(xhr.status>=200&&xhr.status<400){ if(onDone)onDone(xhr.responseText||""); }
-      else{ if(onError)onError(); }
+      if(listo)return;
+      if(xhr.status>=200&&xhr.status<400) terminar(true, xhr.responseText);
+      else fallo(xhr.status);
     }
   };
-  xhr.onerror=function(){ if(onError)onError(); };
+  xhr.onerror=function(){ if(!listo) fallo(0); };
+  xhr.ontimeout=function(){ terminar(false); };
   xhr.send(JSON.stringify(Object.assign({},payload,{key:GAS_KEY})));
 }
 
@@ -3171,6 +3882,33 @@ var REG_DELETED=[];
 function loadRegList(){
   try{var s=localStorage.getItem("reg_list");if(s){REG_LIST=JSON.parse(s);}}catch(e){REG_LIST=[];}
   try{var d=localStorage.getItem("reg_deleted");if(d){REG_DELETED=JSON.parse(d);}}catch(e){REG_DELETED=[];}
+}
+// Ids de equipos personalizados eliminados explícitamente: mismo problema que
+// REG_DELETED arriba. mergeById en saveCloudData/loadCloudData es una unión
+// pura por id, así que sin esta lista un equipo borrado localmente reaparecía
+// en el próximo guardado porque la nube todavía lo tenía.
+var CAT_DELETED=[];
+function loadCatDeleted(){
+  try{var d=localStorage.getItem("cat_deleted");if(d){CAT_DELETED=JSON.parse(d);}}catch(e){CAT_DELETED=[];}
+}
+// Mismo problema que CAT_DELETED, para las otras 6 listas de catálogo que
+// también se fusionan por mergeById (mat/inst/pack/tras/mant/extra): sin
+// tumba, un ítem borrado localmente revive en el próximo guardado porque la
+// nube todavía lo tiene.
+var LIST_DELETED={mat:[],inst:[],pack:[],tras:[],mant:[],extra:[]};
+function loadListDeleted(){
+  Object.keys(LIST_DELETED).forEach(function(k){
+    try{var d=localStorage.getItem(k+"_deleted");if(d){LIST_DELETED[k]=JSON.parse(d);}}catch(e){LIST_DELETED[k]=[];}
+  });
+}
+function marcarListaEliminada(key,id){
+  var arr=LIST_DELETED[key];
+  if(arr.indexOf(id)===-1)arr.push(id);
+  try{localStorage.setItem(key+"_deleted",JSON.stringify(arr));}catch(e){}
+}
+function filtrarVivos(key,list){
+  var muertos=LIST_DELETED[key];
+  return (list||[]).filter(function(it){return muertos.indexOf(it.id)===-1;});
 }
 // ═══════════════════════════════════════
 // REGISTRO DE COTIZACIONES EN FIREBASE
@@ -3431,6 +4169,7 @@ function registrarCotizacion(P){
   preguntarSiEsAlternativa(P.nro);
   renderStatsAdmin();
   renderSeguimiento();
+  vincularCotizacionNueva(P);
 }
 
 // Preguntar al generar, no solo despues. Si el cliente ya tiene una cotizacion
@@ -3702,7 +4441,7 @@ function completarDesdeHistorial(faltan, listo){
     while(pendientes.length && enVuelo<MAX){
       (function(r){
         enVuelo++;
-        fetch(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
+        fetchConTope(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
           .then(function(res){return res.json();})
           .then(function(d){
             if(d&&!d.error){
@@ -3800,7 +4539,7 @@ function corregirDesdeLaPlanilla(){
     while(porRevisar.length && enVuelo<MAX){
       (function(r){
         enVuelo++;
-        fetch(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
+        fetchConTope(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
           .then(function(res){return res.json();})
           .then(function(d){
             if(!d)return;
@@ -3859,6 +4598,110 @@ function completarTelefonos(){
     }
     completarDesdeIndicador(siguenFaltando, delHistorial);
   });
+}
+
+// ═══════════════════════════════════════
+// BUSCAR CLIENTE DEL INDICADOR (llena el formulario con los datos ya cargados)
+// ═══════════════════════════════════════
+// Los clientes viven en la misma base que usa el Indicador (leon_clientes).
+// Se traen una vez (pesan unos KB) y se guardan 10 minutos en memoria.
+var CLI_IND=null, CLI_IND_T=0, CLI_IND_ESPERA=[];
+function cliNorm(t){return String(t==null?"":t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();}
+function cliCargar(cb){
+  if(CLI_IND&&(Date.now()-CLI_IND_T)<10*60*1000){cb(CLI_IND);return;}
+  CLI_IND_ESPERA.push(cb);
+  if(CLI_IND_ESPERA.length>1)return;
+  function fin(lista){var cbs=CLI_IND_ESPERA;CLI_IND_ESPERA=[];cbs.forEach(function(f){f(lista);});}
+  getFirebaseIdToken(function(token){
+    if(!token){fin(null);return;}
+    withAppCheckHeader(function(xhr){
+      xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4)return;
+        var obj=null;
+        if(xhr.status>=200&&xhr.status<300){try{obj=JSON.parse(xhr.responseText);}catch(e){obj=null;}}
+        if(!obj){fin(null);return;}
+        CLI_IND=Object.keys(obj).map(function(k){return obj[k];}).filter(function(c){return c&&c.cliente;});
+        CLI_IND.forEach(function(c){
+          c._q=cliNorm([c.cliente,c.empresa,c.contacto,c.rut,c.rutEmpresa,c.telefono,c.comuna,c.direccion].join(" "));
+        });
+        CLI_IND_T=Date.now();
+        fin(CLI_IND);
+      };
+      return null;
+    });
+  });
+}
+function cliCerrarSug(){var b=document.getElementById("cli-sug");if(b)b.style.display="none";}
+function cliBuscar(){
+  var inp=document.getElementById("cli-buscar"), box=document.getElementById("cli-sug");
+  if(!inp||!box)return;
+  var q=cliNorm(inp.value);
+  if(q.length<2){box.style.display="none";return;}
+  box.style.display="block";
+  box.innerHTML='<div style="padding:10px 12px;color:var(--txt3);font-size:13px">Buscando…</div>';
+  cliCargar(function(lista){
+    if(cliNorm(inp.value)!==q)return; // ya escribio otra cosa
+    if(!lista){box.innerHTML='<div style="padding:10px 12px;color:#e67e22;font-size:13px">No se pudo leer el Indicador. Revisa tu sesión y conexión.</div>';return;}
+    var palabras=q.split(" ");
+    // primero coincidencias por inicio de palabra ("ro" -> Rodolfo, Rossana, no Carolina);
+    // si no hay ninguna, se acepta que el texto esté en cualquier parte.
+    var res=lista.filter(function(c){return palabras.every(function(w){return (" "+c._q).indexOf(" "+w)>=0;});});
+    if(!res.length)res=lista.filter(function(c){return palabras.every(function(w){return c._q.indexOf(w)>=0;});});
+    res=res.sort(function(a,b){
+      var an=cliNorm(a.cliente).indexOf(palabras[0])===0?0:1, bn=cliNorm(b.cliente).indexOf(palabras[0])===0?0:1;
+      return (an-bn)||String(a.cliente).localeCompare(String(b.cliente),"es");
+    }).slice(0,8);
+    if(!res.length){box.innerHTML='<div style="padding:10px 12px;color:var(--txt3);font-size:13px">Sin resultados en el Indicador.</div>';return;}
+    window._cliRes=res;
+    box.innerHTML=res.map(function(c,i){
+      var sub=[c.empresa,c.lugar,c.comuna,c.direccion].filter(Boolean).join(" · ");
+      var tel=c.telefono?(c.telefonoExtranjero?"+"+c.telefono:"+569 "+String(c.telefono).slice(-8)):"";
+      return '<div onmousedown="cliElegir('+i+')" onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'transparent\'" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--brd);background:transparent">'
+        +'<div style="font-weight:700;color:var(--txt)">'+esc(c.cliente)+'</div>'
+        +'<div style="font-size:12px;color:var(--txt3)">'+esc(sub)+(tel?(sub?" · ":"")+esc(tel):"")+'</div></div>';
+    }).join("");
+  });
+}
+function cliSetSelect(sel,valor){
+  if(!sel||!valor)return false;
+  var v=cliNorm(valor), opts=Array.prototype.slice.call(sel.options), i;
+  for(i=0;i<opts.length;i++){if(cliNorm(opts[i].value)===v||cliNorm(opts[i].text)===v){sel.value=opts[i].value;return true;}}
+  for(i=0;i<opts.length;i++){var o=cliNorm(opts[i].value);if(o&&(v.indexOf(o)>=0||o.indexOf(v)>=0)){sel.value=opts[i].value;return true;}}
+  return false;
+}
+function cliElegir(i){
+  var c=(window._cliRes||[])[i];
+  if(!c)return;
+  var emp=c.tipo==="empresa"||!!(c.empresa&&String(c.empresa).trim())||!!c.rutEmpresa;
+  setTipoCliente(emp?"Empresa":"Particular");
+  document.getElementById("cnombre").value=emp?(c.empresa||c.cliente):c.cliente;
+  var rut=emp?(c.rutEmpresa||c.rut||""):(c.rut||"");
+  var rutEl=document.getElementById("crut");
+  rutEl.value=rut;
+  if(typeof checkRut==="function")checkRut(rutEl);
+  var pre=document.getElementById("ctel-pre"), num=document.getElementById("ctel-num");
+  var dig=String(c.telefono||"").replace(/\D/g,"");
+  if(dig){
+    if(c.telefonoExtranjero){pre.value="+";num.value=dig;}
+    else{
+      pre.value=c.telefonoFijo?"+562":"+569";
+      var u=dig.slice(-8);
+      num.value=u.slice(0,4)+" "+u.slice(4);
+    }
+  }else{num.value="";}
+  document.getElementById("cdir").value=[c.direccion,c.detalle].filter(Boolean).join(", ");
+  cliSetSelect(document.getElementById("ccom"),c.comuna);
+  var canal=document.getElementById("ccanal");
+  if(canal&&!canal.value)cliSetSelect(canal,"Cliente que vuelve");
+  var inp=document.getElementById("cli-buscar"); if(inp)inp.value="";
+  cliCerrarSug();
+  var msg=document.getElementById("cli-msg");
+  if(msg){
+    var falta=[]; if(!rut)falta.push("RUT"); if(!dig)falta.push("teléfono"); if(!(c.direccion))falta.push("dirección"); if(!c.comuna)falta.push("comuna");
+    msg.style.display="block";
+    msg.textContent="Datos cargados de «"+c.cliente+"»"+([c.lugar,c.comuna].filter(Boolean).length?" ("+[c.lugar,c.comuna].filter(Boolean).join(" · ")+")":"")+(falta.length?". Falta en el Indicador: "+falta.join(", ")+".":".");
+  }
 }
 
 function completarDesdeIndicador(faltan, delHistorial){
@@ -4130,6 +4973,8 @@ function renderSeguimiento(){
       +'<button class="seg-btn" onclick="completarTelefonos()">Completar desde el historial</button>'
       +'</div>'):'')
     +'<div style="font-size:12.5px;color:var(--txt3);margin-bottom:10px">'
+      +'<button class="seg-btn" onclick="vincularCotizacionesPendientes()">Vincular al Indicador</button>'
+      +' <span style="margin:0 12px 0 6px">agrega a la ficha de cada cliente las cotizaciones que le faltan</span>'
       +'<button class="seg-btn" onclick="corregirDesdeLaPlanilla()">Revisar contra la planilla</button>'
       +' <span style="margin-left:6px">deja el registro igual a la planilla: corrige lo distinto y elimina lo que sobra</span>'
       +'</div>'
@@ -4798,7 +5643,7 @@ function renderPdfPreciosReview(){
       +'<option value="">— Selecciona el equipo —</option>'
       +opciones.map(function(p){
         var sel=p.id===seleccionId?" selected":"";
-        return '<option value="'+p.id+'"'+sel+'>'+p.marca+' — '+p.modelo+' — '+p.btu+'.000 BTU (actual: $'+getCosto(p).toLocaleString("es-CL")+')</option>';
+        return '<option value="'+p.id+'"'+sel+'>'+p.marca+' — '+p.modelo+' — '+fmtBtu(p.btu)+(p.ubicacion?' — '+p.ubicacion:'')+' (actual: $'+getCosto(p).toLocaleString("es-CL")+')</option>';
       }).join("")
       +'</select></div>'
       +'<div><div style="'+lbl+'">Precio Neto Detectado $</div>'
@@ -4876,7 +5721,11 @@ function restaurarRespaldo(input){
     if(data.pack_list)PACK_LIST=data.pack_list;
     if(data.tras_list)TRAS_LIST=data.tras_list;
     if(data.reg_list)REG_LIST=data.reg_list;
-    if(data.ov)ov=data.ov;
+    if(data.ov){
+      ov=data.ov;
+      // Sin esto, tras recargar volvian los valores anteriores a la restauracion.
+      try{Object.keys(ov).forEach(function(id){localStorage.setItem("ov_"+id,JSON.stringify(ov[id]));});}catch(err){}
+    }
     if(data.nro)localStorage.setItem("cot_nro",String(data.nro));
     try{
       localStorage.setItem("inst_list",JSON.stringify(INST_LIST));
@@ -4891,6 +5740,7 @@ function restaurarRespaldo(input){
       data.cat_extra.forEach(function(p){if(!CAT.find(function(x){return x.id===p.id;}))CAT.push(p);});
       try{localStorage.setItem("cat_extra",JSON.stringify(data.cat_extra));}catch(err){}
     }
+    aplicarOvACatalogo();
     updateItipoGrupoSelect();updateItipoSelect();renderInstAdmin();
     updateMantencionSelect();renderMantAdmin();
     updateImaterialesSelect();renderMatAdmin();
@@ -4900,6 +5750,8 @@ function restaurarRespaldo(input){
     updateTiposelOptions();updateBtuselOptions();
     renderStatsAdmin();
     renderAdmin();filtrar();
+    refrescarPreciosCarrito();
+    setVariante("");
     setNroUI(data.nro||1);
     saveCloudData();
     input.value="";
@@ -4951,7 +5803,8 @@ function renderAdmin(){
 
   agrEq.orden.forEach(function(clave){
     var tipo=agrEq.display[clave];
-    html+='<div class="gl">'+tipo+'</div>';
+    var idsTipo=grupos[clave].map(function(p){return p.id;}).join(',');
+    html+='<div class="gl"><input type="text" value="'+esc(tipo)+'" data-ids="'+idsTipo+'" data-campo="tipo" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="background:transparent;border:none;outline:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;width:'+(tipo.length+4)+'ch;max-width:100%"></div>';
 
     // Sub-agrupar por marca + modelo dentro de cada tipo
     var sub={},subOrder=[];
@@ -4961,17 +5814,23 @@ function renderAdmin(){
       sub[key].push(p);
     });
 
+    var esMulti=esTipoMultisplit(clave);
     subOrder.forEach(function(key){
       var items=sub[key];
       var marca=items[0].marca,modelo=items[0].modelo;
-      var btus=items.map(function(p){return p.btu;}).sort(function(a,b){return a-b;}).join(', ');
+      var btus=items.slice().sort(function(a,b){return a.btu-b.btu;}).map(function(p){
+        return fmtBtu(p.btu)+(esMulti&&p.ubicacion?" ("+p.ubicacion+")":"");
+      }).filter(function(t,i,a){return a.indexOf(t)===i;}).join(', ');
       var isOpen=!!EQ_OPEN_GROUPS[key];
       var keyEsc=key.replace(/'/g,"\\'");
+      var idsAttr=items.map(function(p){return p.id;}).join(',');
+      var tituloInput='background:transparent;border:none;border-bottom:1px dashed var(--brd2);font-family:\'DM Sans\',sans-serif;font-size:15px;padding:2px 2px;outline:none';
 
       html+='<div style="border-bottom:1px solid var(--brd)">'
-        +'<div onclick="toggleEqGroup(\''+keyEsc+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 4px;cursor:pointer;user-select:none">'
-        +'<div style="min-width:0"><span style="font-weight:700;color:var(--txt);font-size:15px">'+marca+'</span> '
-        +'<span style="color:var(--txt2);font-size:15px">'+modelo+'</span> '
+        +'<div onclick="toggleEqGroup(\''+keyEsc+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 4px;cursor:pointer;user-select:none;gap:8px">'
+        +'<div style="min-width:0;flex:1;display:flex;align-items:center;flex-wrap:wrap;gap:4px">'
+        +'<input type="text" value="'+esc(marca)+'" data-ids="'+idsAttr+'" data-campo="marca" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';font-weight:700;color:var(--txt);width:'+(marca.length+3)+'ch;max-width:100%">'
+        +'<input type="text" value="'+esc(modelo)+'" data-ids="'+idsAttr+'" data-campo="modelo" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';color:var(--txt2);margin-right:6px;width:'+(modelo.length+3)+'ch;max-width:100%">'
         +'<span style="font-size:12px;color:var(--txt3)">— '+items.length+' BTU: '+btus+'</span></div>'
         +'<span style="color:var(--acc);font-size:16px;transition:transform .2s;flex-shrink:0;margin-left:8px;'+(isOpen?'transform:rotate(180deg)':'')+'">▼</span>'
         +'</div>';
@@ -4984,15 +5843,20 @@ function renderAdmin(){
 
             // Fila 1: Marca + Modelo
             +'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">'
-            +'<div><div style="'+lbl+'">Marca</div><input type="text" style="'+si+'" value="'+p.marca+'" data-id="'+p.id+'" data-campo="marca" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
-            +'<div><div style="'+lbl+'">Modelo</div><input type="text" style="'+si+'" value="'+p.modelo+'" data-id="'+p.id+'" data-campo="modelo" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
+            +'<div><div style="'+lbl+'">Marca</div><input type="text" style="'+si+'" value="'+esc(p.marca)+'" data-id="'+p.id+'" data-campo="marca" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
+            +'<div><div style="'+lbl+'">Modelo</div><input type="text" style="'+si+'" value="'+esc(p.modelo)+'" data-id="'+p.id+'" data-campo="modelo" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
             +'</div>'
 
-            // Fila 2: BTU + Tipo + Proveedor
-            +'<div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:8px">'
+            // Fila 2: BTU + (Interior/Exterior si es Multisplit) + Tipo + Proveedor
+            +'<div style="display:grid;grid-template-columns:'+(esMulti?'1fr 1.2fr 1fr 1.6fr':'1fr 1fr 2fr')+';gap:8px">'
             +'<div><div style="'+lbl+'">BTU</div><input type="number" style="'+si+'" value="'+p.btu+'" data-id="'+p.id+'" data-campo="btu" onchange="setOv(this.dataset.id,this.dataset.campo,parseFloat(this.value))"></div>'
-            +'<div><div style="'+lbl+'">Tipo</div><input type="text" style="'+si+'" value="'+p.tipo+'" data-id="'+p.id+'" data-campo="tipo" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
-            +'<div><div style="'+lbl+'">Proveedor</div><input type="text" style="'+si+'" value="'+p.prov+'" data-id="'+p.id+'" data-campo="prov" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
+            +(esMulti?(
+              '<div><div style="'+lbl+'">Interior/Exterior</div><select style="'+si+'" data-id="'+p.id+'" data-campo="ubicacion" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)">'
+              +['','Interior','Exterior'].map(function(u){return '<option value="'+u+'"'+(p.ubicacion===u?' selected':'')+'>'+(u||'— Selecciona —')+'</option>';}).join('')
+              +'</select></div>'
+            ):'')
+            +'<div><div style="'+lbl+'">Tipo</div><input type="text" style="'+si+'" value="'+esc(p.tipo)+'" data-id="'+p.id+'" data-campo="tipo" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
+            +'<div><div style="'+lbl+'">Proveedor</div><input type="text" style="'+si+'" value="'+esc(p.prov)+'" data-id="'+p.id+'" data-campo="prov" onchange="setOv(this.dataset.id,this.dataset.campo,this.value)"></div>'
             +'</div>'
 
             // Fila 3: Costo + % Gan + Ganancia $ + Precio Venta
@@ -5004,7 +5868,8 @@ function renderAdmin(){
             +'</div>'
 
             // Botón eliminar
-            +'<div style="text-align:right">'
+            +'<div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">'
+            +'<button type="button" onclick="otroProveedorDe(\''+p.id+'\')" title="Copia marca, modelo, BTU y tipo al formulario de abajo para cargar el mismo equipo de otro proveedor" style="background:var(--bg3);color:var(--acc);border:2px solid var(--brd2);padding:7px 14px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer">＋ Mismo equipo, otro proveedor</button>'
             +'<button data-delid="'+p.id+'" onclick="delEquipo(this)" style="background:#c0392b;color:#fff;border:none;padding:7px 16px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer">🗑 Eliminar</button>'
             +'</div>'
             +'</div>';
@@ -5033,6 +5898,9 @@ function renderAdmin(){
     +'<div><div style="'+lbl+'">Proveedor</div><input type="text" id="new-prov" placeholder="Ej: Mar del Sur" style="'+sa+'"></div>'
     +'</div>'
 
+    +'<div><div style="'+lbl+'">Interior/Exterior (solo Multisplit)</div>'
+    +'<select id="new-ubicacion" style="'+sa+'"><option value="">— Selecciona —</option><option value="Interior">Interior</option><option value="Exterior">Exterior</option></select></div>'
+
     +'<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px">'
     +'<div><div style="'+lbl+'">Costo $ Neto</div><input type="number" id="new-costo" placeholder="250000" style="'+sa+'"></div>'
     +'<div><div style="'+lbl+'">% Ganancia</div><input type="number" id="new-pct" value="25" style="'+sa+'"></div>'
@@ -5044,12 +5912,28 @@ function renderAdmin(){
   document.getElementById("adminlista").innerHTML=html;
 }
 
+// Prepara el formulario «Agregar Nuevo Equipo» con los datos de un equipo que ya
+// existe, para cargar el mismo modelo de otro proveedor. El cotizador junta las
+// filas con igual marca+modelo+tipo+BTU y marca la de menor costo. Quedan vacios
+// proveedor y costo, que son lo que cambia.
+function otroProveedorDe(id){
+  var p=CAT.find(function(x){return x.id===id;});
+  if(!p)return;
+  function set(i,v){var e=document.getElementById(i);if(e)e.value=v;}
+  set("new-marca",p.marca);set("new-modelo",p.modelo);set("new-btu",p.btu);
+  set("new-tipo",p.tipo);set("new-ubicacion",p.ubicacion||"");
+  set("new-pct",gPct(p));set("new-prov","");set("new-costo","");
+  var f=document.getElementById("new-prov");
+  if(f){f.scrollIntoView({behavior:"smooth",block:"center"});f.focus();}
+}
 function delEquipo(b){eliminarEquipo(b.getAttribute("data-delid"));}
 function eliminarEquipo(id){
   if(!confirm("¿Eliminar este equipo?")) return;
   CAT=CAT.filter(function(p){return p.id!==id;});
   try{localStorage.removeItem("ov_"+id);}catch(e){}
   try{localStorage.setItem("cat_extra",JSON.stringify(CAT.filter(function(p){return p._nuevo;})));}catch(e){}
+  if(CAT_DELETED.indexOf(id)===-1)CAT_DELETED.push(id);
+  try{localStorage.setItem("cat_deleted",JSON.stringify(CAT_DELETED));}catch(e){}
   updateTiposelOptions();updateBtuselOptions();
   renderAdmin();filtrar();saveCloudData();
 }
@@ -5062,9 +5946,11 @@ function agregarEquipoNuevo(){
   var prov=(document.getElementById("new-prov").value||"").trim()||"-";
   var costo=parseInt(document.getElementById("new-costo").value)||0;
   var pct=parseInt(document.getElementById("new-pct").value)||0;
+  var ubicacion=(document.getElementById("new-ubicacion").value||"").trim();
   if(!marca||!modelo||!btu||!costo||!tipo){alert("Completa Marca, Modelo, BTU, Tipo y Costo.");return;}
   var id="CUSTOM_"+Date.now();
   var nuevo={id:id,tipo:tipo,btu:btu,marca:marca,modelo:modelo,prov:prov,costo:costo,pct:pct,cyber:0,_nuevo:true};
+  if(ubicacion)nuevo.ubicacion=ubicacion;
   CAT.push(nuevo);
   try{var ex=JSON.parse(localStorage.getItem("cat_extra")||"[]");ex.push(nuevo);localStorage.setItem("cat_extra",JSON.stringify(ex));}catch(e){}
   updateTiposelOptions();updateBtuselOptions();
@@ -5080,7 +5966,29 @@ function setOv(id,campo,val){
   saveOv(id);
   updateTiposelOptions();updateBtuselOptions();
   renderAdmin();
+  renderEmpresaAdmin();
   filtrar();
+}
+
+// Cambia marca o modelo en todas las capacidades BTU de un mismo equipo a la
+// vez (el título del grupo en el admin), en vez de tener que editar cada BTU
+// por separado. Un solo guardado en la nube al final, no uno por id.
+function renombrarGrupo(ids,campo,val){
+  ids.forEach(function(id){
+    if(!ov[id])ov[id]={};
+    ov[id][campo]=val;
+    var p=CAT.find(function(x){return x.id===id;});
+    if(p)p[campo]=val;
+    try{localStorage.setItem("ov_"+id,JSON.stringify(ov[id]));}catch(e){}
+  });
+  var m=document.getElementById("savedmsg");
+  m.textContent="Guardado";
+  setTimeout(function(){m.textContent="";},2000);
+  updateTiposelOptions();updateBtuselOptions();
+  renderAdmin();
+  filtrar();
+  refrescarPreciosCarrito();
+  saveCloudData();
 }
 
 document.addEventListener("DOMContentLoaded", function(){
@@ -5114,6 +6022,7 @@ document.addEventListener("DOMContentLoaded", function(){
   var _bwa=document.getElementById("btnwa");if(_bwa)_bwa.addEventListener("click",enviarWhatsApp);
   var _bind=document.getElementById("btnindicador");if(_bind)_bind.addEventListener("click",enviarAIndicador);
   var _bnuevacot=document.getElementById("btnnuevacot");if(_bnuevacot)_bnuevacot.addEventListener("click",nuevaCotizacion);
+  var _bnuevavar=document.getElementById("btnnuevavar");if(_bnuevavar)_bnuevavar.addEventListener("click",nuevaVariante);
   // Install form changes
   ["itipo","imateriales"].forEach(function(id){
     document.getElementById(id).addEventListener("change",calcInst);
@@ -5149,12 +6058,22 @@ document.addEventListener("DOMContentLoaded", function(){
   });
   // Init
   loadRegList();
+  loadCatDeleted();
+  loadListDeleted();
+  // La letra de variante se lee antes de loadNro() para que el N° aparezca
+  // completo (173-B) al instante, aun sin conexion.
+  try{var _varOv=localStorage.getItem("ov_"+COT_VAR_ID);if(_varOv)ov[COT_VAR_ID]=JSON.parse(_varOv);}catch(e){}
   loadNro();
   (function(){var h=new Date();document.getElementById("fecha").value=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");})();
   try{document.getElementById("cvendedor").value=localStorage.getItem("vendedor_nombre")||"";}catch(e){}
   showTab("cot");
   calcInst();
   loadOv();
+  // loadOv() solo recorre CAT (productos), así que no recoge el id reservado
+  // de los datos de empresa; se carga aparte para que pinte al instante en vez
+  // de esperar la sincronización lenta con la nube.
+  try{var _empOv=localStorage.getItem("ov_"+EMPRESA_PDF_ID);if(_empOv)ov[EMPRESA_PDF_ID]=JSON.parse(_empOv);}catch(e){}
+  renderEmpresaAdmin();
   loadInstList();
   updateItipoGrupoSelect();
   updateItipoSelect();
@@ -5422,9 +6341,16 @@ function cerrarSesion(){
 // a la vista.
 function cargarRolUsuario(user,listo){
   var perfil={uid:user.uid,email:user.email,nombre:(user.email||'').split('@')[0],rol:'vendedor'};
+  // 'listo' tiene que llamarse SI O SI: es lo que deja entrar a la app. Si la
+  // consulta del rol se cuelga sin tope, no hay readyState 4 ni onerror y la
+  // app se queda cargando para siempre. Con tope se entra igual, con el perfil
+  // por defecto (vendedor), que es el permiso mas acotado.
+  var yaEntro=false;
+  function entrar(){ if(yaEntro)return; yaEntro=true; LEON_USUARIO=perfil;aplicarRolEnUI();listo(); }
   user.getIdToken().then(function(token){
     getAppCheckToken().then(function(appCheckToken){
       var xhr=new XMLHttpRequest();
+      ponerTopeXHR(xhr, entrar);
       xhr.open('GET',FIREBASE_DB_URL+'/usuarios/'+user.uid+'.json?auth='+token,true);
       if(appCheckToken){try{xhr.setRequestHeader('X-Firebase-AppCheck',appCheckToken);}catch(e){}}
       xhr.onreadystatechange=function(){
@@ -5439,12 +6365,12 @@ function cargarRolUsuario(user,listo){
             if(v&&(v.rol||v.Rol)==='admin')perfil.rol='admin';
           }catch(e){}
         }
-        LEON_USUARIO=perfil;aplicarRolEnUI();listo();
+        entrar();
       };
-      xhr.onerror=function(){LEON_USUARIO=perfil;aplicarRolEnUI();listo();};
+      xhr.onerror=entrar;
       xhr.send();
     });
-  }).catch(function(){LEON_USUARIO=perfil;aplicarRolEnUI();listo();});
+  }).catch(entrar);
 }
 
 // La pestaña ADMINISTRADOR muestra costos, margenes y estadisticas. Un
@@ -5517,5 +6443,143 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
+<script>
+// ═══════════════════════════════════════
+// COTIZAR EN PASOS (v16) — capa visual sobre lo existente.
+// No cambia ninguna regla de precios ni de guardado: solo numera los pasos,
+// muestra un resumen a la izquierda y una barra con el total en el celular.
+// Para quitarla basta borrar este bloque, el HTML #cot-resumen/#totbar y el CSS
+// bajo «Cotizar en pasos».
+// ═══════════════════════════════════════
+(function(){
+  var PASOS=[
+    {c:"Cliente"},{c:"Equipo"},{c:"Instalación"},{c:"Mantención"},
+    {c:"Materiales"},{c:"Extras"},{c:"Traslado"}
+  ];
+  var cards=[];
+
+  function val(id){var e=document.getElementById(id);return e?String(e.value||"").trim():"";}
+  function lineasDe(l){
+    return (window.carrito||[]).filter(function(x){
+      if(l==="equipo")return x.esEquipo||(x.ref&&x.ref.l==="pack");
+      return x.ref&&x.ref.l===l;
+    });
+  }
+  function plural(n,s,p){return n+" "+(n===1?s:p);}
+
+  function estados(){
+    var nombre=val("cnombre"),com=val("ccom");
+    var e=[];
+    e.push(nombre?{ok:true,res:nombre+(com?" · "+com:"")}:{ok:false,res:"Falta el nombre del cliente"});
+    var eq=lineasDe("equipo");
+    e.push(eq.length?{ok:true,res:plural(eq.length,"línea de equipo","líneas de equipo")}:{ok:false,res:"Elige tipo y capacidad"});
+    [["inst","instalación","instalaciones"],["mant","mantención","mantenciones"],
+     ["mat","línea de materiales","líneas de materiales"],["extra","extra","extras"],
+     ["tras","traslado","traslados"]].forEach(function(d){
+      var n=lineasDe(d[0]).length;
+      e.push(n?{ok:true,res:plural(n,d[1],d[2])+" agregado"+(n===1?"":"s")}:{ok:false,res:"Opcional"});
+    });
+    return e;
+  }
+
+  function abierto(card){
+    var b=card.querySelector(".sec-body");
+    return !!b&&!!b.style.maxHeight&&b.style.maxHeight!=="0px"&&b.style.maxHeight!=="0";
+  }
+
+  function refrescar(){
+    if(!cards.length)return;
+    var es=estados();
+    cards.forEach(function(card,i){
+      var r=card.querySelector(".paso-res");
+      if(r)r.textContent=es[i].res;
+      card.classList.toggle("paso-ok",es[i].ok);
+      card.classList.toggle("paso-act",abierto(card));
+      var n=card.querySelector(".paso-n");
+      if(n)n.textContent=es[i].ok?"✓":String(i+1);
+    });
+    // Resumen de la izquierda
+    var nro=val("nro");
+    var a=document.getElementById("rs-nro");
+    if(a)a.textContent="Cotización N° "+(nro||"—");
+    var f=document.getElementById("rs-fecha");
+    if(f){var fv=val("fecha");f.textContent=fv?fv.split("-").reverse().join("-"):"";}
+    var c=document.getElementById("rs-cli");
+    if(c){
+      var nom=val("cnombre"),com=val("ccom"),dir=val("cdir"),tel=val("ctel-num");
+      var partes=[];
+      if(nom)partes.push("<b>"+nom.replace(/</g,"&lt;")+"</b>");
+      if(com)partes.push(com.replace(/</g,"&lt;"));
+      if(dir)partes.push(dir.replace(/</g,"&lt;"));
+      if(tel)partes.push(tel.replace(/</g,"&lt;"));
+      c.innerHTML=partes.length?partes.join(" · "):'<span style="color:var(--txt3)">Sin cliente todavía — paso 1</span>';
+    }
+    var hay=(window.carrito||[]).length>0;
+    var v=document.getElementById("rs-vacio");
+    if(v)v.style.display=hay?"none":"";
+    var p=document.getElementById("rs-pasos");
+    if(p)p.innerHTML=PASOS.map(function(d,i){
+      return '<span class="rs-chip'+(es[i].ok?' ok':'')+'">'+(es[i].ok?'✓ ':'')+d.c+'</span>';
+    }).join("");
+    // Barra de total (solo celular, solo en la pestaña de cotizar)
+    var bar=document.getElementById("totbar");
+    if(bar){
+      var vc=document.getElementById("view-cot");
+      var enCot=vc&&vc.style.display!=="none";
+      if(hay&&enCot&&typeof totalesCarrito==="function"){
+        var t=totalesCarrito();
+        var cantL=window.carrito.reduce(function(s,x){return s+(x.cant||1);},0);
+        document.getElementById("tb-n").textContent=plural(window.carrito.length,"línea","líneas")+(cantL!==window.carrito.length?" · "+cantL+" unidades":"")+" · IVA incl.";
+        document.getElementById("tb-t").textContent=fmt(t.tot);
+        bar.classList.add("on");
+      }else bar.classList.remove("on");
+    }
+  }
+
+  function iniciar(){
+    var right=document.getElementById("cot-right");
+    if(!right)return;
+    cards=[].slice.call(right.querySelectorAll(":scope > .card")).filter(function(c){return c.querySelector(".sec-hdr");});
+    cards.forEach(function(card,i){
+      var hdr=card.querySelector(".sec-hdr");
+      var ct=hdr.querySelector(".ct");
+      var wrap=document.createElement("div");wrap.className="paso-hdr";
+      var n=document.createElement("span");n.className="paso-n";n.textContent=String(i+1);
+      var tx=document.createElement("div");tx.className="paso-tx";
+      tx.appendChild(ct);
+      var res=document.createElement("div");res.className="paso-res";
+      tx.appendChild(res);
+      wrap.appendChild(n);wrap.appendChild(tx);
+      hdr.insertBefore(wrap,hdr.firstChild);
+      // Flecha igual en todos (antes el primero era ▶ y el resto ▼)
+      var ar=hdr.querySelector(".sec-arrow");if(ar)ar.textContent="▼";
+      // Un paso abierto a la vez: abrir uno cierra los demás.
+      hdr.onclick=function(){
+        if(!abierto(card)){
+          cards.forEach(function(o){if(o!==card&&abierto(o))toggleSec(o.querySelector(".sec-hdr"));});
+        }
+        toggleSec(hdr);
+        setTimeout(refrescar,0);
+      };
+    });
+    // El primer paso parte abierto
+    if(cards[0]&&!abierto(cards[0]))toggleSec(cards[0].querySelector(".sec-hdr"));
+    // Siempre que cambie el carrito se vuelve a pintar el resumen
+    var orig=window.renderCarrito;
+    window.renderCarrito=function(){var r=orig.apply(this,arguments);refrescar();return r;};
+    right.addEventListener("input",refrescar);
+    right.addEventListener("change",refrescar);
+    document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",function(){setTimeout(refrescar,0);});});
+    var tb=document.getElementById("tb-ver");
+    if(tb)tb.onclick=function(){var l=document.getElementById("cot-left");if(l)l.scrollIntoView({behavior:"smooth",block:"start"});};
+    // Hay campos que se llenan por código (reabrir una cotización, elegir un
+    // cliente del Indicador): un repaso liviano cubre esos casos.
+    setInterval(refrescar,900);
+    refrescar();
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
+})();
+</script>
+<div id="totbar"><div class="tb-l"><div class="tb-n" id="tb-n"></div><div class="tb-t" id="tb-t"></div></div><button id="tb-ver" type="button">Ver presupuesto ↑</button></div>
 </body>
 </html>
