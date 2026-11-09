@@ -7043,8 +7043,10 @@ if("serviceWorker" in navigator){
 <script>
 // ═══════════════════════════════════════
 // HISTORIAL DE PRECIOS Y MENÚ LATERAL DEL ADMINISTRADOR (v16)
-// Historial: anota cada cambio de costo, % de ganancia o precio hecho a mano
-// en este dispositivo (no viaja a la nube: solo se ve lo editado desde acá).
+// Historial: anota cada cambio de costo, % de ganancia o precio hecho a mano.
+// Se guarda en este dispositivo y se comparte entre todos en Firebase, bajo
+// leon_config/hist_precios (mismo permiso ya publicado: no hacen falta reglas
+// nuevas, y el Indicador solo escucha leon_config/kv).
 // Menú lateral: una sección a la vez, con la lista a la izquierda (chips en el
 // celular). No cambia cómo se guarda nada. Para quitarlo: borrar este bloque
 // y el CSS «Menú lateral e historial».
@@ -7069,18 +7071,66 @@ if("serviceWorker" in navigator){
     return m;
   }
   function leerHist(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")||[];}catch(e){return [];}}
+  function guardarHistLocal(h){try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){}}
+  // REST a leon_config/hist_precios, igual que el registro de cotizaciones.
+  function fbHist(metodo,body,cb){
+    if(typeof getFirebaseIdToken!=="function"){if(cb)cb(null);return;}
+    getFirebaseIdToken(function(token){
+      if(!token){if(cb)cb(null);return;}
+      withAppCheckHeader(function(xhr){
+        xhr.open(metodo,FIREBASE_DB_URL+"/leon_config/hist_precios.json?auth="+token,true);
+        xhr.setRequestHeader("Content-Type","application/json");
+        xhr.onreadystatechange=function(){
+          if(xhr.readyState!==4)return;
+          var ok=xhr.status>=200&&xhr.status<300,d=null;
+          try{d=JSON.parse(xhr.responseText);}catch(e){}
+          if(cb)cb(ok?{d:d}:null);
+        };
+        return body?JSON.stringify(body):null;
+      });
+    });
+  }
+  function aRemoto(lista){
+    var b={};
+    lista.forEach(function(x){var e={};Object.keys(x).forEach(function(c){if(c!=="k")e[c]=x[c];});b[x.k]=e;});
+    return b;
+  }
+  function idDe(x){return "h"+x.t+"_"+String(x.n+x.c+x.a+x.d).split("").reduce(function(h,ch){return (h*31+ch.charCodeAt(0))>>>0;},7).toString(36);}
+  var estadoSync="";
+  function pintarEstado(){var e=el("adm-hist-estado");if(e)e.textContent=estadoSync;}
+  function sincronizar(){
+    estadoSync="Sincronizando…";pintarEstado();
+    fbHist("GET",null,function(r){
+      if(!r){estadoSync="Sin conexión con la nube: se muestra lo guardado en este dispositivo.";pintarEstado();return;}
+      var remoto=(r.d&&typeof r.d==="object")?r.d:{};
+      var local=leerHist();
+      local.forEach(function(x){if(!x.k)x.k=idDe(x);});
+      var porK={};
+      local.forEach(function(x){porK[x.k]=x;});
+      Object.keys(remoto).forEach(function(k){if(!porK[k]&&remoto[k]&&remoto[k].t){var e=remoto[k];e.k=k;porK[k]=e;}});
+      var todos=Object.keys(porK).map(function(k){return porK[k];}).sort(function(a,b){return b.t-a.t;}).slice(0,MAX);
+      guardarHistLocal(todos);
+      // lo que solo existía en este dispositivo se sube
+      var faltan=todos.filter(function(x){return !(x.k in remoto);});
+      if(faltan.length)fbHist("PATCH",aRemoto(faltan),null);
+      estadoSync="Compartido entre dispositivos.";
+      pintarHist();pintarEstado();
+    });
+  }
   function anotar(antes,despues){
     var nuevos=[],quien=(window.LEON_USUARIO&&LEON_USUARIO.nombre)||"";
     Object.keys(despues).forEach(function(k){
       var a=antes[k],d=despues[k];if(!a)return;
       ["costo","pct","precio"].forEach(function(c){
         if(d[c]===undefined||a[c]===undefined||a[c]===d[c])return;
-        nuevos.push({t:Date.now(),sec:d.sec,n:d.nombre,c:c,a:a[c],d:d[c],q:quien});
+        var ahora=Date.now();
+        nuevos.push({k:"h"+ahora+"_"+Math.random().toString(36).slice(2,6),t:ahora,sec:d.sec,n:d.nombre,c:c,a:a[c],d:d[c],q:quien});
       });
     });
     if(!nuevos.length)return;
     var h=nuevos.concat(leerHist()).slice(0,MAX);
-    try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){}
+    guardarHistLocal(h);
+    fbHist("PATCH",aRemoto(nuevos),null);
     if(el("adm-hist")&&el("adm-hist").style.display!=="none")pintarHist();
   }
   var previa=null;
@@ -7095,7 +7145,7 @@ if("serviceWorker" in navigator){
     var cont=el("adm-hist-lista");if(!cont)return;
     var q=(el("adm-hist-q")||{value:""}).value.toLowerCase().trim();
     var h=leerHist().filter(function(x){return !q||(x.n+" "+x.sec).toLowerCase().indexOf(q)>=0;});
-    if(!h.length){cont.innerHTML='<div class="adm-r-vacio">'+(q?'Nada coincide.':'Todavía no hay cambios anotados en este dispositivo.')+'</div>';return;}
+    if(!h.length){cont.innerHTML='<div class="adm-r-vacio">'+(q?'Nada coincide.':'Todavía no hay cambios anotados.')+'</div>';return;}
     var NOM={costo:"Costo",pct:"% ganancia",precio:"Precio neto"};
     cont.innerHTML=h.slice(0,150).map(function(x){
       var esPct=x.c==="pct";
@@ -7141,7 +7191,7 @@ if("serviceWorker" in navigator){
     var body=cards[k].querySelector('[id^="adm-"][id$="-body"]');
     if(body&&body.style.display==="none"&&k!=="hist")toggleAdmSec(k);
     ITEMS.forEach(function(it){if(it.k){var b=el("adm-nav-"+it.k);if(b)b.classList.toggle("on",it.k===k);}});
-    if(k==="hist")pintarHist();
+    if(k==="hist"){pintarHist();sincronizar();}
     if(irArriba)window.scrollTo({top:0,behavior:"smooth"});
   }
   window.admMostrar=mostrar;
@@ -7156,7 +7206,8 @@ if("serviceWorker" in navigator){
     // Tarjeta del historial
     var hc=document.createElement("div");hc.className="card";hc.id="adm-hist";
     hc.innerHTML='<div class="ct" style="margin-bottom:6px">Historial de precios</div>'
-      +'<div class="adm-sum" style="margin-bottom:12px">Cambios de costo, % de ganancia y precio hechos a mano desde este dispositivo. Lo editado desde otro aparato no aparece aquí.</div>'
+      +'<div class="adm-sum" style="margin-bottom:4px">Cambios de costo, % de ganancia y precio hechos a mano, desde cualquier dispositivo.</div>'
+      +'<div class="adm-sum" id="adm-hist-estado" style="margin:0 0 12px;color:var(--txt3)"></div>'
       +'<div style="display:flex;gap:8px;margin-bottom:10px"><input type="text" id="adm-hist-q" placeholder="Filtrar por equipo o sección" style="flex:1">'
       +'<button type="button" id="adm-hist-borrar" style="background:transparent;border:2px solid var(--brd2);color:var(--txt2);border-radius:var(--rs);padding:0 14px;font-weight:700;cursor:pointer;font-family:inherit">Borrar</button></div>'
       +'<div id="adm-hist-lista"></div>';
@@ -7185,7 +7236,12 @@ if("serviceWorker" in navigator){
     view.addEventListener("click",function(e){if(e.target.closest("button"))antesDelCambio();},true);
     view.addEventListener("click",function(e){if(e.target.closest("button"))setTimeout(despuesDelCambio,0);},false);
     el("adm-hist-q").addEventListener("input",pintarHist);
-    el("adm-hist-borrar").onclick=function(){if(confirm("¿Borrar el historial de este dispositivo?")){try{localStorage.removeItem(KEY);}catch(e){}pintarHist();}};
+    el("adm-hist-borrar").onclick=function(){
+      if(!confirm("¿Borrar TODO el historial de precios?\n\nEl historial es compartido: se borra en todos los dispositivos y no se puede recuperar."))return;
+      try{localStorage.removeItem(KEY);}catch(e){}
+      fbHist("DELETE",null,null);
+      pintarHist();
+    };
     var ini="eq";try{ini=localStorage.getItem("adm_sec")||"eq";}catch(e){}
     if(!cards[ini])ini="eq";
     mostrar(ini);
