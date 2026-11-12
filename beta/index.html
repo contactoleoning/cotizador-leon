@@ -461,8 +461,8 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
     <div class="fr"><span class="fl" id="cnombre-label">Nombre Cliente</span><input type="text" id="cnombre" placeholder="Nombre del cliente"></div>
     <div class="fr" id="rowcontacto" style="display:none"><span class="fl">Nombre de contacto</span><input type="text" id="ccontacto" placeholder="Persona que hace la gestión"></div>
     <div class="fr"><span class="fl">Teléfono</span><div style="display:flex;gap:6px;flex:1"><select id="ctel-pre" style="width:80px;flex:0 0 80px;background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:9px 6px;font-size:14px"><option value="+569">+569</option><option value="+562">+562</option><option value="+">Ext.</option></select><input type="text" id="ctel-num" placeholder="XXXX XXXX" style="flex:1"></div></div>
-    <div class="fr"><span class="fl">Dirección</span><input type="text" id="cdir" placeholder="Calle, numero, depto"></div>
-    <div class="fr"><span class="fl">Comuna</span>
+    <div class="fr"><span class="fl" id="cdir-label">Dirección</span><input type="text" id="cdir" placeholder="Calle, numero, depto"></div>
+    <div class="fr"><span class="fl" id="ccom-label">Comuna</span>
       <select id="ccom">
 <option value="">— Selecciona comuna —</option>
         <option value="Alhué">Alhué</option>
@@ -519,6 +519,13 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
         <option value="Vitacura">Vitacura</option>
         <option value="Ñuñoa">Ñuñoa</option>
       </select>
+    </div>
+    <div class="fr" id="rowcomotra" style="display:none"><span class="fl">Comuna o ciudad</span><input type="text" id="ccom-otra" placeholder="Ej: Rancagua, Región de O'Higgins" autocomplete="off"></div>
+    <div class="fr"><label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;color:var(--txt);text-transform:none;letter-spacing:0"><input type="checkbox" id="cobra-chk" style="width:22px;height:22px;padding:0;flex:0 0 auto;accent-color:var(--acc)"> El trabajo se hace en otra dirección</label></div>
+    <div id="bloque-obra" style="display:none">
+      <div class="fr"><span class="fl">Dirección del trabajo</span><input type="text" id="cobra-dir" placeholder="Calle, numero, depto"></div>
+      <div class="fr"><span class="fl">Comuna del trabajo</span><select id="cobra-com"></select></div>
+      <div class="fr" id="rowobracomotra" style="display:none"><span class="fl">Comuna o ciudad</span><input type="text" id="cobra-com-otra" placeholder="Ej: Rancagua, Región de O'Higgins" autocomplete="off"></div>
     </div>
     <div class="fr"><span class="fl">Email</span><input type="text" id="cemail" placeholder="correo@email.com"></div>
     <div class="fr"><span class="fl">Validez</span>
@@ -2298,6 +2305,11 @@ function construirRowIndicador(){
 
   var rut=(document.getElementById("crut").value||"").trim();
   var direccion=(document.getElementById("cdir").value||"").trim();
+  // Si el trabajo es en otra dirección, la ficha del Indicador lleva ESA (ahí
+  // están los equipos y ahí va la mantención); la de facturación queda en la
+  // cotización y en el registro.
+  var _ob=trabajoCliente();
+  if(_ob.dir){direccion=_ob.dir;comuna=_ob.com;}
   var duracion=parseInt((document.getElementById("ind-duracion")||{value:"6"}).value,10)||6;
   var totales=totalesCarrito();
 
@@ -2900,6 +2912,7 @@ function armarPDF(){
   var comuna=document.getElementById("ccom").value.trim()||"";
   var email=document.getElementById("cemail").value.trim()||"";
   var contacto=contactoCliente();
+  var obra=trabajoCliente();
   var giro=document.getElementById("cgiro")?document.getElementById("cgiro").value.trim():"";
   var validez=vs("validez");
   var cyberPct=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
@@ -2994,6 +3007,7 @@ function armarPDF(){
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>RUT:</td><td style='padding:2px 0;vertical-align:top'>"+esc(rut)+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>DIRECCIÓN:</td><td style='padding:2px 0;vertical-align:top'>"+esc(dir)+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>COMUNA:</td><td style='padding:2px 0;vertical-align:top'>"+esc(comuna)+"</td></tr>"
+    +(obra.dir?"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>LUGAR DEL TRABAJO:</td><td style='padding:2px 0;vertical-align:top'>"+esc(obra.dir+(obra.com?", "+obra.com:""))+"</td></tr>":"")
     +"</table>"
     +"</div>"
     +"<div style='flex:0 0 45%'>"
@@ -3064,7 +3078,7 @@ function armarPDF(){
 
 
   var itemsStr=carrito.map(function(p){var c=p.cant||1;return p.desc+(c>1?" x"+c:"");}).join(" | ");
-  return {h:h, nro:nro, fecha:fecha, nombre:nombre, contacto:contacto, rut:rut, tel:tel,
+  return {h:h, nro:nro, fecha:fecha, nombre:nombre, contacto:contacto, rut:rut, tel:tel, dir:dir, obraDir:obra.dir, obraCom:obra.com,
           comuna:comuna, items:itemsStr, sN:Math.round(sN), dM:Math.round(dM), nD:Math.round(nD),
           iva:Math.round(iva), tot:Math.round(tot)};
 }
@@ -3798,7 +3812,7 @@ function nuevaCotizacion(){
   function el(i){return document.getElementById(i);}
   var nroActual=(el("nro")||{}).value||"";
   var siguiente=(parseInt(localStorage.getItem("cot_nro")||"1")||1)+1;
-  var hayCliente=["cnombre","ccontacto","crut","cdir","cemail","ctel-num","ccom","ccanal"].some(function(id){
+  var hayCliente=["cnombre","ccontacto","crut","cdir","cobra-dir","cemail","ctel-num","ccom","ccanal"].some(function(id){
     return el(id)&&String(el(id).value).trim()!=="";
   });
   if(!carrito.length&&!hayCliente){
@@ -3827,7 +3841,7 @@ function nuevaCotizacion(){
 
   // ── Cliente ──
   ["cli-buscar","cnombre","ccontacto","crut","cdir","cemail","ctel-num"].forEach(function(id){if(el(id))el(id).value="";});
-  poner("ccom","");poner("ccanal","");poner("ctel-pre","+569");
+  setComunaValor("ccom","");limpiarTrabajo();poner("ccanal","");poner("ctel-pre","+569");
   if(typeof setTipoCliente==="function")setTipoCliente("Particular");
   if(el("crut")&&typeof checkRut==="function")checkRut(el("crut"));
   var cm=el("cli-msg");if(cm){cm.style.display="none";cm.textContent="";}
@@ -4359,6 +4373,11 @@ function registrarCotizacion(P){
     costoEq:costoEquiposDelCarrito(),
     estado:"Pendiente",
     tel:P.tel||"", comuna:P.comuna||"", rut:P.rut||"",
+    contacto:P.contacto||"",
+    // Si el trabajo es en otra dirección, lo de arriba (dirección y comuna) es la
+    // facturación y el lugar del trabajo queda aparte.
+    dirFact:P.obraDir?(P.dir||""):"", comunaFact:P.obraDir?(P.comuna||""):"",
+    dirTrabajo:P.obraDir||"", comunaTrabajo:P.obraDir?(P.obraCom||""):"",
     canal:(document.getElementById("ccanal")||{value:""}).value||"",
     contactos:[]
   });
@@ -4892,7 +4911,10 @@ function cliElegir(i){
     }
   }else{num.value="";}
   document.getElementById("cdir").value=[c.direccion,c.detalle].filter(Boolean).join(", ");
-  cliSetSelect(document.getElementById("ccom"),c.comuna);
+  if(typeof limpiarTrabajo==="function")limpiarTrabajo();
+  var _sc=document.getElementById("ccom");
+  if(c.comuna&&cliSetSelect(_sc,c.comuna))setComunaValor("ccom",_sc.value);
+  else setComunaValor("ccom",c.comuna||"");
   var canal=document.getElementById("ccanal");
   if(canal&&!canal.value)cliSetSelect(canal,"Cliente que vuelve");
   var inp=document.getElementById("cli-buscar"); if(inp)inp.value="";
@@ -7035,7 +7057,7 @@ if("serviceWorker" in navigator){
 (function(){
   var KEY="cot_borrador_v1",MAX_MS=7*24*3600*1000;
   var GAN_BUENA=20,GAN_JUSTA=10; // % de ganancia sobre el costo
-  var CAMPOS=["cnombre","ccontacto","crut","cdir","ccom","cemail","ctel-pre","ctel-num","ccanal","validez","cyberdisc","cvendedor","ind-duracion"];
+  var CAMPOS=["cnombre","ccontacto","crut","cdir","ccom","cobra-dir","cobra-com","cemail","ctel-pre","ctel-num","ccanal","validez","cyberdisc","cvendedor","ind-duracion"];
   var pendiente=false,restaurando=false,timer=null;
   function el(i){return document.getElementById(i);}
   function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
@@ -7056,12 +7078,16 @@ if("serviceWorker" in navigator){
     var d={t:Date.now(),nro:(el("nro")||{}).value||"",carrito:window.carrito,campos:{},
       tipoCliente:(el("cnombre")&&el("cnombre").dataset.tipo)||"Particular"};
     CAMPOS.forEach(function(id){if(el(id))d.campos[id]=el(id).value;});
+    d.obra=!!(el("cobra-chk")&&el("cobra-chk").checked);
     try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}
   }
   function programar(){clearTimeout(timer);timer=setTimeout(guardar,600);}
   function restaurar(d){
     restaurando=true;
     CAMPOS.forEach(function(id){if(el(id)&&d.campos&&d.campos[id]!==undefined)el(id).value=d.campos[id];});
+    // Una comuna escrita a mano no existe en la lista: se vuelve a poner como "otra".
+    if(typeof setComunaValor==="function"){setComunaValor("ccom",(d.campos||{}).ccom);setComunaValor("cobra-com",(d.campos||{})["cobra-com"]);}
+    if(typeof setTrabajoActivo==="function")setTrabajoActivo(!!d.obra);
     if(typeof setTipoCliente==="function")setTipoCliente(d.tipoCliente||"Particular");
     if(el("crut")&&typeof checkRut==="function")try{checkRut(el("crut"));}catch(e){}
     window.carrito=d.carrito||[];
@@ -7458,6 +7484,109 @@ if("serviceWorker" in navigator){
     };
     b.style.display="none";
     document.addEventListener("keydown",function(e){if(e.key==="Escape")cerrar();});
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
+})();
+</script>
+<script>
+// ═══════════════════════════════════════
+// COMUNA ESCRITA A MANO Y DIRECCIÓN DEL TRABAJO (v17)
+// La lista de comunas es solo de la Región Metropolitana; una empresa de
+// Rancagua no cabía. Cada selector de comuna ahora termina en «Otra comuna o
+// ciudad…», que abre un campo de texto; lo escrito pasa a ser el valor del
+// selector, así que todo lo que ya leía la comuna (PDF, Indicador, registro)
+// la lee igual. Además, un cliente puede facturar en una dirección y tener el
+// trabajo en otra: «El trabajo se hace en otra dirección».
+// Para quitarlo: borrar este bloque, los campos #rowcomotra, #cobra-chk y
+// #bloque-obra del HTML y las llamadas a trabajoCliente/setComunaValor.
+// ═══════════════════════════════════════
+(function(){
+  var OTRA="Otra comuna o ciudad\u2026";
+  var PARES={"ccom":{inp:"ccom-otra",row:"rowcomotra"},"cobra-com":{inp:"cobra-com-otra",row:"rowobracomotra"}};
+  function el(i){return document.getElementById(i);}
+  function norm(s){return String(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
+  function otraOpt(sel){
+    for(var i=0;i<sel.options.length;i++){if(sel.options[i].dataset.otra)return sel.options[i];}
+    return null;
+  }
+  function mostrarFila(id,on){var r=el(PARES[id].row);if(r)r.style.display=on?"":"none";}
+  function soltarOtra(id){
+    var sel=el(id),op=sel&&otraOpt(sel),inp=el(PARES[id].inp);
+    if(op){op.value="";op.textContent=OTRA;}
+    if(inp)inp.value="";
+    mostrarFila(id,false);
+  }
+
+  // Deja el selector en esa comuna; si no está en la lista, la deja como «otra».
+  window.setComunaValor=function(id,texto){
+    var sel=el(id);if(!sel||!PARES[id])return;
+    var op=otraOpt(sel),inp=el(PARES[id].inp);
+    texto=String(texto||"").trim();
+    if(!texto){soltarOtra(id);sel.selectedIndex=0;return;}
+    var n=norm(texto);
+    for(var i=0;i<sel.options.length;i++){
+      var o=sel.options[i];
+      if(o===op||!o.value)continue;
+      if(norm(o.value)===n){soltarOtra(id);sel.selectedIndex=i;return;}
+    }
+    if(!op)return;
+    op.value=texto;op.textContent=texto;
+    sel.selectedIndex=[].indexOf.call(sel.options,op);
+    if(inp)inp.value=texto;
+    mostrarFila(id,true);
+  };
+
+  function iniciarPar(id){
+    var sel=el(id),inp=el(PARES[id].inp);
+    if(!sel||!inp||otraOpt(sel))return;
+    var op=document.createElement("option");
+    op.value="";op.textContent=OTRA;op.dataset.otra="1";
+    sel.appendChild(op);
+    sel.addEventListener("change",function(){
+      var o=sel.options[sel.selectedIndex];
+      if(o&&o.dataset.otra){mostrarFila(id,true);inp.focus();}
+      else soltarOtra(id);
+    });
+    inp.addEventListener("input",function(){
+      var t=inp.value.trim();
+      op.value=t;op.textContent=t||OTRA;
+    });
+  }
+
+  // ── Dirección del trabajo ──
+  window.setTrabajoActivo=function(on){
+    var chk=el("cobra-chk");if(chk)chk.checked=!!on;
+    var b=el("bloque-obra");if(b)b.style.display=on?"":"none";
+    var d=el("cdir-label"),c=el("ccom-label");
+    if(d)d.textContent=on?"Dirección de facturación":"Dirección";
+    if(c)c.textContent=on?"Comuna de facturación":"Comuna";
+  };
+  // {dir,com} del lugar del trabajo, o vacíos si no hay una dirección distinta.
+  window.trabajoCliente=function(){
+    var chk=el("cobra-chk"),d=el("cobra-dir"),c=el("cobra-com");
+    if(!chk||!chk.checked||!d||!d.value.trim())return {dir:"",com:""};
+    return {dir:d.value.trim(),com:c?String(c.value||"").trim():""};
+  };
+  window.limpiarTrabajo=function(){
+    setTrabajoActivo(false);
+    var d=el("cobra-dir");if(d)d.value="";
+    setComunaValor("cobra-com","");
+  };
+
+  function iniciar(){
+    var base=el("ccom"),obra=el("cobra-com");
+    if(!base||!obra)return;
+    // El selector del trabajo parte con las mismas comunas que el de facturación.
+    if(!obra.options.length){
+      for(var i=0;i<base.options.length;i++){
+        var o=document.createElement("option");
+        o.value=base.options[i].value;o.textContent=base.options[i].textContent;
+        obra.appendChild(o);
+      }
+    }
+    iniciarPar("ccom");iniciarPar("cobra-com");
+    var chk=el("cobra-chk");
+    if(chk)chk.addEventListener("change",function(){setTrabajoActivo(chk.checked);if(chk.checked&&el("cobra-dir"))el("cobra-dir").focus();});
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
 })();
