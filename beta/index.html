@@ -520,12 +520,12 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
         <option value="Ñuñoa">Ñuñoa</option>
       </select>
     </div>
-    <div class="fr" id="rowcomotra" style="display:none"><span class="fl">Comuna o ciudad</span><input type="text" id="ccom-otra" placeholder="Ej: Rancagua, Región de O'Higgins" autocomplete="off"></div>
+    <div class="fr" id="rowcomotra" style="display:none"><span class="fl">Ciudad o región</span><input type="text" id="ccom-otra" placeholder="Ej: Rancagua" autocomplete="off"></div>
     <div class="fr"><label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;color:var(--txt);text-transform:none;letter-spacing:0"><input type="checkbox" id="cobra-chk" style="width:22px;height:22px;padding:0;flex:0 0 auto;accent-color:var(--acc)"> El trabajo se hace en otra dirección</label></div>
     <div id="bloque-obra" style="display:none">
       <div class="fr"><span class="fl">Dirección del trabajo</span><input type="text" id="cobra-dir" placeholder="Calle, numero, depto"></div>
       <div class="fr"><span class="fl">Comuna del trabajo</span><select id="cobra-com"></select></div>
-      <div class="fr" id="rowobracomotra" style="display:none"><span class="fl">Comuna o ciudad</span><input type="text" id="cobra-com-otra" placeholder="Ej: Rancagua, Región de O'Higgins" autocomplete="off"></div>
+      <div class="fr" id="rowobracomotra" style="display:none"><span class="fl">Ciudad o región</span><input type="text" id="cobra-com-otra" placeholder="Ej: Rancagua" autocomplete="off"></div>
     </div>
     <div class="fr"><span class="fl">Email</span><input type="text" id="cemail" placeholder="correo@email.com"></div>
     <div class="fr"><span class="fl">Validez</span>
@@ -3006,7 +3006,7 @@ function armarPDF(){
     +(contacto?"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>CONTACTO:</td><td style='padding:2px 0;vertical-align:top'>"+esc(contacto)+"</td></tr>":"")
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>RUT:</td><td style='padding:2px 0;vertical-align:top'>"+esc(rut)+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>DIRECCIÓN:</td><td style='padding:2px 0;vertical-align:top'>"+esc(dir)+"</td></tr>"
-    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>COMUNA:</td><td style='padding:2px 0;vertical-align:top'>"+esc(comuna)+"</td></tr>"
+    +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>"+(comunaEsLibre("ccom")?"CIUDAD:":"COMUNA:")+"</td><td style='padding:2px 0;vertical-align:top'>"+esc(comuna)+"</td></tr>"
     +(obra.dir?"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>LUGAR DEL TRABAJO:</td><td style='padding:2px 0;vertical-align:top'>"+esc(obra.dir+(obra.com?", "+obra.com:""))+"</td></tr>":"")
     +"</table>"
     +"</div>"
@@ -7501,7 +7501,7 @@ if("serviceWorker" in navigator){
 // #bloque-obra del HTML y las llamadas a trabajoCliente/setComunaValor.
 // ═══════════════════════════════════════
 (function(){
-  var OTRA="Otra comuna o ciudad\u2026";
+  var OTRA="Otra ciudad o región\u2026";
   var PARES={"ccom":{inp:"ccom-otra",row:"rowcomotra"},"cobra-com":{inp:"cobra-com-otra",row:"rowobracomotra"}};
   function el(i){return document.getElementById(i);}
   function norm(s){return String(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
@@ -7552,6 +7552,12 @@ if("serviceWorker" in navigator){
       op.value=t;op.textContent=t||OTRA;
     });
   }
+
+  // ¿La comuna elegida fue escrita a mano (fuera de la lista de Santiago)?
+  window.comunaEsLibre=function(id){
+    var sel=el(id),o=sel&&sel.options[sel.selectedIndex];
+    return !!(o&&o.dataset.otra&&o.value);
+  };
 
   // ── Dirección del trabajo ──
   window.setTrabajoActivo=function(on){
