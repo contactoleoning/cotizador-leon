@@ -459,6 +459,7 @@ input,select,textarea{transition:border-color .18s,box-shadow .18s}
       <button type="button" id="tipo-empresa" class="tipo-cliente-btn" onclick="setTipoCliente('Empresa')" style="flex:1;padding:9px;border-radius:6px;border:2px solid var(--brd);background:var(--inp);color:var(--txt);font-weight:700;cursor:pointer">Empresa</button>
     </div></div>
     <div class="fr"><span class="fl" id="cnombre-label">Nombre Cliente</span><input type="text" id="cnombre" placeholder="Nombre del cliente"></div>
+    <div class="fr" id="rowcontacto" style="display:none"><span class="fl">Nombre de contacto</span><input type="text" id="ccontacto" placeholder="Persona que hace la gestión"></div>
     <div class="fr"><span class="fl">Teléfono</span><div style="display:flex;gap:6px;flex:1"><select id="ctel-pre" style="width:80px;flex:0 0 80px;background:var(--inp);color:var(--txt);border:1px solid var(--brd);border-radius:6px;padding:9px 6px;font-size:14px"><option value="+569">+569</option><option value="+562">+562</option><option value="+">Ext.</option></select><input type="text" id="ctel-num" placeholder="XXXX XXXX" style="flex:1"></div></div>
     <div class="fr"><span class="fl">Dirección</span><input type="text" id="cdir" placeholder="Calle, numero, depto"></div>
     <div class="fr"><span class="fl">Comuna</span>
@@ -2342,6 +2343,7 @@ function construirRowIndicador(){
       nroCotizacion:nro,
       montoCotizado:totales.tot,
       canal:(document.getElementById("ccanal")||{value:""}).value||"",
+      contacto:contactoCliente(),
       obs:"Generado desde cotización N°"+nro+" — total "+fmt(totales.tot)
   };
 }
@@ -2452,7 +2454,7 @@ function fusionarConExistente(existente, row){
     aviso:false
   };
 
-  ["telefono","rut","direccion","comuna","lugar"].forEach(function(campo){
+  ["telefono","rut","direccion","comuna","lugar","contacto"].forEach(function(campo){
     var actual=(existente[campo]||"").toString().trim();
     if(!actual && row[campo])patch[campo]=row[campo];
   });
@@ -2734,6 +2736,15 @@ function dvRut(rutNum){
   return String(resto);
 }
 
+// Persona de contacto de una empresa (quien hace la gestión). Solo cuenta si el
+// cliente es Empresa: si se vuelve a Particular el texto queda guardado pero
+// no se usa ni se muestra.
+function contactoCliente(){
+  var inp=document.getElementById("cnombre"),c=document.getElementById("ccontacto");
+  if(!inp||!c||inp.dataset.tipo!=="Empresa")return "";
+  return c.value.trim();
+}
+
 function setTipoCliente(tipo){
   var btnP=document.getElementById("tipo-particular"), btnE=document.getElementById("tipo-empresa");
   var lbl=document.getElementById("cnombre-label"), inp=document.getElementById("cnombre");
@@ -2749,6 +2760,8 @@ function setTipoCliente(tipo){
     inp.placeholder="Nombre del cliente";
   }
   inp.dataset.tipo=tipo;
+  var rc=document.getElementById("rowcontacto");
+  if(rc)rc.style.display=(tipo==="Empresa")?"":"none";
   if(typeof refrescarDuracionSugerida==="function")refrescarDuracionSugerida();
 }
 
@@ -2886,6 +2899,7 @@ function armarPDF(){
   var dir=document.getElementById("cdir").value.trim()||"";
   var comuna=document.getElementById("ccom").value.trim()||"";
   var email=document.getElementById("cemail").value.trim()||"";
+  var contacto=contactoCliente();
   var giro=document.getElementById("cgiro")?document.getElementById("cgiro").value.trim():"";
   var validez=vs("validez");
   var cyberPct=parseInt(document.getElementById("cyberdisc")?document.getElementById("cyberdisc").value:0)||0;
@@ -2976,6 +2990,7 @@ function armarPDF(){
     +"<div style='flex:0 0 55%'>"
     +"<table style='border-collapse:collapse;width:100%;color:#1a1a1a'>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top;width:90px'>SEÑOR(ES):</td><td style='padding:2px 0;vertical-align:top'>"+esc(nombre)+"</td></tr>"
+    +(contacto?"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>CONTACTO:</td><td style='padding:2px 0;vertical-align:top'>"+esc(contacto)+"</td></tr>":"")
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>RUT:</td><td style='padding:2px 0;vertical-align:top'>"+esc(rut)+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>DIRECCIÓN:</td><td style='padding:2px 0;vertical-align:top'>"+esc(dir)+"</td></tr>"
     +"<tr><td style='white-space:nowrap;font-weight:700;padding:2px 6px 2px 0;vertical-align:top'>COMUNA:</td><td style='padding:2px 0;vertical-align:top'>"+esc(comuna)+"</td></tr>"
@@ -3049,7 +3064,7 @@ function armarPDF(){
 
 
   var itemsStr=carrito.map(function(p){var c=p.cant||1;return p.desc+(c>1?" x"+c:"");}).join(" | ");
-  return {h:h, nro:nro, fecha:fecha, nombre:nombre, rut:rut, tel:tel,
+  return {h:h, nro:nro, fecha:fecha, nombre:nombre, contacto:contacto, rut:rut, tel:tel,
           comuna:comuna, items:itemsStr, sN:Math.round(sN), dM:Math.round(dM), nD:Math.round(nD),
           iva:Math.round(iva), tot:Math.round(tot)};
 }
@@ -3330,7 +3345,9 @@ function mensajeCotizacionWA(o){
   // Sin saludo de entrada: la cotizacion se manda en una conversacion que ya
   // está en curso con el cliente, así que el mensaje parte directo.
   var nom=String(o.nombre||"").replace(/\(.*\)/,"").trim();
-  var primero=(!o.empresa&&nom)?nom.split(/\s+/)[0]:"";
+  // Particular: se saluda por su primer nombre. Empresa: por el de la persona de
+  // contacto, si se anotó (la razón social no es a quien se le escribe).
+  var primero=o.empresa?(o.contacto?String(o.contacto).trim().split(/\s+/)[0]:""):(nom?nom.split(/\s+/)[0]:"");
   var t=String(o.servicios||"").toLowerCase(), tipos=[];
   if(/mantenc/.test(t))tipos.push("mantención");
   if(/instalaci/.test(t))tipos.push("instalación");
@@ -3368,7 +3385,7 @@ function enviarWhatsApp(){
       digits=(pre.value.replace(/[^0-9]/g,"")+num.value.replace(/[^0-9]/g,""));
     }
     var msg=mensajeCotizacionWA({
-      nombre:P.nombre, empresa:(document.getElementById("cnombre").dataset.tipo==="Empresa"),
+      nombre:P.nombre, contacto:P.contacto, empresa:(document.getElementById("cnombre").dataset.tipo==="Empresa"),
       nro:P.nro, total:P.tot, link:link, validez:vs("validez"), servicios:P.items,
       vendedor:(document.getElementById("cvendedor")||{value:""}).value,
       descPct:(P.sN>0&&P.dM>0)?Math.round(P.dM*100/P.sN):0
@@ -3781,7 +3798,7 @@ function nuevaCotizacion(){
   function el(i){return document.getElementById(i);}
   var nroActual=(el("nro")||{}).value||"";
   var siguiente=(parseInt(localStorage.getItem("cot_nro")||"1")||1)+1;
-  var hayCliente=["cnombre","crut","cdir","cemail","ctel-num","ccom","ccanal"].some(function(id){
+  var hayCliente=["cnombre","ccontacto","crut","cdir","cemail","ctel-num","ccom","ccanal"].some(function(id){
     return el(id)&&String(el(id).value).trim()!=="";
   });
   if(!carrito.length&&!hayCliente){
@@ -3809,7 +3826,7 @@ function nuevaCotizacion(){
   }
 
   // ── Cliente ──
-  ["cli-buscar","cnombre","crut","cdir","cemail","ctel-num"].forEach(function(id){if(el(id))el(id).value="";});
+  ["cli-buscar","cnombre","ccontacto","crut","cdir","cemail","ctel-num"].forEach(function(id){if(el(id))el(id).value="";});
   poner("ccom","");poner("ccanal","");poner("ctel-pre","+569");
   if(typeof setTipoCliente==="function")setTipoCliente("Particular");
   if(el("crut")&&typeof checkRut==="function")checkRut(el("crut"));
@@ -4856,6 +4873,10 @@ function cliElegir(i){
   var emp=c.tipo==="empresa"||!!(c.empresa&&String(c.empresa).trim())||!!c.rutEmpresa;
   setTipoCliente(emp?"Empresa":"Particular");
   document.getElementById("cnombre").value=emp?(c.empresa||c.cliente):c.cliente;
+  // La ficha del Indicador se llama como la persona con la que se habla; si hay
+  // empresa y no se anotó un contacto aparte, esa persona es el contacto.
+  var _cc=document.getElementById("ccontacto");
+  if(_cc)_cc.value=emp?(c.contacto||((c.empresa&&c.cliente&&c.cliente!==c.empresa)?c.cliente:"")):"";
   var rut=emp?(c.rutEmpresa||c.rut||""):(c.rut||"");
   var rutEl=document.getElementById("crut");
   rutEl.value=rut;
@@ -7014,7 +7035,7 @@ if("serviceWorker" in navigator){
 (function(){
   var KEY="cot_borrador_v1",MAX_MS=7*24*3600*1000;
   var GAN_BUENA=20,GAN_JUSTA=10; // % de ganancia sobre el costo
-  var CAMPOS=["cnombre","crut","cdir","ccom","cemail","ctel-pre","ctel-num","ccanal","validez","cyberdisc","cvendedor","ind-duracion"];
+  var CAMPOS=["cnombre","ccontacto","crut","cdir","ccom","cemail","ctel-pre","ctel-num","ccanal","validez","cyberdisc","cvendedor","ind-duracion"];
   var pendiente=false,restaurando=false,timer=null;
   function el(i){return document.getElementById(i);}
   function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
