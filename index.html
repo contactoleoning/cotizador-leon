@@ -6921,7 +6921,8 @@ firebase.auth().onAuthStateChanged(function(user){
 var LEON_SESION_MS = 60*60*1000;      // 1 hora
 var LEON_SESION_AVISO_MS = 5*60*1000; // cuenta regresiva en los últimos 5 min
 var LEON_SESION_KEY = 'leon_sesion_inicio';
-var _leonIniMem = 0, _leonExpirando = false;
+var LEON_SESION_EXT_KEY = 'leon_sesion_ext';   // horas extra pedidas con el botón +1 hora
+var _leonIniMem = 0, _leonExtMem = 0, _leonExpirando = false;
 
 function leonSesionInicio(){
   var v = 0;
@@ -6929,7 +6930,19 @@ function leonSesionInicio(){
   if (!v) v = _leonIniMem;   // si el navegador no deja guardar, vale la de esta página
   return v > 0 ? v : 0;
 }
+function leonSesionExt(){
+  var n = 0;
+  try { n = parseInt(localStorage.getItem(LEON_SESION_EXT_KEY), 10) || 0; } catch(e) {}
+  if (!n) n = _leonExtMem;
+  return n > 0 ? Math.min(n, 24) : 0;
+}
+function leonSesionMarcarExt(n){
+  _leonExtMem = n || 0;
+  try { if (n) localStorage.setItem(LEON_SESION_EXT_KEY, String(n)); else localStorage.removeItem(LEON_SESION_EXT_KEY); } catch(e) {}
+}
 function leonSesionMarcar(t){
+  // Una hora de entrada nueva (o borrada) empieza de cero: sin horas extra.
+  leonSesionMarcarExt(0);
   _leonIniMem = t || 0;
   try { if (t) localStorage.setItem(LEON_SESION_KEY, String(t)); else localStorage.removeItem(LEON_SESION_KEY); } catch(e) {}
 }
@@ -6938,7 +6951,7 @@ function leonSesionMarcar(t){
 function leonSesionRestante(){
   var i = leonSesionInicio(), ahora = Date.now();
   if (!i || i > ahora + 60000) return 0;
-  return Math.max(0, i + LEON_SESION_MS - ahora);
+  return Math.max(0, i + LEON_SESION_MS * (1 + leonSesionExt()) - ahora);
 }
 function leonSesionLogueado(){
   try { return !!firebase.auth().currentUser; } catch(e) { return false; }
@@ -6970,18 +6983,48 @@ function leonSesionExpirar(){
   cerrarSesion();
   lockError('Pasó 1 hora desde que entraste. Vuelve a entrar con tu contraseña.');
 }
+var _leonExtMsgHasta = 0;
 function leonSesionChip(ms){
   var c = document.getElementById('leon-sesion-chip');
-  if (ms <= 0 || ms > LEON_SESION_AVISO_MS) { if (c && c.parentNode) c.parentNode.removeChild(c); return; }
+  var aviso = ms > 0 && ms <= LEON_SESION_AVISO_MS;
+  var confirmacion = ms > 0 && Date.now() < _leonExtMsgHasta;
+  if (!aviso && !confirmacion) { if (c && c.parentNode) c.parentNode.removeChild(c); return; }
   if (!c) {
     c = document.createElement('div');
     c.id = 'leon-sesion-chip';
     c.setAttribute('role', 'timer');
-    c.style.cssText = 'position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:99999;background:#b91c1c;color:#fff;font:700 14px/1 system-ui,-apple-system,sans-serif;padding:10px 16px;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.4);pointer-events:none;white-space:nowrap;';
+    c.style.cssText = 'position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:12px;color:#fff;font:700 14px/1 system-ui,-apple-system,sans-serif;padding:8px 10px 8px 16px;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.4);white-space:nowrap;';
+    var tx = document.createElement('span'); tx.id = 'leon-sesion-txt';
+    var bt = document.createElement('button'); bt.id = 'leon-sesion-ext'; bt.type = 'button';
+    bt.textContent = '+1 hora';
+    bt.title = 'Mantener la sesión abierta una hora más';
+    bt.style.cssText = 'border:0;border-radius:999px;background:#fff;color:#b91c1c;font:800 13px/1 system-ui,-apple-system,sans-serif;padding:8px 13px;cursor:pointer;';
+    bt.onclick = leonSesionExtender;
+    c.appendChild(tx); c.appendChild(bt);
     document.body.appendChild(c);
   }
-  var s = Math.ceil(ms/1000);
-  c.textContent = 'La sesión se cierra en ' + Math.floor(s/60) + ':' + ('0' + (s%60)).slice(-2);
+  var texto = document.getElementById('leon-sesion-txt'), boton = document.getElementById('leon-sesion-ext');
+  if (aviso) {
+    var s = Math.ceil(ms/1000);
+    texto.textContent = 'La sesión se cierra en ' + Math.floor(s/60) + ':' + ('0' + (s%60)).slice(-2);
+    c.style.background = '#b91c1c';
+    boton.style.display = '';
+  } else {
+    texto.textContent = '✓ Sesión extendida 1 hora más';
+    c.style.background = '#15803d';
+    c.style.paddingRight = '16px';
+    boton.style.display = 'none';
+  }
+}
+// Botón «+1 hora» del aviso rojo: corre el final de la sesión una hora más, sin
+// pedir la contraseña de nuevo. Solo está disponible en los últimos 5 minutos y
+// con la sesión todavía vigente. Como la hora de entrada la comparten las tres
+// apps, la extensión vale para las tres.
+function leonSesionExtender(){
+  if (!leonSesionLogueado() || leonSesionRestante() <= 0) return;
+  leonSesionMarcarExt(leonSesionExt() + 1);
+  _leonExtMsgHasta = Date.now() + 3000;
+  leonSesionVigilar();
 }
 function leonSesionVigilar(){
   if (!leonSesionLogueado()) { leonSesionChip(0); return; }
