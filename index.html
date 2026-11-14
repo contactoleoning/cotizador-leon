@@ -2598,6 +2598,123 @@ function vincularCotizacionesPendientes(){
   });
 }
 
+// ═══════════════════════════════════════
+// UNA COTIZACIÓN -> FICHA DEL CLIENTE, CON SU PDF
+// ═══════════════════════════════════════
+// Botón «Agregar al Indicador» en cada cotización del registro. Sirve cuando se
+// cotizó antes de crear la ficha: la ficha guarda la cotización y el enlace al
+// PDF que se mandó (el de Drive), y en el Indicador aparece un «Ver PDF».
+// Solo toca el historial de cotizaciones de ESA ficha: no cambia fechas,
+// equipos, ciclo de mantención ni la cotización "vigente" de la ficha.
+// Siempre pide confirmación mostrando a qué ficha va.
+function agregarCotizacionAlIndicador(nro){
+  var r=REG_LIST.find(function(x){return String(x.nro)===String(nro);});
+  if(!r){alert("No encuentro la cotización N°"+nro+" en el registro.");return;}
+  getFirebaseIdToken(function(token){
+    if(!token){alert("Necesitas sesión iniciada.");return;}
+    // 1) El PDF que se mandó: el servidor guarda el enlace de Drive por número.
+    var pedirLink=GAS_URL
+      ? fetchConTope(GAS_URL+"?nro="+encodeURIComponent(r.nro)+"&key="+encodeURIComponent(GAS_KEY))
+          .then(function(res){return res.json();})
+          .then(function(d){return (d&&!d.error&&d.link&&/^https:\/\//.test(String(d.link)))?String(d.link):"";})
+          .catch(function(){return "";})
+      : Promise.resolve("");
+    pedirLink.then(function(link){
+      // 2) Las fichas del Indicador.
+      withAppCheckHeader(function(xhr){
+        xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
+        xhr.onreadystatechange=function(){
+          if(xhr.readyState!==4)return;
+          var clientes=null;
+          if(xhr.status>=200&&xhr.status<300){try{clientes=JSON.parse(xhr.responseText);}catch(e){clientes=null;}}
+          if(!clientes){alert("No se pudo leer el Indicador. Revisa tu conexión e intenta de nuevo.");return;}
+          elegirFichaParaCotizacion(clientes,r,function(sel){
+            if(sel)guardarCotizacionEnFicha(token,r,sel,link);
+          });
+        };
+        return null;
+      });
+    });
+  });
+}
+
+// Qué ficha es. Primero por RUT (o teléfono) y comuna, como siempre; si no
+// calza, por el nombre. Nunca escribe sin que se confirme.
+function elegirFichaParaCotizacion(clientes,r,cb){
+  var rg={rut:r.rut,telefono:r.tel,direccion:r.dirTrabajo||"",comuna:r.comunaTrabajo||r.comuna||""};
+  var fichas=fichasDeLaPersona(clientes,rg);
+  var m=fichas.length?fichaDeEstaDireccion(fichas,rg):null;
+  var como=(rutNormalizado(rg.rut)?"mismo RUT":"mismo teléfono")+" y misma comuna";
+  var cand=m?[m]:[];
+  if(!cand.length){
+    var toks=direccionNormalizada(r.nombre).split(" ").filter(function(t){return t.length>=2;});
+    if(toks.length){
+      Object.keys(clientes).forEach(function(k){
+        var c=clientes[k]; if(!c)return;
+        var n=direccionNormalizada((c.cliente||"")+" "+(c.empresa||"")+" "+(c.contacto||""));
+        if(toks.every(function(t){return n.indexOf(t)>=0;}))cand.push({clave:k,ficha:c});
+      });
+    }
+    como="mismo nombre";
+  }
+  function descr(x){
+    var f=x.ficha;
+    return (f.cliente||"(sin nombre)")+" — "+(f.lugar||"sin tipo")+" en "+(f.comuna||"sin comuna")+(f.direccion?(" · "+f.direccion):"");
+  }
+  var cab="Cotización N°"+r.nro+" · "+(r.nombre||"")+" · "+fmt(r.total||0);
+  if(!cand.length){
+    alert(cab+"\n\nNo encontré una ficha de este cliente en el Indicador.\n\nCrea la ficha (o corrige su nombre para que se parezca al de la cotización) y vuelve a apretar este botón.");
+    cb(null);return;
+  }
+  if(cand.length===1){
+    if(!confirm(cab+"\n\n¿Agregarla a la ficha de:\n\n"+descr(cand[0])+"\n(reconocida por "+como+")?\n\nSolo se suma a su historial de cotizaciones, con el PDF."))return cb(null);
+    cb(cand[0]);return;
+  }
+  var op=cand.slice(0,9).map(function(x,i){return (i+1)+") "+descr(x);}).join("\n");
+  var rp=prompt(cab+"\n\nHay "+cand.length+" fichas parecidas. Escribe el número de la que corresponde:\n\n"+op+"\n\n(Cancelar = no hacer nada)");
+  var i=parseInt(rp,10)-1;
+  if(!rp||isNaN(i)||!cand[i])return cb(null);
+  cb(cand[i]);
+}
+
+function guardarCotizacionEnFicha(token,r,sel,link){
+  var ficha=sel.ficha;
+  var lista=Array.isArray(ficha.cotizaciones)?ficha.cotizaciones.slice()
+    :Object.keys(ficha.cotizaciones||{}).map(function(k){return ficha.cotizaciones[k];});
+  var idx=-1;
+  lista.forEach(function(c,i){if(c&&String(c.nro)===String(r.nro))idx=i;});
+  var estado=r.estado==="Aceptada"?"concretada":(r.estado==="Rechazada"?"rechazada":"");
+  if(idx>=0){
+    var ya=lista[idx];
+    if(ya.link||!link){
+      alert("La N°"+r.nro+" ya está en la ficha de "+(ficha.cliente||"este cliente")+(ya.link?" con su PDF.":". No encontré un PDF guardado para ella."));
+      return;
+    }
+    ya.link=link;
+  }else{
+    var e={nro:r.nro,monto:r.total||0,fecha:fechaISO(r.fecha)||r.fecha||"",servicio:(r.serv&&r.serv!=="—")?r.serv:""};
+    if(link)e.link=link;
+    if(estado)e.estado=estado;
+    lista.push(e);
+  }
+  withAppCheckHeader(function(xp){
+    xp.open("PATCH", FIREBASE_DB_URL+"/leon_clientes/"+sel.clave+".json?auth="+token, true);
+    xp.setRequestHeader("Content-Type","application/json");
+    xp.onreadystatechange=function(){
+      if(xp.readyState!==4)return;
+      if(xp.status>=200&&xp.status<300){
+        alert("✓ Cotización N°"+r.nro+" agregada a la ficha de "+(ficha.cliente||"este cliente")+"."
+          +(link?"\n\nEn el Indicador se ve con su botón «Ver PDF».":"\n\nNo encontré el PDF de esta cotización (se generó solo para imprimir), así que quedó sin enlace.")
+          +(estado?"":"\n\nQuedó como Pendiente. Si el trabajo ya se hizo, márcala Concretada en la ficha."));
+      }else{
+        alert("No se pudo guardar en la ficha. Intenta de nuevo.");
+      }
+    };
+    xp.onerror=function(){alert("No se pudo guardar en la ficha. Revisa tu conexión.");};
+    return JSON.stringify({cotizaciones:lista});
+  });
+}
+
 function enviarAIndicador(){
   if(!carrito.length){alert("Agrega al menos un producto al presupuesto.");return;}
   if(!document.getElementById("cnombre").value.trim()){
@@ -5228,6 +5345,7 @@ function renderSeguimiento(){
         +(r.tel?'<button class="seg-btn wa" onclick="waSeguimiento(\''+escAttr(String(r.nro))+'\')">📲 Escribir</button>':'<span style="font-size:12px;color:var(--txt2)">sin teléfono</span>')
         +'<button class="seg-btn ok" onclick="cerrarCotizacion(\''+escAttr(String(r.nro))+'\',\'Aceptada\')">✓ Cerró</button>'
         +'<button class="seg-btn no" onclick="cerrarCotizacion(\''+escAttr(String(r.nro))+'\',\'Rechazada\')">✕ Se perdió</button>'
+        +'<button class="seg-btn" title="Guardar esta cotización, con su PDF, en la ficha del cliente" onclick="agregarCotizacionAlIndicador(\''+escAttr(String(r.nro))+'\')">📋 Agregar al Indicador</button>'
         +(r.grupo?('<button class="seg-btn" title="Tratarlas como trabajos separados" onclick="desagrupar(\''+escAttr(r.grupo)+'\')">Separar</button>'):'')
       +'</div>'
     +'</div>';
@@ -5615,6 +5733,7 @@ function renderStatsAdmin(){
       +btn("Pendiente","Pendiente","#f39c12")
       +btn("Aceptada","Aceptada","#27ae60")
       +btn("Rechazada","Rechazada","#e74c3c")
+      +'<button onclick="agregarCotizacionAlIndicador(\''+escAttr(r.nro)+'\')" title="Guardar esta cotización, con su PDF, en la ficha del cliente" style="flex:0 0 auto;padding:7px 10px;border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;border:2px solid var(--brd2);background:transparent;color:var(--txt2)">📋 Al Indicador</button>'
       +'<button onclick="eliminarCotizacionReg(\''+escAttr(r.nro)+'\')" title="Eliminar del historial" style="flex:0 0 auto;padding:7px 12px;border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;border:2px solid #c0392b;background:transparent;color:#c0392b">🗑</button>'
       +'</div>'
       +'</div>';
