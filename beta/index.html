@@ -2558,39 +2558,165 @@ function vincularCotizacionNueva(P){
   }catch(e){console.error(e);}
 }
 
-// Para las que ya existían: revisa el registro y agrega al historial de cada
-// ficha las cotizaciones que le faltan. Pide confirmación antes de escribir.
+// Para las que ya existían. CADA VEZ que se aprieta el botón se vuelve a intentar
+// todo lo que falte, así lo que no calzó o falló la vez anterior se reintenta solo:
+//  · cotizaciones que no están en la ficha de su cliente -> se agregan, con su PDF;
+//  · las que ya están pero sin el enlace al PDF -> se les pone el enlace.
+// Reconoce al cliente por RUT (o teléfono) y comuna. Si no calza, por nombre, pero
+// solo con nombre y apellido y si hay UNA sola ficha así. Antes de escribir
+// muestra a qué ficha va cada una y pide confirmación. No cambia fechas, equipos
+// ni el ciclo de mantención.
+var _vinculando=false;
+var _sinPdfSesion={};   // nros que el servidor dijo no tener PDF: no se vuelven a pedir en esta sesión
+
+function listaCotizaciones(ficha){
+  var c=ficha&&ficha.cotizaciones;
+  return Array.isArray(c)?c.slice():Object.keys(c||{}).map(function(k){return c[k];});
+}
+function estadoFichaDeReg(r){
+  if(r.estado==="Aceptada")return "concretada";
+  if(r.estado==="Rechazada"||r.estado==="Descartada")return "rechazada";
+  return "";
+}
+function entradaCotizacion(r,link){
+  var e={nro:r.nro,monto:r.total||0,fecha:fechaISO(r.fecha)||r.fecha||"",servicio:(r.serv&&r.serv!=="—")?r.serv:""};
+  if(link)e.link=link;
+  var est=estadoFichaDeReg(r);
+  if(est)e.estado=est;
+  return e;
+}
+// Fichas cuyo nombre contiene todas las palabras del nombre dado.
+function fichasPorNombre(clientes,nombre,minPalabras){
+  var toks=direccionNormalizada(nombre).split(" ").filter(function(t){return t.length>=2;});
+  var res=[];
+  if(toks.length<minPalabras)return res;
+  Object.keys(clientes||{}).forEach(function(k){
+    var c=clientes[k]; if(!c)return;
+    var n=direccionNormalizada((c.cliente||"")+" "+(c.empresa||"")+" "+(c.contacto||""));
+    if(toks.every(function(t){return n.indexOf(t)>=0;}))res.push({clave:k,ficha:c});
+  });
+  return res;
+}
+
+function planVinculacion(clientes){
+  var acciones=[], sinFicha=[];
+  REG_LIST.forEach(function(r){
+    var m=null, porNombre=false;
+    if(r.rut||r.tel){
+      var rg={rut:r.rut,telefono:r.tel,direccion:r.dirTrabajo||"",comuna:r.comunaTrabajo||r.comuna||""};
+      var fichas=fichasDeLaPersona(clientes,rg);
+      m=fichas.length?fichaDeEstaDireccion(fichas,rg):null;
+    }
+    // Por nombre solo si el trabajo no es en otra dirección: una dirección distinta
+    // puede ser una instalación nueva, y eso lo decide la persona con el botón de la tarjeta.
+    if(!m&&!r.dirTrabajo){
+      var c=fichasPorNombre(clientes,r.nombre,2);
+      if(c.length===1){m=c[0];porNombre=true;}
+    }
+    if(!m){sinFicha.push(r);return;}
+    var ya=null;
+    listaCotizaciones(m.ficha).forEach(function(c){if(c&&String(c.nro)===String(r.nro))ya=c;});
+    if(!ya)acciones.push({tipo:"agregar",r:r,clave:m.clave,ficha:m.ficha,porNombre:porNombre,link:""});
+    else if(!ya.link)acciones.push({tipo:"pdf",r:r,clave:m.clave,ficha:m.ficha,porNombre:porNombre,link:""});
+  });
+  return {acciones:acciones,sinFicha:sinFicha};
+}
+
+// Pide al servidor el enlace de Drive de cada cotización (4 a la vez).
+function traerEnlacesPDF(acciones,progreso,listo){
+  var porNro={};
+  acciones.forEach(function(a){(porNro[a.r.nro]=porNro[a.r.nro]||[]).push(a);});
+  var nros=Object.keys(porNro).filter(function(n){return !_sinPdfSesion[n];});
+  var total=nros.length, hechos=0, enVuelo=0, MAX=4;
+  if(!GAS_URL||!total){listo();return;}
+  function siguiente(){
+    if(!nros.length&&enVuelo===0){listo();return;}
+    while(nros.length&&enVuelo<MAX){
+      (function(n){
+        enVuelo++;
+        fetchConTope(GAS_URL+"?nro="+encodeURIComponent(n)+"&key="+encodeURIComponent(GAS_KEY))
+          .then(function(res){return res.json();})
+          .then(function(d){
+            var l=(d&&!d.error&&d.link&&/^https:\/\//.test(String(d.link)))?String(d.link):"";
+            if(l)porNro[n].forEach(function(a){a.link=l;});
+            else if(d&&!d.error)_sinPdfSesion[n]=true;   // respondió bien y no hay PDF
+          })
+          .catch(function(){})   // falla de red: queda para el próximo intento
+          .then(function(){enVuelo--;hechos++;progreso(hechos,total);siguiente();});
+      })(nros.shift());
+    }
+  }
+  siguiente();
+}
+
 function vincularCotizacionesPendientes(){
-  var regs=REG_LIST.map(function(r){
-    return {nro:r.nro,monto:r.total,fecha:fechaISO(r.fecha),servicio:r.serv&&r.serv!=="—"?r.serv:"",
-            rut:r.rut,telefono:r.tel,direccion:"",comuna:r.comuna,_nombre:r.nombre};
-  }).filter(function(r){return r.rut||r.telefono;});
-  if(!regs.length){alert("Ninguna cotización tiene RUT o teléfono para reconocer al cliente.");return;}
+  if(_vinculando)return;
+  var btn=document.querySelector('[onclick="vincularCotizacionesPendientes()"]');
+  var txt0=btn?btn.textContent:"";
+  function estado(t){if(btn)btn.textContent=t;}
+  function fin(){_vinculando=false;if(btn){btn.disabled=false;btn.textContent=txt0;}}
+  if(!REG_LIST.length){alert("No hay cotizaciones en el registro.");return;}
+  _vinculando=true; if(btn)btn.disabled=true;
+  estado("Revisando…");
   getFirebaseIdToken(function(token){
-    if(!token){alert("Necesitas sesión iniciada.");return;}
+    if(!token){fin();alert("Necesitas sesión iniciada.");return;}
     withAppCheckHeader(function(xhr){
       xhr.open("GET", FIREBASE_DB_URL+"/leon_clientes.json?auth="+token, true);
       xhr.onreadystatechange=function(){
         if(xhr.readyState!==4)return;
         var clientes=null;
         if(xhr.status>=200&&xhr.status<300){try{clientes=JSON.parse(xhr.responseText);}catch(e){clientes=null;}}
-        if(!clientes){alert("No se pudo leer el Indicador.");return;}
-        var faltan=[];
-        regs.forEach(function(rg){
-          var fichas=fichasDeLaPersona(clientes,rg);
-          var m=fichas.length?fichaDeEstaDireccion(fichas,rg):null;
-          if(!m)return;
-          var ya=(m.ficha.cotizaciones||[]).some(function(c){return String(c.nro)===String(rg.nro);});
-          if(!ya)faltan.push({rg:rg,cliente:m.ficha.cliente||"(sin nombre)"});
-        });
-        if(!faltan.length){alert("Todas las cotizaciones que se pueden reconocer ya están en la ficha de su cliente.");return;}
-        var lista=faltan.slice(0,15).map(function(x){return "  • N°"+x.rg.nro+" → "+x.cliente;}).join("\n");
-        if(!confirm("Se agregarán "+faltan.length+" cotizaciones al historial de la ficha de su cliente en el Indicador:\n\n"+lista
-          +(faltan.length>15?"\n  … y "+(faltan.length-15)+" más":"")
-          +"\n\nSolo se suman al historial: no cambian fechas, equipos ni el ciclo de mantención."))return;
-        vincularCotizacionesAFicha(faltan.map(function(x){return x.rg;}),function(r){
-          if(!r){alert("No se pudo completar. Intenta de nuevo.");return;}
-          alert("✓ "+r.vinculadas.length+" cotizaciones agregadas a la ficha de su cliente.");
+        if(!clientes){fin();alert("No se pudo leer el Indicador. Revisa tu conexión e intenta de nuevo.");return;}
+        var plan=planVinculacion(clientes);
+        estado("Buscando PDFs…");
+        traerEnlacesPDF(plan.acciones,function(h,t){estado("Buscando PDFs "+h+"/"+t+"…");},function(){
+          // Para las que solo faltaba el PDF, sin enlace no hay nada que hacer.
+          var acc=plan.acciones.filter(function(a){return a.tipo==="agregar"||a.link;});
+          var sf=plan.sinFicha;
+          var textoSinFicha=sf.length
+            ?("\n\nSin ficha reconocida ("+sf.length+"): "+sf.slice(0,8).map(function(r){return "N°"+r.nro+" "+(r.nombre||"");}).join(", ")+(sf.length>8?" …":"")
+              +".\nCrea la ficha (o iguala el nombre) y vuelve a apretar el botón, o usa el botón 📋 de cada tarjeta.")
+            :"";
+          if(!acc.length){fin();alert("No hay nada que agregar ni PDF que completar."+textoSinFicha);return;}
+          var nAg=acc.filter(function(a){return a.tipo==="agregar";}).length, nPdf=acc.length-nAg;
+          var lista=acc.slice(0,15).map(function(a){
+            return "  • N°"+a.r.nro+" "+(a.r.nombre||"")+" → "+(a.ficha.cliente||"(sin nombre)")+(a.ficha.comuna?" ("+a.ficha.comuna+")":"")
+              +(a.tipo==="pdf"?" · solo PDF":"")+(a.porNombre?" · por nombre":"")+(a.link?"":" · sin PDF");
+          }).join("\n");
+          if(!confirm((nAg?("Se agregarán "+nAg+" cotizaciones al historial de su ficha"):"")+(nAg&&nPdf?" y ":"")+(nPdf?("se pondrá el PDF a "+nPdf+" que ya están"):"")+":\n\n"+lista
+              +(acc.length>15?"\n  … y "+(acc.length-15)+" más":"")
+              +"\n\nSolo se suman al historial: no cambian fechas, equipos ni el ciclo de mantención."+textoSinFicha)){fin();return;}
+          estado("Guardando…");
+          var porFicha={};
+          acc.forEach(function(a){(porFicha[a.clave]=porFicha[a.clave]||{ficha:a.ficha,acc:[]}).acc.push(a);});
+          var claves=Object.keys(porFicha), pend=claves.length, fallas=0;
+          claves.forEach(function(k){
+            var f=porFicha[k], lista2=listaCotizaciones(f.ficha);
+            f.acc.forEach(function(a){
+              if(a.tipo==="agregar")lista2.push(entradaCotizacion(a.r,a.link));
+              else lista2.forEach(function(c){if(c&&String(c.nro)===String(a.r.nro)&&!c.link)c.link=a.link;});
+            });
+            withAppCheckHeader(function(xp){
+              xp.open("PATCH", FIREBASE_DB_URL+"/leon_clientes/"+k+".json?auth="+token, true);
+              xp.setRequestHeader("Content-Type","application/json");
+              xp.onreadystatechange=function(){
+                if(xp.readyState!==4)return;
+                if(!(xp.status>=200&&xp.status<300))fallas++;
+                if(--pend===0)terminar();
+              };
+              xp.onerror=function(){fallas++;if(--pend===0)terminar();};
+              return JSON.stringify({cotizaciones:lista2});
+            });
+          });
+          function terminar(){
+            fin();
+            if(fallas){
+              alert("⚠ No se pudo guardar en "+fallas+" de "+claves.length+" ficha"+(claves.length>1?"s":"")
+                +(fallas<claves.length?" (las demás sí quedaron)":"")+".\n\nAprieta el botón otra vez: reintenta lo que falte."+textoSinFicha);
+              return;
+            }
+            alert("✓ Listo: "+nAg+" cotización"+(nAg===1?"":"es")+" agregada"+(nAg===1?"":"s")+" y "+nPdf+" PDF completado"+(nPdf===1?"":"s")+"."+textoSinFicha);
+          }
         });
       };
       return null;
@@ -2647,14 +2773,7 @@ function elegirFichaParaCotizacion(clientes,r,cb){
   var como=(rutNormalizado(rg.rut)?"mismo RUT":"mismo teléfono")+" y misma comuna";
   var cand=m?[m]:[];
   if(!cand.length){
-    var toks=direccionNormalizada(r.nombre).split(" ").filter(function(t){return t.length>=2;});
-    if(toks.length){
-      Object.keys(clientes).forEach(function(k){
-        var c=clientes[k]; if(!c)return;
-        var n=direccionNormalizada((c.cliente||"")+" "+(c.empresa||"")+" "+(c.contacto||""));
-        if(toks.every(function(t){return n.indexOf(t)>=0;}))cand.push({clave:k,ficha:c});
-      });
-    }
+    cand=fichasPorNombre(clientes,r.nombre,1);
     como="mismo nombre";
   }
   function descr(x){
@@ -2679,11 +2798,10 @@ function elegirFichaParaCotizacion(clientes,r,cb){
 
 function guardarCotizacionEnFicha(token,r,sel,link){
   var ficha=sel.ficha;
-  var lista=Array.isArray(ficha.cotizaciones)?ficha.cotizaciones.slice()
-    :Object.keys(ficha.cotizaciones||{}).map(function(k){return ficha.cotizaciones[k];});
+  var lista=listaCotizaciones(ficha);
   var idx=-1;
   lista.forEach(function(c,i){if(c&&String(c.nro)===String(r.nro))idx=i;});
-  var estado=r.estado==="Aceptada"?"concretada":(r.estado==="Rechazada"?"rechazada":"");
+  var estado=estadoFichaDeReg(r);
   if(idx>=0){
     var ya=lista[idx];
     if(ya.link||!link){
@@ -2692,10 +2810,7 @@ function guardarCotizacionEnFicha(token,r,sel,link){
     }
     ya.link=link;
   }else{
-    var e={nro:r.nro,monto:r.total||0,fecha:fechaISO(r.fecha)||r.fecha||"",servicio:(r.serv&&r.serv!=="—")?r.serv:""};
-    if(link)e.link=link;
-    if(estado)e.estado=estado;
-    lista.push(e);
+    lista.push(entradaCotizacion(r,link));
   }
   withAppCheckHeader(function(xp){
     xp.open("PATCH", FIREBASE_DB_URL+"/leon_clientes/"+sel.clave+".json?auth="+token, true);
