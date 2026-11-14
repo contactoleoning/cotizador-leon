@@ -6567,7 +6567,7 @@ function checkPass(){
   if(!email){lockError('Escribe tu correo.');document.getElementById('lock-email').focus();return;}
   if(!pass){lockError('Escribe tu contraseña.');document.getElementById('lock-input').focus();return;}
   btn.disabled=true;btn.textContent='Entrando…';
-  firebase.auth().signInWithEmailAndPassword(email,pass)
+  leonSesionEntrar(email,pass)
     .then(function(){document.getElementById('lock-input').value='';})
     .catch(function(err){
       var m='No pudimos entrar. Revisa el correo y la contraseña.';
@@ -6581,6 +6581,7 @@ function checkPass(){
 }
 
 function cerrarSesion(){
+  leonSesionMarcar(0);
   LEON_USUARIO=null;_fbIdToken=null;
   firebase.auth().signOut().catch(function(e){console.error('Error al cerrar sesión:',e);});
 }
@@ -6646,6 +6647,7 @@ function aplicarRolEnUI(){
 try{
 firebase.auth().onAuthStateChanged(function(user){
   var ov=document.getElementById('lock-overlay');
+  if(user&&!user.isAnonymous&&!leonSesionPermitida())user=null;
   if(user&&!user.isAnonymous){
     cargarRolUsuario(user,function(){
       if(ov)ov.style.display='none';
@@ -6665,6 +6667,101 @@ firebase.auth().onAuthStateChanged(function(user){
   console.error('Firebase Auth no se pudo iniciar:',e);
   lockError('No se pudo conectar con el servidor. Revisa la conexión y recarga.');
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// LÍMITE DE SESIÓN: 1 HORA desde que se entra, pase lo que pase.
+// Es un cronómetro, no un bloqueo por inactividad: da igual si la página
+// queda abierta, se cierra o se cierra el navegador. La hora de entrada se
+// guarda en el dispositivo (localStorage) y las tres apps la comparten, porque
+// comparten sesión de Firebase: entrar en una abre las tres, y a la hora se
+// cierran las tres.
+//   · Al abrir la app con una sesión vieja (o sin hora registrada) se cierra
+//     la sesión y se pide la contraseña.
+//   · Con la app abierta, a la hora exacta se cierra sola.
+//   · Los últimos 5 minutos se ve una cuenta regresiva arriba.
+// Ojo: esto vive en el navegador. Frena a quien tome un celular ya abierto,
+// pero no protege contra alguien que sepa editar el almacenamiento del
+// navegador; eso solo se resuelve con reglas en el servidor.
+// ═══════════════════════════════════════════════════════════════════════
+var LEON_SESION_MS = 60*60*1000;      // 1 hora
+var LEON_SESION_AVISO_MS = 5*60*1000; // cuenta regresiva en los últimos 5 min
+var LEON_SESION_KEY = 'leon_sesion_inicio';
+var _leonIniMem = 0, _leonExpirando = false;
+
+function leonSesionInicio(){
+  var v = 0;
+  try { v = parseInt(localStorage.getItem(LEON_SESION_KEY), 10) || 0; } catch(e) {}
+  if (!v) v = _leonIniMem;   // si el navegador no deja guardar, vale la de esta página
+  return v > 0 ? v : 0;
+}
+function leonSesionMarcar(t){
+  _leonIniMem = t || 0;
+  try { if (t) localStorage.setItem(LEON_SESION_KEY, String(t)); else localStorage.removeItem(LEON_SESION_KEY); } catch(e) {}
+}
+// Milisegundos que le quedan a la sesión. 0 = vencida, sin hora registrada o
+// con una hora "del futuro" (reloj movido).
+function leonSesionRestante(){
+  var i = leonSesionInicio(), ahora = Date.now();
+  if (!i || i > ahora + 60000) return 0;
+  return Math.max(0, i + LEON_SESION_MS - ahora);
+}
+function leonSesionLogueado(){
+  try { return !!firebase.auth().currentUser; } catch(e) { return false; }
+}
+// La hora de entrada se anota ANTES de pedirle la sesión a Firebase, porque
+// onAuthStateChanged puede dispararse antes de que vuelva la promesa. Si la
+// contraseña está mal, se restaura lo que había.
+function leonSesionEntrar(email, pass){
+  var previa = leonSesionInicio();
+  leonSesionMarcar(Date.now());
+  return firebase.auth().signInWithEmailAndPassword(email, pass).catch(function(err){
+    leonSesionMarcar(previa);
+    throw err;
+  });
+}
+// Para el onAuthStateChanged: ¿se le deja entrar a este usuario?
+function leonSesionPermitida(){
+  if (leonSesionRestante() > 0) return true;
+  leonSesionMarcar(0);
+  try { firebase.auth().signOut().catch(function(){}); } catch(e) {}
+  lockError('Por seguridad la sesión dura 1 hora. Vuelve a entrar con tu contraseña.');
+  return false;
+}
+function leonSesionExpirar(){
+  if (_leonExpirando) return;
+  _leonExpirando = true;
+  setTimeout(function(){ _leonExpirando = false; }, 4000);
+  leonSesionMarcar(0);
+  cerrarSesion();
+  lockError('Pasó 1 hora desde que entraste. Vuelve a entrar con tu contraseña.');
+}
+function leonSesionChip(ms){
+  var c = document.getElementById('leon-sesion-chip');
+  if (ms <= 0 || ms > LEON_SESION_AVISO_MS) { if (c && c.parentNode) c.parentNode.removeChild(c); return; }
+  if (!c) {
+    c = document.createElement('div');
+    c.id = 'leon-sesion-chip';
+    c.setAttribute('role', 'timer');
+    c.style.cssText = 'position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:99999;background:#b91c1c;color:#fff;font:700 14px/1 system-ui,-apple-system,sans-serif;padding:10px 16px;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.4);pointer-events:none;white-space:nowrap;';
+    document.body.appendChild(c);
+  }
+  var s = Math.ceil(ms/1000);
+  c.textContent = 'La sesión se cierra en ' + Math.floor(s/60) + ':' + ('0' + (s%60)).slice(-2);
+}
+function leonSesionVigilar(){
+  if (!leonSesionLogueado()) { leonSesionChip(0); return; }
+  var r = leonSesionRestante();
+  if (r <= 0) { leonSesionChip(0); leonSesionExpirar(); return; }
+  leonSesionChip(r);
+}
+// Cada segundo, y al volver a la pestaña o a la app (los navegadores del
+// celular congelan los temporizadores en segundo plano, así que se compara
+// siempre contra la hora real, no contra lo que "debió" correr).
+setInterval(leonSesionVigilar, 1000);
+document.addEventListener('visibilitychange', leonSesionVigilar);
+window.addEventListener('pageshow', leonSesionVigilar);
+window.addEventListener('focus', leonSesionVigilar);
 
 // Bloqueo por inactividad, igual que en el Indicador.
 // Antes la sesion moria al cerrar la pestaña, porque se marcaba en
