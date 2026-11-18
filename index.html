@@ -201,6 +201,30 @@ select option{background:#161619;color:var(--txt)}
 .tag-mas{background:var(--bg2);color:var(--txt3);border:1px solid var(--brd)}
 .pc-prov.sel{border-color:var(--grn);background:#16301f;box-shadow:0 0 0 1px var(--grn)}
 .pc-prov.sel .pc-prov-n{color:var(--grn)}
+/* ── Equipo agotado: sigue apareciendo, pero en rojo y tachado ── */
+.pc-ago{border-color:#7a2a2a;background:#2a1517}
+.pc-ago:hover{border-color:var(--red);background:#331a1d}
+.pc-ago .pn,.pc-ago .pc-prov-n{color:var(--red);text-decoration:line-through;text-decoration-thickness:2px}
+.pc-ago .pv,.pc-ago .piv{color:var(--red)}
+.pc-ago .pv{text-decoration:line-through;text-decoration-thickness:2px}
+.pc-ago.sel,.pc-prov.pc-ago.sel{border-color:var(--red);background:#3a1a1d;box-shadow:0 0 0 1px var(--red)}
+.pc-ago.sel .pn,.pc-ago.sel .pc-prov-n{color:var(--red)}
+.tag-act{display:inline-block;background:#12361f;color:var(--grn);border:1px solid var(--grn);font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.act-chip{display:inline-flex;align-items:center;gap:8px;margin-right:auto;font-size:14px;font-weight:700;color:var(--txt)}
+.act-chip small{font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em}
+.act-ok{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:var(--grn);color:#0b0b0d;border-radius:6px;font-size:16px;font-weight:900;line-height:1}
+.tag-ago{display:inline-block;background:var(--red);color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em;padding:3px 10px;border-radius:20px;text-decoration:none}
+/* ── Administrador: títulos que agrupan equipos ── */
+.gl.adm-tipo{font-size:19px;font-weight:800;letter-spacing:.1em;margin:32px 0 12px;padding:13px 16px;background:var(--bg3);border:1px solid var(--brd2);border-left:7px solid var(--acc);border-radius:var(--rs);color:#fff;border-bottom:1px solid var(--brd2)}
+.adm-eq{margin:10px 0 0;border:1px solid var(--brd2);border-left:5px solid var(--blu);border-radius:var(--rs);background:var(--bg2);overflow:hidden}
+.adm-eq-h{display:flex;justify-content:space-between;align-items:center;padding:15px 14px;cursor:pointer;user-select:none;gap:8px}
+.adm-eq.open .adm-eq-h{background:#1b2735;border-bottom:1px solid var(--brd2)}
+.adm-eq.adm-eq-ago{border-left-color:var(--red)}
+.adm-eq .ai.ai-ago{background:#241315;border-left:4px solid var(--red)}
+.adm-ago-chip{background:var(--red);color:#fff;font-size:11px;font-weight:800;letter-spacing:.06em;padding:2px 9px;border-radius:20px;white-space:nowrap}
+.btn-ago{background:var(--bg3);color:var(--red);border:2px solid #7a2a2a;padding:7px 14px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif}
+.btn-ago:hover{background:#3a1a1d}
+.btn-ago.on{background:var(--red);color:#fff;border-color:var(--red)}
 /* ── Cotizar en pasos ── */
 .paso-n{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;
   border:2px solid var(--brd2);color:var(--txt2);font-size:14px;font-weight:800;flex-shrink:0;margin-right:12px;transition:all .2s}
@@ -1435,19 +1459,44 @@ function claveGrupoEq(p){
 }
 // Tarjeta de un equipo. En un grupo con varios proveedores (marca != null) el
 // nombre del equipo va en la cabecera del grupo y aqui se destaca el proveedor.
+// Agotado se marca en el administrador (boton en cada equipo) y viaja en ov
+// como cualquier otro campo editado, asi llega a todos los dispositivos.
+function esAgotado(p){return !!(p&&(p.agotado===true||(ov[p.id]&&ov[p.id].agotado===true)));}
+// Mes en que se cambio por ultima vez el costo o el % de ganancia de un equipo.
+// Vive en ov[id].actualizado ("2026-11-17") y viaja con el resto de ov. Devuelve
+// "Noviembre" (con el año si no es el actual) o "" si nunca se ha modificado.
+var MESES_ES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+function mesActualizado(p){
+  var a=(ov[p.id]&&ov[p.id].actualizado)||p.actualizado;
+  var m=/^(\d{4})-(\d{2})/.exec(String(a||""));
+  if(!m)return "";
+  var nm=MESES_ES[parseInt(m[2],10)-1];
+  if(!nm)return "";
+  return parseInt(m[1],10)===new Date().getFullYear()?nm:nm+" "+m[1];
+}
+function sellarActualizado(id){
+  var h=new Date();
+  if(!ov[id])ov[id]={};
+  ov[id].actualizado=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");
+}
 function tarjetaEquipoHtml(p,marca){
-  var n=pvN(p);
+  var n=pvN(p),ago=esAgotado(p),cls=ago?" pc-ago":"";
+  var mesAct=ago?"":mesActualizado(p);
+  var tagAct=mesAct?'<span class="tag-act">✓ Actualizado · '+esc(mesAct)+'</span>':'';
+  if(ago&&marca!==null)marca='<span class="tag-ago">AGOTADO</span>';
+  else if(marca!==null)marca+=tagAct;
   if(marca!==null){
-    return '<div class="pc pc-prov" id="pc-'+p.id+'" data-pid="'+p.id+'">'
+    return '<div class="pc pc-prov'+cls+'" id="pc-'+p.id+'" data-pid="'+p.id+'">'
       +'<div class="pc-prov-l"><span class="pc-prov-n">'+esc(String(p.prov||"").trim())+'</span>'+marca+'</div>'
       +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span><span class="piv">c/IVA</span></div></div>';
   }
-  return '<div class="pc" id="pc-'+p.id+'" data-pid="'+p.id+'">'
+  return '<div class="pc'+cls+'" id="pc-'+p.id+'" data-pid="'+p.id+'">'
     +'<div class="pn">'+p.marca+' - '+p.modelo+'</div>'
     +'<div class="pm"><span class="bdg bb">'+fmtBtu(p.btu)+'</span>'
     +'<span class="bdg bt">'+p.tipo+'</span>'
     +(p.ubicacion?'<span class="bdg bu">'+p.ubicacion+'</span>':'')
-    +'<span class="bdg bp">'+esc(String(p.prov||"").trim())+'</span></div>'
+    +'<span class="bdg bp">'+esc(String(p.prov||"").trim())+'</span>'
+    +(ago?'<span class="tag-ago">AGOTADO</span>':tagAct)+'</div>'
     +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span>'
     +'<span class="piv">c/IVA</span></div></div>';
 }
@@ -1501,10 +1550,13 @@ function filtrar(){
   });
   lista.innerHTML=grupos.map(function(g){
     if(g.length===1)return tarjetaEquipoHtml(g[0],null);
-    var ord=g.slice().sort(function(a,b){return getCosto(a)-getCosto(b);});
-    var minC=getCosto(ord[0]);
+    // Los agotados se listan al final y no cuentan para "mas barato".
+    var porCosto=function(a,b){return getCosto(a)-getCosto(b);};
+    var agot=g.filter(esAgotado).sort(porCosto);
+    var ord=g.filter(function(p){return !esAgotado(p);}).sort(porCosto);
+    var minC=ord.length?getCosto(ord[0]):0;
     var empate=ord.every(function(p){return getCosto(p)===minC;});
-    var p0=ord[0];
+    var p0=g[0];
     return '<div class="pgrp">'
       +'<div class="pgrp-h"><div class="pn">'+p0.marca+' - '+p0.modelo+'</div>'
       +'<div class="pm"><span class="bdg bb">'+fmtBtu(p0.btu)+'</span>'
@@ -1513,11 +1565,13 @@ function filtrar(){
       +'<span class="bdg bcmp">'+g.length+' proveedores</span></div></div>'
       +ord.map(function(p,i){
         var dif=getCosto(p)-minC;
+        if(ord.length<2)return tarjetaEquipoHtml(p,'');
         var marca=(!empate&&i===0)?'<span class="tag-barato">MÁS BARATO</span>'
           :(empate?'<span class="tag-igual">MISMO COSTO</span>'
           :'<span class="tag-mas">+'+fmt(dif)+' de costo</span>');
         return tarjetaEquipoHtml(p,marca);
       }).join("")
+      +agot.map(function(p){return tarjetaEquipoHtml(p,'');}).join("")
       +'</div>';
   }).join("");
   // Fix: si la sección tiene max-height fijo, liberarlo para mostrar contenido dinámico
@@ -1539,6 +1593,7 @@ function seleccionar(id){
 
 function agregar(){
   if(!selProd)return;
+  if(esAgotado(selProd)&&!confirm("Este equipo está marcado como AGOTADO.\n\n"+selProd.marca+" "+selProd.modelo+" "+fmtBtu(selProd.btu)+" · "+String(selProd.prov||"").trim()+"\n\n¿Agregarlo a la cotización igual?"))return;
   var cant=parseInt(document.getElementById("cantequipo").value)||1;
   var neto=pvN(selProd);
   // Se guardan marca, modelo y btu por separado ademas de armados dentro de
@@ -6088,7 +6143,10 @@ function aplicarPreciosPdf(){
     var precio=parseFloat(valInput.value)||0;
     if(!equipoId||!precio){sinSeleccion++;return;}
     if(!ov[equipoId])ov[equipoId]={};
+    var _pe=CAT.find(function(x){return x.id===equipoId;});
+    var _cambio=!_pe||getCosto(_pe)!==precio;
     ov[equipoId].costo=precio;
+    if(_cambio)sellarActualizado(equipoId);
     saveOv(equipoId);
     aplicados++;
   });
@@ -6225,7 +6283,7 @@ function renderAdmin(){
   agrEq.orden.forEach(function(clave){
     var tipo=agrEq.display[clave];
     var idsTipo=grupos[clave].map(function(p){return p.id;}).join(',');
-    html+='<div class="gl" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><input type="text" value="'+esc(tipo)+'" data-ids="'+idsTipo+'" data-campo="tipo" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="background:transparent;border:none;outline:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;width:'+(tipo.length+4)+'ch;max-width:100%">'
+    html+='<div class="gl adm-tipo" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><input type="text" value="'+esc(tipo)+'" data-ids="'+idsTipo+'" data-campo="tipo" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="background:transparent;border:none;outline:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;width:'+(Math.ceil(tipo.length*1.45)+3)+'ch;max-width:100%">'
       +'<button type="button" class="adm-delg" data-ids="'+idsTipo+'" data-label="'+esc(tipo)+'" title="Elimina este tipo con todos sus equipos" onclick="eliminarEquiposGrupo(this.dataset.ids.split(\',\'),this.dataset.label)">🗑 Eliminar tipo</button></div>';
 
     // Sub-agrupar por marca + modelo dentro de cada tipo
@@ -6246,14 +6304,17 @@ function renderAdmin(){
       var isOpen=!!EQ_OPEN_GROUPS[key];
       var keyEsc=key.replace(/'/g,"\\'");
       var idsAttr=items.map(function(p){return p.id;}).join(',');
-      var tituloInput='background:transparent;border:none;border-bottom:1px dashed var(--brd2);font-family:\'DM Sans\',sans-serif;font-size:15px;padding:2px 2px;outline:none';
+      var tituloInput='background:transparent;border:none;border-bottom:1px dashed var(--brd2);font-family:\'DM Sans\',sans-serif;font-size:18px;padding:2px 2px;outline:none';
+      var nAgo=items.filter(esAgotado).length;
 
-      html+='<div style="border-bottom:1px solid var(--brd)">'
-        +'<div onclick="toggleEqGroup(\''+keyEsc+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 4px;cursor:pointer;user-select:none;gap:8px">'
+      html+='<div class="adm-eq'+(isOpen?' open':'')+(nAgo===items.length?' adm-eq-ago':'')+'">'
+        +'<div class="adm-eq-h" onclick="toggleEqGroup(\''+keyEsc+'\')">'
         +'<div style="min-width:0;flex:1;display:flex;align-items:center;flex-wrap:wrap;gap:4px">'
-        +'<input type="text" value="'+esc(marca)+'" data-ids="'+idsAttr+'" data-campo="marca" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';font-weight:700;color:var(--txt);width:'+(marca.length+3)+'ch;max-width:100%">'
-        +'<input type="text" value="'+esc(modelo)+'" data-ids="'+idsAttr+'" data-campo="modelo" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';color:var(--txt2);margin-right:6px;width:'+(modelo.length+3)+'ch;max-width:100%">'
-        +'<span style="font-size:12px;color:var(--txt3)">— '+items.length+' BTU: '+btus+'</span></div>'
+        +'<input type="text" value="'+esc(marca)+'" data-ids="'+idsAttr+'" data-campo="marca" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';font-weight:800;color:#fff;width:'+(marca.length+4)+'ch;max-width:100%">'
+        +'<input type="text" value="'+esc(modelo)+'" data-ids="'+idsAttr+'" data-campo="modelo" onclick="event.stopPropagation()" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value)" style="'+tituloInput+';font-weight:600;color:var(--txt);margin-right:6px;width:'+(modelo.length+4)+'ch;max-width:100%">'
+        +'<span style="font-size:12px;color:var(--txt3)">— '+items.length+' BTU: '+btus+'</span>'
+        +(nAgo?'<span class="adm-ago-chip">'+(nAgo===items.length?'AGOTADO':nAgo+(nAgo===1?' agotado':' agotados'))+'</span>':'')
+        +'</div>'
         +'<button type="button" class="adm-delg" data-ids="'+idsAttr+'" data-label="'+esc(marca+" "+modelo)+'" title="Elimina este equipo con todas sus capacidades y proveedores" onclick="event.stopPropagation();eliminarEquiposGrupo(this.dataset.ids.split(\',\'),this.dataset.label)">🗑</button>'
         +'<span style="color:var(--acc);font-size:16px;transition:transform .2s;flex-shrink:0;margin-left:8px;'+(isOpen?'transform:rotate(180deg)':'')+'">▼</span>'
         +'</div>';
@@ -6262,7 +6323,8 @@ function renderAdmin(){
         items.forEach(function(p){
           var pct=gPct(p),costo=getCosto(p);
           var n=Math.round(costo*(1+pct/100));
-          html+='<div class="ai" style="flex-direction:column;gap:10px;padding:14px 0 14px 12px;border-top:1px solid var(--brd)">'
+          var ago=esAgotado(p),mesAct=mesActualizado(p);
+          html+='<div class="ai'+(ago?' ai-ago':'')+'" style="flex-direction:column;gap:10px;padding:14px 14px;border-top:1px solid var(--brd)">'
 
             // Fila 1: Marca + Modelo
             +'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">'
@@ -6291,7 +6353,9 @@ function renderAdmin(){
             +'</div>'
 
             // Botón eliminar
-            +'<div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">'
+            +'<div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap">'
+            +(mesAct?'<span class="act-chip" title="Mes en que se modificó el costo o el % de este equipo"><small>Actualizado</small>'+esc(mesAct)+'<span class="act-ok">✓</span></span>':'')
+            +'<button type="button" class="btn-ago'+(ago?' on':'')+'" data-id="'+p.id+'" onclick="toggleAgotado(this.dataset.id)" title="Sigue apareciendo en el cotizador, en rojo y tachado">'+(ago?'✓ AGOTADO · quitar':'Marcar agotado')+'</button>'
             +'<button type="button" onclick="otroProveedorDe(\''+p.id+'\')" title="Copia marca, modelo, BTU y tipo al formulario de abajo para cargar el mismo equipo de otro proveedor" style="background:var(--bg3);color:var(--acc);border:2px solid var(--brd2);padding:7px 14px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer">＋ Mismo equipo, otro proveedor</button>'
             +'<button data-delid="'+p.id+'" onclick="delEquipo(this)" style="background:#c0392b;color:#fff;border:none;padding:7px 16px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer">🗑 Eliminar</button>'
             +'</div>'
@@ -6350,6 +6414,13 @@ function otroProveedorDe(id){
   if(f){f.scrollIntoView({behavior:"smooth",block:"center"});f.focus();}
 }
 function delEquipo(b){eliminarEquipo(b.getAttribute("data-delid"));}
+// Marca o desmarca un equipo (una fila: capacidad + proveedor) como agotado.
+// Pasa por setOv, asi se guarda, se sincroniza y se refresca el cotizador.
+function toggleAgotado(id){
+  var p=CAT.find(function(x){return x.id===id;});
+  if(!p)return;
+  setOv(id,"agotado",!esAgotado(p));
+}
 
 // Elimina varios equipos de una vez (un tipo, o una marca+modelo con todas sus
 // capacidades y proveedores). Mismo mecanismo que eliminarEquipo: lapida en
@@ -6531,7 +6602,12 @@ document.addEventListener("DOMContentLoaded", function(){
     if(!inp)return;
     var id=inp.getAttribute("data-id"),campo=inp.getAttribute("data-campo");
     if(!ov[id])ov[id]={};
-    ov[id][campo]=parseFloat(inp.value)||0;
+    var _p=CAT.find(function(x){return x.id===id;});
+    var _nuevo=parseFloat(inp.value)||0;
+    var _antes=_p?(campo==="costo"?getCosto(_p):gPct(_p)):undefined;
+    ov[id][campo]=_nuevo;
+    // Solo si el valor cambio de verdad: se anota el mes de la modificacion.
+    if((campo==="costo"||campo==="pct")&&_nuevo!==_antes)sellarActualizado(id);
     saveOv(id);
     renderAdmin();
     filtrar();
