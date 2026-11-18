@@ -3109,7 +3109,10 @@ function totalesCarrito(){
   var sN=carrito.reduce(function(a,b){var d=b.disc||0;return a+(b.neto*(b.cant||1)*(1-d/100));},0);
   var dM=cyberPct>0?Math.round(sN*cyberPct/100):0;
   var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva;
-  return {cyberPct:cyberPct,sN:sN,dM:dM,nD:nD,iva:iva,tot:tot,totTC:Math.round(tot*1.035)};
+  // Valor de lista (sin descuentos de linea) y cuanto se descuento en las lineas:
+  // solo para mostrarlo; el calculo de totales no cambia.
+  var lista=carrito.reduce(function(a,b){return a+b.neto*(b.cant||1);},0);
+  return {cyberPct:cyberPct,sN:sN,dM:dM,nD:nD,iva:iva,tot:tot,totTC:Math.round(tot*1.035),lista:lista,dL:lista-sN};
 }
 
 function renderCarrito(){
@@ -3134,16 +3137,23 @@ function renderCarrito(){
     }
     return '<div class="ci"><div style="flex:1;min-width:0">'
       +'<div style="font-size:18px;font-weight:700;color:var(--txt)">'+p.desc+cantLabel+'</div>'
-      +'<div style="font-size:15px;color:var(--txt2);margin-top:3px">'+p.tipo+cantDesc+provLinea+'</div></div>'
+      +'<div style="font-size:15px;color:var(--txt2);margin-top:3px">'+p.tipo+cantDesc+provLinea+'</div>'
+      +(disc>0?'<div style="font-size:15px;font-weight:700;color:var(--cy);margin-top:3px">Descuento −'+disc+'% · −'+fmt(p.neto*cant*disc/100)+' neto</div>':'')
+      +'</div>'
       +'<div style="display:flex;align-items:center;gap:8px">'
       +'<div style="display:flex;align-items:center;gap:4px">'
       +'<input type="number" min="0" max="100" value="'+disc+'" style="width:50px;font-size:13px;padding:3px 5px;border:1px solid var(--brd);border-radius:4px;background:var(--inp);color:var(--txt);text-align:center" onchange="changeItemDisc('+i+',this.value)" title="Descuento %">'
       +'<span style="font-size:12px;color:var(--txt2)">%</span>'
       +'</div>'
-      +'<span style="font-size:19px;font-weight:700;color:var(--grn)">'+fmt(netoDisc*cant)+'</span>'
+      +'<div style="text-align:right">'
+      +(disc>0?'<div style="font-size:13px;color:var(--txt3);text-decoration:line-through">'+fmt(p.neto*cant)+'</div>':'')
+      +'<span style="font-size:19px;font-weight:700;color:var(--grn)">'+fmt(netoDisc*cant)+'</span></div>'
       +'<button class="bdel" data-idx="'+i+'">X</button></div></div>';
   }).join("");
-  var th='<div class="tr"><span>Subtotal neto</span><span>'+fmt(sN)+'</span></div>';
+  var th='';
+  if(t.dL>0.5)th+='<div class="tr"><span>Valor de lista</span><span>'+fmt(t.lista)+'</span></div>'
+    +'<div class="tr dc"><span>Descuento en ítems</span><span>-'+fmt(t.dL)+'</span></div>';
+  th+='<div class="tr"><span>Subtotal neto</span><span>'+fmt(sN)+'</span></div>';
   if(dM>0)th+='<div class="tr dc"><span>Descuento Global -'+cyberPct+'%</span><span>-'+fmt(dM)+'</span></div>';
   th+='<div class="tr"><span>Monto neto</span><span>'+fmt(nD)+'</span></div>'
     +'<div class="tr"><span>IVA 19%</span><span>'+fmt(iva)+'</span></div>'
@@ -3197,6 +3207,7 @@ function armarPDF(){
   var sN=carrito.reduce(function(a,b){var d=b.disc||0;return a+(b.neto*(b.cant||1)*(1-d/100));},0);
   var dM=cyberPct>0?Math.round(sN*cyberPct/100):0;
   var nD=sN-dM,iva=Math.round(nD*IVA),tot=nD+iva,totTC=Math.round(tot*1.035);
+  var listaPDF=carrito.reduce(function(a,b){return a+b.neto*(b.cant||1);},0),dLinea=listaPDF-sN;
 
   var TC="padding:6px 8px;font-size:10px;color:#1a1a1a;text-align:center;border:none;";
   var TL="padding:6px 8px;font-size:10px;color:#1a1a1a;text-align:left;border:none;";
@@ -3210,7 +3221,7 @@ function armarPDF(){
       +"<td style='"+TC+"'>"+c+"</td>"
       +"<td style='"+TL+"'>"+p.desc+"</td>"
       +"<td style='"+TC+"'>$ "+unitNet.toLocaleString("es-CL")+"</td>"
-      +"<td style='"+TC+"'>"+(d>0?d+" %":"—")+"</td>"
+      +"<td style='"+TC+"'>"+(d>0?"<b>"+d+" %</b><div style='font-size:8px;color:#555'>-$ "+Math.round(p.neto*c*d/100).toLocaleString("es-CL")+"</div>":"—")+"</td>"
       +"<td style='"+TC+"'>$ "+subtotal.toLocaleString("es-CL")+"</td>"
       +"</tr>";
   }).join("");
@@ -3305,9 +3316,9 @@ function armarPDF(){
   h+="<table style='width:100%;border-collapse:collapse;margin-top:6px;border-top:1.5px solid #555;border-bottom:1.5px solid #555'>"
     +"<thead><tr>"
     +"<td style='"+TH+"text-align:center;width:10%'>CANTIDAD</td>"
-    +"<td style='"+TH+"text-align:center;width:48%'>DESCRIPCIÓN</td>"
+    +"<td style='"+TH+"text-align:center;width:46%'>DESCRIPCIÓN</td>"
     +"<td style='"+TH+"text-align:center;width:17%'>VALOR UNITARIO</td>"
-    +"<td style='"+TH+"text-align:center;width:10%'>% DESCUENTO</td>"
+    +"<td style='"+TH+"text-align:center;width:12%'>% DESCUENTO</td>"
     +"<td style='"+TH+"text-align:center;width:15%'>SUBTOTAL</td>"
     +"</tr></thead>"
     +"<tbody>"+rows+blanks+"</tbody>"
@@ -3337,6 +3348,8 @@ function armarPDF(){
     +"</td>"
     +"<td style='vertical-align:top;min-width:200px;white-space:nowrap'>"
     +"<table style='border-collapse:collapse;width:100%;border:1px solid #999;color:#1a1a1a'>"
+    +(dLinea>0.5?"<tr><td style='padding:5px 12px;font-size:10px'>VALOR DE LISTA</td><td style='padding:5px 12px;font-size:10px;text-align:right'>$ "+Math.round(listaPDF).toLocaleString("es-CL")+"</td></tr>"
+      +"<tr><td style='padding:5px 12px;font-size:10px'>DESCUENTO EN ÍTEMS</td><td style='padding:5px 12px;font-size:10px;text-align:right'>-$ "+Math.round(dLinea).toLocaleString("es-CL")+"</td></tr>":"")
     +"<tr><td style='padding:5px 12px;font-size:10px'>SUBTOTAL NETO</td><td style='padding:5px 12px;font-size:10px;text-align:right'>$ "+Math.round(sN).toLocaleString("es-CL")+"</td></tr>"
     +(dM>0?"<tr><td style='padding:5px 12px;font-size:10px'>DESCUENTO GLOBAL "+(cyberPct>0?"-"+cyberPct+"%":"")+"</td><td style='padding:5px 12px;font-size:10px;text-align:right'>-$ "+Math.round(dM).toLocaleString("es-CL")+"</td></tr>":"")
     +"<tr><td style='padding:5px 12px;font-size:10px'>NETO($)</td><td style='padding:5px 12px;font-size:10px;text-align:right'>$ "+Math.round(nD).toLocaleString("es-CL")+"</td></tr>"
