@@ -6296,7 +6296,9 @@ function renderAdmin(){
 
     var esMulti=esTipoMultisplit(clave);
     subOrder.forEach(function(key){
-      var items=sub[key];
+      // Capacidades de menor a mayor BTU (9, 12, 18, 24...); a igual BTU se
+      // conserva el orden en que estaban (varios proveedores de la misma capacidad).
+      var items=sub[key].slice().sort(function(a,b){return (parseFloat(a.btu)||0)-(parseFloat(b.btu)||0);});
       var marca=items[0].marca,modelo=items[0].modelo;
       var btus=items.slice().sort(function(a,b){return a.btu-b.btu;}).map(function(p){
         return fmtBtu(p.btu)+(esMulti&&p.ubicacion?" ("+p.ubicacion+")":"");
