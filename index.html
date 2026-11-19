@@ -192,6 +192,8 @@ select option{background:#161619;color:var(--txt)}
 .pgrp-h .pm{margin:6px 0 10px}
 .pgrp .pc-prov+.pc-prov{margin-top:8px}
 .bcmp{background:#3a2d12;color:var(--cy);border:1px solid #6b4f1c}
+.bpais{background:#2a2540;color:#d3c8ff;border:1px solid #4a4170}
+.adm-origen{background:#1a2030;align-items:stretch!important}
 .pc-prov{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 14px}
 .pc-prov-l{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pc-prov-n{font-size:17px;font-weight:700}
@@ -1380,6 +1382,49 @@ function sellarActualizado(id){
   if(!ov[id])ov[id]={};
   ov[id].actualizado=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");
 }
+// ── País de referencia del equipo ──────────────────────────────────────
+// Dos datos por equipo: país de la MARCA y país donde se HECHO (fabrica), mas una nota
+// de que tan seguro es el dato. Se editan en el administrador (valen para todas las
+// capacidades y proveedores del mismo marca+modelo) y viajan en ov como cualquier
+// otro campo. Mientras nadie los edite se usan estos valores de referencia, sacados
+// de fichas de tienda (Falabella, Easy, Paris, ClimaOferta) y del sitio de cada marca:
+// no son datos oficiales del fabricante y el pais puede cambiar segun el lote o el
+// codigo exacto del modelo. Un campo dejado en blanco por el usuario manda sobre estos.
+var PAIS_MARCA_DEF={midea:"China",hisense:"China",tcl:"China",samsung:"Corea del Sur",lg:"Corea del Sur",
+  daikin:"Japón",trane:"Estados Unidos",anwo:"Chile"};
+var HECHO_EN_DEF=[
+  {m:"hisense",r:/hi-?vida/,h:"China",n:"Confirmado en el 9.000 BTU (Easy y Sodimac). Las otras capacidades no traen el dato."},
+  {m:"hisense",r:/port[aá]til/,h:"China",n:"Paris y Falabella lo dicen para el modelo AP12HW4RNPS00. Un anuncio de Falabella dice «Chile», probablemente un error del vendedor."},
+  {m:"midea",r:/ecomaster/,h:"China",n:"Confirmado en el 9.000 y el 18.000."},
+  {m:"midea",r:/air-?volution/,h:"China",n:"Solo confirmado en el 9.000 (ClimaOferta). El 12.000 y el 18.000 no traen el dato, pero no hay razón para pensar que cambie."},
+  {m:"samsung",r:/black/,h:"",n:"Ninguna ficha de este modelo trae el origen."},
+  {m:"samsung",r:/wind-?free/,h:"Tailandia (a veces Vietnam)",n:"Los 9.000, 12.000, 18.000 y 24.000 aparecen como Tailandia. Una variante del 12.000 (AR12BSEAMWKZS) y otra del 18.000 salen como Vietnam. Depende del código exacto del equipo."},
+  {m:"tcl",r:/breeze/,h:"China",n:"Confirmado en el 18.000."},
+  {m:"kendal",r:/i3|bm2|n3|black/,h:"Probablemente China",n:"No hay ficha con el país para esos códigos. Easy declara «China» en otros Kendal."},
+  {m:"kendal",r:/r2|inverter/,t:/split muro/,h:"China",n:"Confirmado en el R2-ASM-12MDS por la ficha de Kendal Chile y por Solotodo. En el 9.000 no se encontró el dato."},
+  {m:"vesta",r:/x32|inverter/,t:/split muro/,h:"China",n:"Confirmado en el X32-ASM-24MDS por la tienda de Kendal Chile."},
+  {m:"lg",r:/dual/,h:"China",n:"Falabella lo dice para el VM122H9 y el VM182H9, y EITA para el 12.000. No se encontró en las páginas de LG Chile."}
+];
+function normOrigen(x){return String(x==null?"":x).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();}
+function origenEq(p){
+  var o=(p&&ov[p.id])||{},m=normOrigen(p.marca),mo=normOrigen(p.modelo),t=normOrigen(p.tipo);
+  var d={marca:PAIS_MARCA_DEF[m]||"",hecho:"",nota:""};
+  for(var i=0;i<HECHO_EN_DEF.length;i++){
+    var r=HECHO_EN_DEF[i];
+    if(r.m===m&&r.r.test(mo)&&(!r.t||r.t.test(t))){d.hecho=r.h;d.nota=r.n;break;}
+  }
+  function pick(a,b,c){return a!==undefined?a:(b!==undefined?b:c);}
+  return {marca:String(pick(o.paisMarca,p.paisMarca,d.marca)||""),
+          hecho:String(pick(o.hechoEn,p.hechoEn,d.hecho)||""),
+          nota:String(pick(o.origenNota,p.origenNota,d.nota)||"")};
+}
+function origenChipsHtml(p){
+  var o=origenEq(p),h="";
+  var tip=o.nota?' title="'+esc(o.nota)+'"':'';
+  if(o.hecho)h+='<span class="bdg bpais"'+tip+'>Hecho en · '+esc(o.hecho)+'</span>';
+  if(o.marca)h+='<span class="bdg bpais"'+tip+'>Marca · '+esc(o.marca)+'</span>';
+  return h;
+}
 function tarjetaEquipoHtml(p,marca){
   var n=pvN(p),ago=esAgotado(p),cls=ago?" pc-ago":"";
   var mesAct=ago?"":mesActualizado(p);
@@ -1396,6 +1441,7 @@ function tarjetaEquipoHtml(p,marca){
     +'<div class="pm"><span class="bdg bb">'+fmtBtu(p.btu)+'</span>'
     +'<span class="bdg bt">'+p.tipo+'</span>'
     +(p.ubicacion?'<span class="bdg bu">'+p.ubicacion+'</span>':'')
+    +origenChipsHtml(p)
     +'<span class="bdg bp">'+esc(String(p.prov||"").trim())+'</span>'
     +(ago?'<span class="tag-ago">AGOTADO</span>':tagAct)+'</div>'
     +'<div class="pp"><span class="pv">'+fmt(wIVA(n))+'</span>'
@@ -1463,6 +1509,7 @@ function filtrar(){
       +'<div class="pm"><span class="bdg bb">'+fmtBtu(p0.btu)+'</span>'
       +'<span class="bdg bt">'+p0.tipo+'</span>'
       +(p0.ubicacion?'<span class="bdg bu">'+p0.ubicacion+'</span>':'')
+      +origenChipsHtml(p0)
       +'<span class="bdg bcmp">'+g.length+' proveedores</span></div></div>'
       +ord.map(function(p,i){
         var dif=getCosto(p)-minC;
@@ -6242,6 +6289,16 @@ function renderAdmin(){
         +'</div>';
 
       if(isOpen){
+        var og=origenEq(items[0]);
+        html+='<div class="ai adm-origen" style="flex-direction:column;gap:10px;padding:14px;border-top:1px solid var(--brd)">'
+          +'<div style="font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--txt3);text-transform:uppercase">País de referencia · vale para todas las capacidades y proveedores</div>'
+          +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">'
+          +'<div><div style="'+lbl+'">País de la marca</div><input type="text" list="origen-paises-list" placeholder="Ej: Japón" style="'+si+'" value="'+esc(og.marca)+'" data-ids="'+idsAttr+'" data-campo="paisMarca" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value.trim())"></div>'
+          +'<div><div style="'+lbl+'">Hecho en (dónde se fabrica)</div><input type="text" list="origen-paises-list" placeholder="Ej: China" style="'+si+'" value="'+esc(og.hecho)+'" data-ids="'+idsAttr+'" data-campo="hechoEn" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value.trim())"></div>'
+          +'</div>'
+          +'<div><div style="'+lbl+'">Qué tan seguro es el dato</div><input type="text" placeholder="Ej: Confirmado en el 9.000 por la ficha de la marca" style="'+si+'" value="'+esc(og.nota)+'" data-ids="'+idsAttr+'" data-campo="origenNota" onchange="renombrarGrupo(this.dataset.ids.split(\',\'),this.dataset.campo,this.value.trim())"></div>'
+          +'<datalist id="origen-paises-list"><option value="China"><option value="Japón"><option value="Corea del Sur"><option value="Tailandia"><option value="Vietnam"><option value="Malasia"><option value="Chile"><option value="Estados Unidos"><option value="México"><option value="Italia"><option value="Alemania"></datalist>'
+          +'</div>';
         items.forEach(function(p){
           var pct=gPct(p),costo=getCosto(p);
           var n=Math.round(costo*(1+pct/100));
